@@ -1,0 +1,10 @@
+@import "tailwindcss";
+@theme {
+  --color-brand: oklch(0.6 0.2 250);
+}
+@layer base {
+  body {
+    @apply bg-neutral-950 text-neutral-100 antialiased selection:bg-brand/30 selection:text-brand;
+    font-family: 'Inter', system-ui, sans-serif;
+  }
+}
