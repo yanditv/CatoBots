@@ -1,16 +1,17 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Building2, Bot, Users, Plus, Trash2, LogOut, LayoutDashboard, ShieldCheck, X, Target, Search, Edit2 } from 'lucide-react';
+import { Building2, Bot, Users, Plus, Trash2, LogOut, LayoutDashboard, ShieldCheck, X, Target, Search, Edit2, Star } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 
 const AdminPanel = () => {
-  const [activeTab, setActiveTab] = useState<'institutions' | 'robots' | 'referees' | 'matches'>('institutions');
-  const [data, setData] = useState<{ institutions: any[], robots: any[], referees: any[], matches: any[] }>({
+  const [activeTab, setActiveTab] = useState<'institutions' | 'robots' | 'referees' | 'matches' | 'sponsors'>('institutions');
+  const [data, setData] = useState<{ institutions: any[], robots: any[], referees: any[], matches: any[], sponsors: any[] }>({
     institutions: [],
     robots: [],
     referees: [],
-    matches: []
+    matches: [],
+    sponsors: []
   });
   const [showModal, setShowModal] = useState(false);
   const [isEditMode, setIsEditMode] = useState(false);
@@ -22,19 +23,21 @@ const AdminPanel = () => {
 
   const fetchData = async () => {
     try {
-      const [instRes, robotRes, userRes] = await Promise.all([
+      const [instRes, robotRes, userRes, sponsorRes] = await Promise.all([
         fetch(`http://${window.location.hostname}:3001/api/institutions`),
         fetch(`http://${window.location.hostname}:3001/api/robots`),
-        fetch(`http://${window.location.hostname}:3001/api/users`, { headers: { Authorization: `Bearer ${token}` } })
+        fetch(`http://${window.location.hostname}:3001/api/users`, { headers: { Authorization: `Bearer ${token}` } }),
+        fetch(`http://${window.location.hostname}:3001/api/sponsors`)
       ]);
       
-      const stats = [instRes, robotRes, userRes].map(r => r.ok);
+      const stats = [instRes, robotRes, userRes, sponsorRes].map(r => r.ok);
       if (stats.includes(false)) throw new Error('Error al cargar algunos datos');
 
       setData({ 
         institutions: await instRes.json(), 
         robots: await robotRes.json(), 
         referees: await userRes.json(),
+        sponsors: await sponsorRes.json(),
         matches: await (await fetch(`http://${window.location.hostname}:3001/api/matches`)).json()
       });
     } catch (error) {
@@ -68,6 +71,9 @@ const AdminPanel = () => {
         refereeId: formData.refereeId,
         category: formData.category
       };
+    } else if (activeTab === 'sponsors') {
+      endpoint = '/api/sponsors';
+      body = { name: formData.name, logoUrl: formData.logoUrl, website: formData.website, tier: formData.tier };
     }
 
     try {
@@ -114,6 +120,8 @@ const AdminPanel = () => {
     if (activeTab === 'institutions') endpoint = `/api/institutions/${id}`;
     if (activeTab === 'robots') endpoint = `/api/robots/${id}`;
     if (activeTab === 'referees') endpoint = `/api/users/${id}`;
+    if (activeTab === 'sponsors') endpoint = `/api/sponsors/${id}`;
+    if (activeTab === 'matches') endpoint = `/api/matches/${id}`;
 
     try {
       const res = await fetch(`http://${window.location.hostname}:3001${endpoint}`, {
@@ -144,6 +152,7 @@ const AdminPanel = () => {
       case 'robots': return 'Robots';
       case 'referees': return 'Árbitros';
       case 'matches': return 'Encuentros';
+      case 'sponsors': return 'Sponsors';
       default: return id;
     }
   };
@@ -166,6 +175,7 @@ const AdminPanel = () => {
           <TabButton id="robots" icon={Bot} label="Robots" />
           <TabButton id="referees" icon={Users} label="Árbitros" />
           <TabButton id="matches" icon={Target} label="Encuentros" />
+          <TabButton id="sponsors" icon={Star} label="Sponsors" />
         </nav>
 
         <div className="flex flex-col gap-2 pt-8 border-t border-neutral-50">
@@ -267,6 +277,34 @@ const AdminPanel = () => {
                     <p className="text-[10px] font-black text-neutral-400 uppercase tracking-[0.2em] mt-2 mb-1">{m.category}</p>
                     <p className="text-[9px] font-bold text-neutral-300 uppercase tracking-tighter">ID: {m.id.slice(0, 12)}...</p>
                   </div>
+                </div>
+                <div className="flex gap-2">
+                  <button onClick={() => handleEdit(m)} className="text-neutral-300 hover:text-black hover:bg-neutral-50 transition-all p-4 bg-neutral-50 rounded-2xl border border-neutral-100"><Edit2 size={20} /></button>
+                  <button onClick={() => handleDelete(m.id)} className="text-neutral-300 hover:text-red-500 hover:bg-red-50 transition-all p-4 bg-neutral-50 rounded-2xl border border-neutral-100"><Trash2 size={20} /></button>
+                </div>
+              </motion.div>
+            ))}
+
+            {activeTab === 'sponsors' && data.sponsors.filter(s => s.name.toLowerCase().includes(searchQuery.toLowerCase())).map((s) => (
+              <motion.div key={s.id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="bg-white border border-neutral-100 p-8 rounded-[2.5rem] flex justify-between items-center shadow-lg shadow-neutral-200/40">
+                <div className="flex items-center gap-8">
+                  <div className="w-16 h-16 bg-neutral-50 rounded-3xl flex items-center justify-center text-neutral-400 border border-neutral-100 overflow-hidden">
+                    {s.logoUrl ? <img src={s.logoUrl} className="w-full h-full object-contain" /> : <Star size={32} />}
+                  </div>
+                  <div>
+                    <h3 className="text-2xl font-black text-black">{s.name}</h3>
+                    <div className="flex items-center gap-4 mt-2">
+                      <p className={`text-[10px] font-black uppercase tracking-widest px-3 py-1 rounded-lg ${
+                        s.tier === 'GOLD' ? 'bg-yellow-50 text-yellow-600' : 
+                        s.tier === 'SILVER' ? 'bg-slate-50 text-slate-400' : 'bg-orange-50 text-orange-600'
+                      }`}>{s.tier}</p>
+                      <p className="text-[10px] text-neutral-400 font-bold uppercase tracking-wider">{s.website}</p>
+                    </div>
+                  </div>
+                </div>
+                <div className="flex gap-2">
+                  <button onClick={() => handleEdit(s)} className="text-neutral-300 hover:text-black hover:bg-neutral-50 transition-all p-4 bg-neutral-50 rounded-2xl border border-neutral-100"><Edit2 size={20} /></button>
+                  <button onClick={() => handleDelete(s.id)} className="text-neutral-300 hover:text-red-500 hover:bg-red-50 transition-all p-4 bg-neutral-50 rounded-2xl border border-neutral-100"><Trash2 size={20} /></button>
                 </div>
               </motion.div>
             ))}
@@ -372,6 +410,34 @@ const AdminPanel = () => {
                           <select required value={formData.refereeId || ''} className="w-full bg-neutral-50 border border-neutral-100 rounded-2.5xl p-5 appearance-none text-sm" onChange={e => setFormData({...formData, refereeId: e.target.value})}>
                             <option value="">Seleccionar...</option>
                             {data.referees.map(u => <option key={u.id} value={u.id}>@{u.username}</option>)}
+                          </select>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {activeTab === 'sponsors' && (
+                    <div className="space-y-6">
+                      <div className="space-y-2">
+                        <label className="text-[10px] font-black uppercase text-neutral-400 px-2">Nombre del Sponsor</label>
+                        <input required value={formData.name || ''} placeholder="Nombre oficial" className="w-full bg-neutral-50 border border-neutral-100 rounded-2.5xl p-5" onChange={e => setFormData({...formData, name: e.target.value})} />
+                      </div>
+                      <div className="space-y-2">
+                        <label className="text-[10px] font-black uppercase text-neutral-400 px-2">Logo URL</label>
+                        <input value={formData.logoUrl || ''} placeholder="https://..." className="w-full bg-neutral-50 border border-neutral-100 rounded-2.5xl p-5" onChange={e => setFormData({...formData, logoUrl: e.target.value})} />
+                      </div>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                          <label className="text-[10px] font-black uppercase text-neutral-400 px-2">Sitio Web</label>
+                          <input value={formData.website || ''} placeholder="www.sponsor.com" className="w-full bg-neutral-50 border border-neutral-100 rounded-2.5xl p-5" onChange={e => setFormData({...formData, website: e.target.value})} />
+                        </div>
+                        <div className="space-y-2">
+                          <label className="text-[10px] font-black uppercase text-neutral-400 px-2">Nivel (Tier)</label>
+                          <select required value={formData.tier || ''} className="w-full bg-neutral-50 border border-neutral-100 rounded-2.5xl p-5 appearance-none" onChange={e => setFormData({...formData, tier: e.target.value})}>
+                            <option value="">Seleccionar...</option>
+                            <option value="GOLD">GOLD</option>
+                            <option value="SILVER">SILVER</option>
+                            <option value="BRONZE">BRONZE</option>
                           </select>
                         </div>
                       </div>

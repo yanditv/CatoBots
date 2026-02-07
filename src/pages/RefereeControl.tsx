@@ -13,7 +13,8 @@ const RefereeControl = ({ matches, onControl }: RefereeProps) => {
   const [selectedMatchId, setSelectedMatchId] = useState<string | null>(null);
   const { logout, user } = useAuth();
   
-  const selectedMatch = matches.find(m => m.id === selectedMatchId);
+  const myMatches = matches.filter(m => m.refereeId === user?.id);
+  const selectedMatch = myMatches.find(m => m.id === selectedMatchId);
 
   const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
@@ -53,7 +54,7 @@ const RefereeControl = ({ matches, onControl }: RefereeProps) => {
              <h2 className="text-sm font-black uppercase text-neutral-400">Seleccionar Arena Activa</h2>
           </div>
           <div className="grid grid-cols-1 gap-4">
-            {matches.map(m => (
+            {myMatches.map(m => (
               <button
                 key={m.id}
                 onClick={() => setSelectedMatchId(m.id)}
@@ -69,6 +70,11 @@ const RefereeControl = ({ matches, onControl }: RefereeProps) => {
                 <div className="text-sm font-bold text-neutral-400">#{m.id.slice(0, 4)}</div>
               </button>
             ))}
+            {myMatches.length === 0 && (
+              <div className="text-center py-20 bg-white border border-neutral-100 rounded-[2.5rem]">
+                <p className="text-neutral-400 font-bold uppercase tracking-widest text-xs">No tienes encuentros asignados</p>
+              </div>
+            )}
           </div>
         </section>
       </div>

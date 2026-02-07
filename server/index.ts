@@ -10,6 +10,7 @@ import { User } from './models/User';
 import { Institution } from './models/Institution';
 import { Robot } from './models/Robot';
 import { Match } from './models/Match';
+import { Sponsor } from './models/Sponsor';
 
 dotenv.config();
 
@@ -54,7 +55,7 @@ app.post('/api/auth/login', async (req, res) => {
   const user = await User.findOne({ where: { username } });
   if (user && bcrypt.compareSync(password, user.password)) {
     const token = jwt.sign({ id: user.id, role: user.role, username: user.username }, JWT_SECRET, { expiresIn: '24h' });
-    res.json({ token, role: user.role, username: user.username });
+    res.json({ token, role: user.role, username: user.username, id: user.id });
   } else {
     res.status(401).send({ message: 'Invalid username or password' });
   }
@@ -114,11 +115,35 @@ app.delete('/api/users/:id', authenticateJWT, isAdmin, async (req, res) => {
   res.sendStatus(204);
 });
 
+// Sponsors
+app.get('/api/sponsors', async (req, res) => res.json(await Sponsor.findAll()));
+app.post('/api/sponsors', authenticateJWT, isAdmin, async (req, res) => {
+  res.json(await Sponsor.create(req.body));
+});
+app.put('/api/sponsors/:id', authenticateJWT, isAdmin, async (req, res) => {
+  await Sponsor.update(req.body, { where: { id: req.params.id } });
+  res.json(await Sponsor.findByPk(req.params.id));
+});
+app.delete('/api/sponsors/:id', authenticateJWT, isAdmin, async (req, res) => {
+  await Sponsor.destroy({ where: { id: req.params.id } });
+  res.sendStatus(204);
+});
+
 app.get('/api/matches', async (req, res) => res.json(await Match.findAll({ include: ['robotA', 'robotB', 'referee'] })));
 app.post('/api/matches', authenticateJWT, isAdmin, async (req, res) => {
   const newMatch = await Match.create(req.body);
   broadcastState();
   res.json(newMatch);
+});
+app.put('/api/matches/:id', authenticateJWT, isAdmin, async (req, res) => {
+  await Match.update(req.body, { where: { id: req.params.id } });
+  broadcastState();
+  res.json(await Match.findByPk(req.params.id, { include: ['robotA', 'robotB', 'referee'] }));
+});
+app.delete('/api/matches/:id', authenticateJWT, isAdmin, async (req, res) => {
+  await Match.destroy({ where: { id: req.params.id } });
+  broadcastState();
+  res.sendStatus(204);
 });
 
 // --- Socket.io Real-time Logic ---

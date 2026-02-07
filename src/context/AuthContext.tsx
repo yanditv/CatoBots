@@ -1,6 +1,7 @@
-import { createContext, useContext, useState, useEffect, type ReactNode } from 'react';
+import { createContext, useContext, useState, type ReactNode } from 'react';
 
 interface User {
+  id: string;
   username: string;
   role: 'ADMIN' | 'REFEREE';
 }
@@ -8,7 +9,7 @@ interface User {
 interface AuthContextType {
   user: User | null;
   token: string | null;
-  login: (token: string, role: 'ADMIN' | 'REFEREE', username: string) => void;
+  login: (token: string, role: 'ADMIN' | 'REFEREE', username: string, id: string) => void;
   logout: () => void;
   isAuthenticated: boolean;
 }
@@ -16,20 +17,18 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | null>(null);
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
-  const [user, setUser] = useState<User | null>(null);
-  const [token, setToken] = useState<string | null>(null);
-
-  useEffect(() => {
-    const savedToken = localStorage.getItem('token');
-    const savedUser = localStorage.getItem('user');
-    if (savedToken && savedUser) {
-      setToken(savedToken);
-      setUser(JSON.parse(savedUser));
+  const [user, setUser] = useState<User | null>(() => {
+    const saved = localStorage.getItem('user');
+    try {
+      return saved ? JSON.parse(saved) : null;
+    } catch {
+      return null;
     }
-  }, []);
+  });
+  const [token, setToken] = useState<string | null>(() => localStorage.getItem('token'));
 
-  const login = (newToken: string, role: 'ADMIN' | 'REFEREE', username: string) => {
-    const userData: User = { username, role };
+  const login = (newToken: string, role: 'ADMIN' | 'REFEREE', username: string, id: string) => {
+    const userData: User = { id, username, role };
     setToken(newToken);
     setUser(userData);
     localStorage.setItem('token', newToken);

@@ -28,7 +28,7 @@ const Login = () => {
       if (!response.ok) throw new Error('Credenciales inválidas');
 
       const data = await response.json();
-      login(data.token, data.role, data.username);
+      login(data.token, data.role, data.username, data.id);
       navigate(data.role === 'ADMIN' ? '/admin' : '/referee');
     } catch (err: any) {
       setError(err.message);
