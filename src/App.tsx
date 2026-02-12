@@ -1,6 +1,7 @@
 import { Routes, Route, Navigate } from 'react-router-dom'
 import { useEffect, useState } from 'react'
 import { io, Socket } from 'socket.io-client'
+import Form from './pages/Form/Form'
 import Dashboard from './pages/Dashboard'
 import RefereeControl from './pages/RefereeControl'
 import Registration from './pages/Registration'
@@ -66,8 +67,11 @@ function AppContent() {
   return (
     <div className="min-h-screen bg-neutral-950 text-neutral-100 font-sans selection:bg-brand/30">
       <Routes>
+        {/* Public Form */}
+        <Route path="/" element={<Form />} />
+
         {/* Public Scoreboard */}
-        <Route path="/" element={<Dashboard matches={matches} />} />
+        <Route path="/dashboard" element={<Dashboard matches={matches} />} />
         <Route path="/keys" element={<Brackets />} />
         
         {/* Auth */}
