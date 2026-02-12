@@ -1,18 +1,27 @@
 import { useState } from 'react';
-import { motion } from 'framer-motion';
-import { Play, Pause, RotateCcw, Plus, ShieldAlert, Timer, ChevronLeft, Target, LogOut } from 'lucide-react';
+import { Play, Pause, RotateCcw, Plus, ShieldAlert, Timer, Trophy, ChevronLeft, Target, LogOut } from 'lucide-react';
 import type { MatchState } from '../App';
 import { useAuth } from '../context/AuthContext';
 
-interface RefereeProps {
+interface RefereeControlProps {
   matches: MatchState[];
   onControl: (matchId: string, action: string, payload?: any) => void;
 }
 
-const RefereeControl = ({ matches, onControl }: RefereeProps) => {
+const ActionButton = ({ icon: Icon, label, onClick, color = 'bg-white', textColor = 'text-black', size = 'py-6' }: any) => (
+  <button 
+    onClick={onClick}
+    className={`${color} ${textColor} w-full ${size} rounded-[2rem] border border-neutral-100 shadow-lg shadow-neutral-200/40 font-bold uppercase text-sm flex flex-col items-center justify-center gap-3 active:scale-95 transition-all hover:shadow-xl`}
+  >
+    <Icon size={24} />
+    {label}
+  </button>
+);
+
+const RefereeControl = ({ matches, onControl }: RefereeControlProps) => {
+  const { user, logout } = useAuth();
   const [selectedMatchId, setSelectedMatchId] = useState<string | null>(null);
-  const { logout, user } = useAuth();
-  
+
   const myMatches = matches.filter(m => m.refereeId === user?.id);
   const selectedMatch = myMatches.find(m => m.id === selectedMatchId);
 
@@ -22,89 +31,69 @@ const RefereeControl = ({ matches, onControl }: RefereeProps) => {
     return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
 
-  const ActionButton = ({ icon: Icon, label, onClick, color = 'bg-white', textColor = 'text-neutral-500', size = 'py-6' }: any) => (
-    <motion.button
-      whileTap={{ scale: 0.95 }}
-      onClick={onClick}
-      className={`relative overflow-hidden ${size} px-4 rounded-[2rem] flex flex-col items-center justify-center gap-2 border border-neutral-100 shadow-sm active:shadow-inner transition-all ${color} ${textColor}`}
-    >
-      <Icon className="w-6 h-6" />
-      <span className="text-[10px] font-black uppercase tracking-[0.15em] opacity-80">{label}</span>
-    </motion.button>
-  );
-
-  if (!selectedMatchId) {
+  if (!selectedMatch) {
     return (
-      <div className="min-h-screen bg-neutral-50 p-6 flex flex-col gap-8 max-w-lg mx-auto">
-        <header className="flex justify-between items-center mt-4">
-          <div>
-            <h1 className="text-4xl font-black text-black uppercase">Operaciones</h1>
-            <p className="text-xs text-neutral-400 font-bold uppercase mt-1">Operador: {user?.username}</p>
+      <div className="min-h-screen bg-neutral-50 p-8 flex flex-col">
+        <header className="flex justify-between items-center mb-12">
+          <div className="flex items-center gap-4">
+             <div className="w-12 h-12 bg-brand rounded-2xl flex items-center justify-center text-white shadow-lg shadow-brand/20">
+                <Target size={24} />
+             </div>
+             <div>
+                <h1 className="text-2xl text-neutral-500 font-black tracking-tight">CONTROL <span className="text-brand">ÁRBITRO</span></h1>
+                <p className="text-sm font-black text-neutral-400 uppercase">Panel de Operaciones</p>
+             </div>
           </div>
-          <button onClick={logout} className="p-3 bg-red-50 text-red-500 rounded-2xl border border-red-100 shadow-xl shadow-red-500/5">
+          <button onClick={logout} className="p-4 bg-white rounded-2xl border border-neutral-100 text-red-500 shadow-sm hover:shadow-md transition-all">
             <LogOut size={20} />
           </button>
         </header>
 
-        <section className="space-y-6">
-          <div className="flex items-center gap-3">
-             <div className="w-8 h-8 bg-brand/10 rounded-xl flex items-center justify-center text-brand">
-                <Target size={18} />
-             </div>
-             <h2 className="text-sm font-black uppercase text-neutral-400">Seleccionar Arena Activa</h2>
-          </div>
-          <div className="grid grid-cols-1 gap-4">
-            {myMatches.map(m => (
-              <button
+        <div className="flex-1 max-w-2xl mx-auto w-full">
+          <h2 className="text-md font-black text-neutral-400 uppercase mb-6 px-4">Encuentros Asignados</h2>
+          <div className="grid gap-4">
+            {myMatches.length > 0 ? myMatches.map(m => (
+              <button 
                 key={m.id}
                 onClick={() => setSelectedMatchId(m.id)}
-                className="bg-white border border-neutral-100 p-6 rounded-[2.5rem] text-left hover:border-brand/30 transition-all flex justify-between items-center shadow-lg shadow-neutral-200/40 group"
+                className="bg-white border border-neutral-100 p-8 rounded-[2.5rem] flex justify-between items-center shadow-lg shadow-neutral-200/40 hover:scale-[1.02] transition-all group active:scale-95"
               >
-                <div>
-                  <div className="flex items-center gap-2 mb-2">
-                    <span className="text-xs font-black text-brand uppercase bg-brand/5 px-3 py-1 rounded-lg border border-brand/10">{m.category}</span>
-                    {m.isActive && <span className="w-2 h-2 rounded-full bg-brand animate-pulse" />}
-                  </div>
-                  <h3 className="font-black text-xl text-black group-hover:text-brand transition-colors">{m.robotA?.name} <span className="text-neutral-400 font-medium">vs</span> {m.robotB?.name}</h3>
+                <div className="text-left">
+                  <span className="text-sm font-black text-brand uppercase mb-2 block">{m.category} | {m.round}</span>
+                  <p className="text-2xl font-black text-black group-hover:text-brand transition-colors">
+                    {m.robotA?.name || '---'} vs {m.robotB?.name || '---'}
+                  </p>
                 </div>
-                <div className="text-sm font-bold text-neutral-400">#{m.id.slice(0, 4)}</div>
+                <ChevronLeft size={24} className="rotate-180 text-neutral-200 group-hover:text-brand transition-colors" />
               </button>
-            ))}
-            {myMatches.length === 0 && (
-              <div className="text-center py-20 bg-white border border-neutral-100 rounded-[2.5rem]">
-                <p className="text-neutral-400 font-bold uppercase tracking-widest text-xs">No tienes encuentros asignados</p>
+            )) : (
+              <div className="p-12 text-center bg-white rounded-[3rem] border border-neutral-100 shadow-sm">
+                <p className="text-neutral-400 font-bold">No tienes encuentros asignados para hoy.</p>
               </div>
             )}
           </div>
-        </section>
+        </div>
       </div>
     );
   }
 
-  if (!selectedMatch) return null;
-
   return (
-    <div className="min-h-screen bg-neutral-50 p-6 flex flex-col gap-6 max-w-lg mx-auto pb-16">
-      <header className="p-8 rounded-[3rem] bg-white border border-neutral-100 flex flex-col gap-6 mt-4 shadow-xl shadow-neutral-200/50">
-        <div className="flex justify-between items-center">
-          <button 
-            onClick={() => setSelectedMatchId(null)}
-            className="p-3 bg-neutral-50 rounded-2xl text-neutral-400 border border-neutral-100"
-          >
-            <ChevronLeft size={24} />
-          </button>
-          <div className="text-right">
-             <p className="text-[10px] text-neutral-400 uppercase font-black tracking-widest leading-none mb-2">{selectedMatch.category}</p>
-             <h1 className="text-2xl font-black text-black">CONTROL DE ARENA</h1>
-          </div>
+    <div className="min-h-screen bg-neutral-50 p-6 flex flex-col max-w-3xl mx-auto">
+      <header className="mb-8">
+        <button onClick={() => setSelectedMatchId(null)} className="flex items-center gap-2 text-neutral-400 font-black text-sm uppercase mb-6 hover:text-black transition-colors">
+          <ChevronLeft size={16} /> Volver a la lista
+        </button>
+        <div className="flex justify-between items-end mb-6">
+          <h1 className="text-4xl text-neutral-500 font-black uppercase">{selectedMatch.category}</h1>
+          <span className="bg-brand text-white px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest">{selectedMatch.round}</span>
         </div>
-        <div className={`w-full py-8 rounded-[2rem] font-mono text-7xl font-black text-center tabular-nums border shadow-inner ${selectedMatch.isActive ? 'bg-brand/5 border-brand/20 text-brand' : 'bg-neutral-50 border-neutral-100 text-neutral-300'}`}>
+        <div className={`w-full py-8 rounded-[2rem] font-mono text-7xl font-black text-center tabular-nums border shadow-inner ${selectedMatch.isActive ? 'bg-brand/5 border-brand/20 text-brand' : 'bg-neutral-50 border-neutral-100 text-neutral-400'}`}>
           {formatTime(selectedMatch.timeLeft)}
         </div>
       </header>
 
       {/* Timer Controls */}
-      <div className="grid grid-cols-3 gap-4">
+      <div className="grid grid-cols-3 gap-4 mb-4">
         <ActionButton 
           icon={selectedMatch.isActive ? Pause : Play} 
           label={selectedMatch.isActive ? 'Pausar' : 'Iniciar'} 
@@ -133,7 +122,7 @@ const RefereeControl = ({ matches, onControl }: RefereeProps) => {
         <div className="flex flex-col gap-4">
           <div className="p-6 rounded-[2.5rem] bg-white border border-brand/10 text-center shadow-lg shadow-brand/5 relative overflow-hidden">
             <div className="absolute top-0 left-0 w-full h-1 bg-brand/10" />
-            <h2 className="text-xs font-black text-brand uppercase tracking-widest truncate px-2">{selectedMatch.robotA?.name}</h2>
+            <h2 className="text-md font-black text-brand uppercase truncate px-2">{selectedMatch.robotA?.name}</h2>
             <div className="text-7xl font-black my-4 text-black">{selectedMatch.scoreA}</div>
           </div>
           <ActionButton 
@@ -148,38 +137,58 @@ const RefereeControl = ({ matches, onControl }: RefereeProps) => {
             icon={ShieldAlert} 
             label="Falta" 
             textColor="text-red-500"
-            onClick={() => {
-              const p = prompt('¿Razón de la penalización?');
-              if(p) onControl(selectedMatch.id, 'ADD_PENALTY_A', p);
-            }}
+            onClick={() => onControl(selectedMatch.id, 'ADD_PENALTY_A')}
           />
         </div>
 
         {/* Side B Control */}
         <div className="flex flex-col gap-4">
-          <div className="p-6 rounded-[2.5rem] bg-white border border-neutral-200 text-center shadow-lg shadow-neutral-200/30 relative overflow-hidden">
-             <div className="absolute top-0 left-0 w-full h-1 bg-neutral-100" />
-            <h2 className="text-xs font-black text-neutral-400 uppercase tracking-widest truncate px-2">{selectedMatch.robotB?.name}</h2>
+          <div className="p-6 rounded-[2.5rem] bg-white border border-neutral-100 text-center shadow-lg shadow-neutral-200/40 relative overflow-hidden">
+            <h2 className="text-md font-black text-neutral-400 uppercase truncate px-2">{selectedMatch.robotB?.name}</h2>
             <div className="text-7xl font-black my-4 text-black">{selectedMatch.scoreB}</div>
           </div>
           <ActionButton 
             icon={Plus} 
             label="Punto" 
             size="py-12"
-            color="bg-white text-black"
-            textColor="text-black"
+            color="bg-neutral-100"
             onClick={() => onControl(selectedMatch.id, 'ADD_SCORE_B')}
           />
           <ActionButton 
             icon={ShieldAlert} 
             label="Falta" 
             textColor="text-red-500"
-            onClick={() => {
-              const p = prompt('¿Razón de la penalización?');
-              if(p) onControl(selectedMatch.id, 'ADD_PENALTY_B', p);
-            }}
+            onClick={() => onControl(selectedMatch.id, 'ADD_PENALTY_B')}
           />
         </div>
+      </div>
+
+      {/* Finishing Status */}
+      <div className="mt-8">
+        {!selectedMatch.isFinished ? (
+          <button 
+            onClick={() => {
+              if (confirm('¿Finalizar encuentro y declarar ganador?')) onControl(selectedMatch.id, 'FINISH');
+            }}
+            className="w-full bg-black text-white py-8 rounded-[2rem] font-black uppercase shadow-2xl shadow-black/20 hover:bg-neutral-900 transition-all flex items-center justify-center gap-4 active:scale-95"
+          >
+            <Trophy size={24} className="text-brand" />
+            Finalizar Encuentro
+          </button>
+        ) : (
+          <div className="flex flex-col gap-4">
+            <div className="bg-brand text-white p-8 rounded-[2rem] text-center font-black uppercase shadow-xl shadow-brand/20">
+              <Trophy size={32} className="mx-auto mb-4" />
+              ¡Encuentro Terminado!
+            </div>
+            <button 
+              onClick={() => onControl(selectedMatch.id, 'UNFINISH')}
+              className="w-full bg-white border border-neutral-100 text-red-500 py-6 rounded-[2rem] font-black uppercase text-sm active:scale-95"
+            >
+              Anular Finalización
+            </button>
+          </div>
+        )}
       </div>
     </div>
   );

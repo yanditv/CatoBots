@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { ShieldCheck, User, Lock } from 'lucide-react';
+import { User, Lock } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
 const Login = () => {
@@ -45,11 +45,11 @@ const Login = () => {
         className="w-full max-w-md bg-white border border-neutral-100 rounded-[3rem] p-12 shadow-2xl shadow-neutral-200/60 relative overflow-hidden"
       >
         <div className="flex flex-col items-center mb-12">
-          <div className="w-20 h-20 bg-brand/10 rounded-[2rem] flex items-center justify-center text-brand mb-6">
-            <ShieldCheck size={44} />
+          <div className="w-20 h-20 flex items-center justify-center text-brand mb-6">
+            <img src="/favicon.svg" alt="Logo" />
           </div>
-          <h1 className="text-4xl font-black tracking-tight text-black mb-2">Centro de Autenticación</h1>
-          <p className="text-neutral-400 font-bold uppercase tracking-widest text-[10px]">Protocolo de Seguridad v4.0</p>
+          <h1 className="text-4xl font-black tracking-tight text-black mb-2">CatoBots IV</h1>
+          <p className="text-neutral-400 font-bold uppercase tracking-widest text-[10px]">Inicio de Sesión</p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-6">
@@ -63,7 +63,7 @@ const Login = () => {
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
                 className="w-full bg-neutral-50 border border-neutral-100 rounded-2xl py-4.5 pl-14 pr-6 focus:border-brand/30 outline-none transition-all placeholder:text-neutral-300 font-medium text-black"
-                placeholder="ID de Agente"
+                placeholder="Usuario"
               />
             </div>
           </div>
@@ -78,7 +78,7 @@ const Login = () => {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 className="w-full bg-neutral-50 border border-neutral-100 rounded-2xl py-4.5 pl-14 pr-6 focus:border-brand/30 outline-none transition-all placeholder:text-neutral-300 font-medium text-black"
-                placeholder="Frase Clave"
+                placeholder="Contraseña"
               />
             </div>
           </div>

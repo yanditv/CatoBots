@@ -5,7 +5,9 @@ import { Institution } from './Institution';
 export class Robot extends Model {
   declare id: string;
   declare name: string;
-  declare weightClass: string;
+  declare level: 'JUNIOR' | 'SENIOR' | 'MASTER';
+  declare category: string;
+  declare isHomologated: boolean;
   declare institutionId: string;
 }
 
@@ -19,9 +21,19 @@ Robot.init({
     type: DataTypes.STRING,
     allowNull: false,
   },
-  weightClass: {
+  level: {
     type: DataTypes.STRING,
     allowNull: false,
+    defaultValue: 'JUNIOR',
+  },
+  category: {
+    type: DataTypes.STRING,
+    allowNull: false,
+    defaultValue: 'Minisumo Autónomo',
+  },
+  isHomologated: {
+    type: DataTypes.BOOLEAN,
+    defaultValue: false,
   },
 }, {
   sequelize,

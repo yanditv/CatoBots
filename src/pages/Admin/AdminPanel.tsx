@@ -1,148 +1,261 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Building2, Bot, Users, Plus, Trash2, LogOut, LayoutDashboard, ShieldCheck, X, Target, Search, Edit2, Star } from 'lucide-react';
+import { 
+  Building2, 
+  Bot, 
+  Users, 
+  Plus, 
+  Trash2, 
+  LogOut, 
+  LayoutDashboard, 
+  ShieldCheck, 
+  X, 
+  Target, 
+  Search, 
+  Edit2, 
+  Star,
+  Share2
+} from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 
+interface Institution {
+  id: string;
+  name: string;
+  contactEmail?: string;
+  isPaid: boolean;
+  members: string[];
+}
+
+interface Robot {
+  id: string;
+  name: string;
+  level: 'JUNIOR' | 'SENIOR' | 'MASTER';
+  category: string;
+  isHomologated: boolean;
+  institutionId: string;
+  Institution?: Institution;
+}
+
+interface User {
+  id: string;
+  username: string;
+  role: string;
+}
+
+interface Match {
+  id: string;
+  robotAId: string;
+  robotBId: string;
+  scoreA: number;
+  scoreB: number;
+  category: string;
+  round: string;
+  refereeId: string;
+  robotA?: Robot;
+  robotB?: Robot;
+  referee?: User;
+  showInDashboard: boolean;
+}
+
+interface Sponsor {
+  id: string;
+  name: string;
+  logoUrl?: string;
+  website?: string;
+  tier: string;
+}
+
+const COMPETITION_LEVELS = ['JUNIOR', 'SENIOR', 'MASTER'] as const;
+
+const CATEGORIES_BY_LEVEL: Record<string, string[]> = {
+  JUNIOR: [
+    'RoboFut',
+    'Minisumo Autónomo',
+    'Laberinto',
+    'BattleBots 1lb',
+    'Seguidor de Línea',
+    'Sumo RC',
+    'Scratch & Play: Code Masters Arena'
+  ],
+  SENIOR: [
+    'RoboFut',
+    'Minisumo Autónomo',
+    'Laberinto',
+    'BattleBots 1lb',
+    'Seguidor de Línea',
+    'Sumo RC',
+    'Scratch & Play: Code Masters Arena',
+    'BioBot'
+  ],
+  MASTER: [
+    'Minisumo Autónomo',
+    'Seguidor de Línea',
+    'RoboFut Master',
+    'BattleBots 1lb'
+  ]
+};
+
 const AdminPanel = () => {
-  const [activeTab, setActiveTab] = useState<'institutions' | 'robots' | 'referees' | 'matches' | 'sponsors'>('institutions');
-  const [data, setData] = useState<{ institutions: any[], robots: any[], referees: any[], matches: any[], sponsors: any[] }>({
+  const { logout, token } = useAuth();
+  const navigate = useNavigate();
+  const [activeTab, setActiveTab] = useState<'institutions' | 'robots' | 'referees' | 'matches' | 'sponsors' | 'brackets'>('institutions');
+  const [showModal, setShowModal] = useState(false);
+  const [isEditMode, setIsEditMode] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [formData, setFormData] = useState<any>({});
+  const [searchQuery, setSearchQuery] = useState('');
+  const [selectedRobots, setSelectedRobots] = useState<string[]>([]);
+  const [data, setData] = useState<{
+    institutions: Institution[],
+    robots: Robot[],
+    referees: User[],
+    matches: Match[],
+    sponsors: Sponsor[]
+  }>({
     institutions: [],
     robots: [],
     referees: [],
     matches: [],
     sponsors: []
   });
-  const [showModal, setShowModal] = useState(false);
-  const [isEditMode, setIsEditMode] = useState(false);
-  const [editId, setEditId] = useState<string | null>(null);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [formData, setFormData] = useState<any>({});
-  const { token, logout } = useAuth();
-  const navigate = useNavigate();
 
   const fetchData = async () => {
     try {
-      const [instRes, robotRes, userRes, sponsorRes] = await Promise.all([
-        fetch(`http://${window.location.hostname}:3001/api/institutions`),
-        fetch(`http://${window.location.hostname}:3001/api/robots`),
-        fetch(`http://${window.location.hostname}:3001/api/users`, { headers: { Authorization: `Bearer ${token}` } }),
-        fetch(`http://${window.location.hostname}:3001/api/sponsors`)
+      const hostname = window.location.hostname;
+      const authHeader = { 'Authorization': `Bearer ${token}` };
+      const [inst, robots, users, matches, sponsors] = await Promise.all([
+        fetch(`http://${hostname}:3001/api/institutions`, { headers: authHeader }).then(res => res.json()),
+        fetch(`http://${hostname}:3001/api/robots`, { headers: authHeader }).then(res => res.json()),
+        fetch(`http://${hostname}:3001/api/users`, { headers: authHeader }).then(res => res.json()),
+        fetch(`http://${hostname}:3001/api/matches`, { headers: authHeader }).then(res => res.json()),
+        fetch(`http://${hostname}:3001/api/sponsors`, { headers: authHeader }).then(res => res.json())
       ]);
-      
-      const stats = [instRes, robotRes, userRes, sponsorRes].map(r => r.ok);
-      if (stats.includes(false)) throw new Error('Error al cargar algunos datos');
-
-      setData({ 
-        institutions: await instRes.json(), 
-        robots: await robotRes.json(), 
-        referees: await userRes.json(),
-        sponsors: await sponsorRes.json(),
-        matches: await (await fetch(`http://${window.location.hostname}:3001/api/matches`)).json()
+      setData({
+        institutions: inst,
+        robots: robots,
+        referees: users.filter((u: any) => u.role === 'REFEREE'),
+        matches: matches,
+        sponsors: sponsors
       });
-    } catch (error) {
-      console.error('Error fetching admin data:', error);
+    } catch (err) {
+      console.error('Error fetching admin data:', err);
     }
   };
 
   useEffect(() => {
     fetchData();
-  }, [token]);
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    let endpoint = '';
-    let body = {};
-
-    if (activeTab === 'institutions') {
-      endpoint = '/api/institutions';
-      body = { name: formData.name, members: [formData.member1, formData.member2] };
-    } else if (activeTab === 'robots') {
-      endpoint = '/api/robots';
-      body = { name: formData.name, weightClass: formData.weightClass, institutionId: formData.institutionId };
-    } else if (activeTab === 'referees') {
-      endpoint = '/api/users';
-      body = { username: formData.username, password: formData.password };
-    } else if (activeTab === 'matches') {
-      endpoint = '/api/matches';
-      body = { 
-        robotAId: formData.robotAId, 
-        robotBId: formData.robotBId, 
-        refereeId: formData.refereeId,
-        category: formData.category
-      };
-    } else if (activeTab === 'sponsors') {
-      endpoint = '/api/sponsors';
-      body = { name: formData.name, logoUrl: formData.logoUrl, website: formData.website, tier: formData.tier };
-    }
+    const hostname = window.location.hostname;
+    let endpoint = `/api/${activeTab}`;
+    const method = isEditMode ? 'PUT' : 'POST';
+    if (isEditMode) endpoint += `/${editingId}`;
 
     try {
-      const url = isEditMode 
-        ? `http://${window.location.hostname}:3001${endpoint}/${editId}`
-        : `http://${window.location.hostname}:3001${endpoint}`;
-        
-      const res = await fetch(url, {
-        method: isEditMode ? 'PUT' : 'POST',
-        headers: { 
+      const response = await fetch(`http://${hostname}:3001${endpoint}`, {
+        method,
+        headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`
         },
-        body: JSON.stringify(body)
+        body: JSON.stringify(formData)
       });
-      if (res.ok) {
+
+      if (response.ok) {
         setShowModal(false);
-        setIsEditMode(false);
-        setEditId(null);
         setFormData({});
         fetchData();
+      } else {
+        const errorData = await response.json();
+        alert(errorData.message || 'Error al procesar la solicitud');
       }
-    } catch (error) {
-      alert('Error al guardar datos');
+    } catch (err) {
+      console.error('Error submitting form:', err);
     }
   };
 
   const handleEdit = (item: any) => {
-    setEditId(item.id);
     setIsEditMode(true);
-    let initialData = { ...item };
-    if (activeTab === 'institutions') {
-      initialData.member1 = item.members[0];
-      initialData.member2 = item.members[1];
-    }
-    setFormData(initialData);
+    setEditingId(item.id);
+    setFormData(item);
     setShowModal(true);
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm('¿Estás seguro? Esto eliminará el registro permanentemente.')) return;
-    
-    let endpoint = '';
-    if (activeTab === 'institutions') endpoint = `/api/institutions/${id}`;
-    if (activeTab === 'robots') endpoint = `/api/robots/${id}`;
-    if (activeTab === 'referees') endpoint = `/api/users/${id}`;
-    if (activeTab === 'sponsors') endpoint = `/api/sponsors/${id}`;
-    if (activeTab === 'matches') endpoint = `/api/matches/${id}`;
+    if (!confirm('¿Estás seguro de eliminar este registro?')) return;
+    const hostname = window.location.hostname;
+    let endpoint = `/api/${activeTab}/${id}`;
 
     try {
-      const res = await fetch(`http://${window.location.hostname}:3001${endpoint}`, {
+      const response = await fetch(`http://${hostname}:3001${endpoint}`, {
         method: 'DELETE',
         headers: { 'Authorization': `Bearer ${token}` }
       });
-      if (res.ok) fetchData();
-    } catch (error) {
-      alert('Error al eliminar');
+
+      if (response.ok) fetchData();
+    } catch (err) {
+      console.error('Error deleting record:', err);
+    }
+  };
+
+  const handleToggleDashboard = async (match: Match) => {
+    const hostname = window.location.hostname;
+    try {
+      const resp = await fetch(`http://${hostname}:3001/api/matches/${match.id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ showInDashboard: !match.showInDashboard })
+      });
+      if (resp.ok) fetchData();
+    } catch (err) {
+      console.error('Error toggling dashboard:', err);
+    }
+  };
+
+  const handleGenerateBracket = async () => {
+    if (!formData.category || !formData.level || selectedRobots.length < 2 || !formData.refereeId) {
+      alert('Completa Nivel, Categoría, Árbitro y selecciona al menos 2 robots');
+      return;
+    }
+    const hostname = window.location.hostname;
+    try {
+      const resp = await fetch(`http://${hostname}:3001/api/brackets/generate`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          category: formData.category,
+          level: formData.level,
+          robotIds: selectedRobots,
+          refereeId: formData.refereeId
+        })
+      });
+      if (resp.ok) {
+        alert('Llave generada con éxito');
+        setActiveTab('matches');
+        fetchData();
+      }
+    } catch (err) {
+      console.error('Error generating bracket:', err);
     }
   };
 
   const TabButton = ({ id, icon: Icon, label }: any) => (
     <button
-      onClick={() => setActiveTab(id)}
-      className={`flex items-center gap-4 px-6 py-4 rounded-md   font-black transition-all ${
-        activeTab === id ? 'bg-brand text-white shadow-xl shadow-brand/20' : 'bg-transparent text-neutral-400 hover:bg-neutral-50 hover:text-neutral-600'
+      onClick={() => { setActiveTab(id); setSearchQuery(''); }}
+      className={`flex items-center gap-4 px-6 py-4 rounded-2xl transition-all font-black text-sm uppercase ${
+        activeTab === id ? 'bg-black text-white shadow-xl shadow-black/10' : 'text-neutral-500 hover:bg-neutral-100 hover:text-black'
       }`}
     >
-      <Icon size={20} />
-      <span className="text-[11px] uppercase tracking-widest">{label}</span>
+      <Icon size={18} /> {label}
     </button>
   );
 
@@ -161,12 +274,14 @@ const AdminPanel = () => {
     <div className="min-h-screen bg-neutral-50 text-black flex flex-col md:flex-row font-sans">
       <aside className="w-full md:w-80 bg-white border-r border-neutral-100 p-8 flex flex-col gap-10 shadow-sm">
         <div className="flex items-center gap-4 px-2">
-          <div className="w-12 h-12 bg-brand/10 rounded-2xl flex items-center justify-center text-brand">
-            <ShieldCheck size={28} />
+          <div className="w-12 h-12 flex items-center justify-center text-brand">
+            <img src="/favicon.svg" alt="Logo" />
           </div>
           <div>
-            <h2 className="font-black tracking-tight text-xl">SISTEMA</h2>
-            <p className="text-[9px] font-black text-neutral-400 uppercase tracking-[0.2em]">Centro de Gestión</p>
+            <h2 className="text-2xl font-black tracking-tighter leading-none">
+               Cato<span className="text-brand">Bots IV</span>
+             </h2>
+            <p className="text-sm font-black text-neutral-400 uppercase">Centro de Gestión</p>
           </div>
         </div>
 
@@ -176,13 +291,17 @@ const AdminPanel = () => {
           <TabButton id="referees" icon={Users} label="Árbitros" />
           <TabButton id="matches" icon={Target} label="Encuentros" />
           <TabButton id="sponsors" icon={Star} label="Sponsors" />
+          <TabButton id="brackets" icon={Share2} label="Generador" />
+          <button onClick={() => navigate('/keys')} className="flex items-center gap-4 px-6 py-4 rounded-2xl text-neutral-500 font-black hover:bg-neutral-100 hover:text-black transition-all text-sm uppercase">
+            <Share2 size={18} /> Llaves del Torneo
+          </button>
         </nav>
 
         <div className="flex flex-col gap-2 pt-8 border-t border-neutral-50">
-          <button onClick={() => navigate('/')} className="flex items-center gap-4 px-6 py-4 rounded-2xl text-neutral-400 font-black hover:bg-neutral-50 hover:text-black transition-all text-[11px] uppercase tracking-widest">
+          <button onClick={() => navigate('/')} className="flex items-center gap-4 px-6 py-4 rounded-2xl text-neutral-400 font-black hover:bg-neutral-100 hover:text-black transition-all text-sm uppercase">
             <LayoutDashboard size={18} /> Vista Pública
           </button>
-          <button onClick={logout} className="flex items-center gap-4 px-6 py-4 rounded-2xl text-red-500 font-black hover:bg-red-50 transition-all text-[11px] uppercase tracking-widest">
+          <button onClick={logout} className="flex items-center gap-4 px-6 py-4 rounded-2xl text-red-500 font-black hover:bg-red-50 transition-all text-sm uppercase">
             <LogOut size={18} /> Salir del Sistema
           </button>
         </div>
@@ -191,7 +310,7 @@ const AdminPanel = () => {
       <main className="flex-1 p-8 md:p-16 overflow-y-auto">
         <header className="mb-16 flex flex-col sm:flex-row justify-between items-start sm:items-end gap-6">
           <div>
-            <span className="text-[10px] font-black uppercase tracking-[0.3em] text-neutral-400 mb-2 block px-2">Nodo Administrativo</span>
+            <span className="text-md font-black uppercase text-neutral-400 mb-2 block px-2">Nodo Administrativo</span>
             <h1 className="text-6xl font-black tracking-tighter uppercase text-black">{getTabLabel(activeTab)}</h1>
           </div>
           
@@ -202,14 +321,14 @@ const AdminPanel = () => {
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder={`Buscar ${getTabLabel(activeTab).toLowerCase()}...`}
-                className="w-full bg-white border border-neutral-100 pl-12 pr-4 py-4 rounded-2xl text-xs font-bold outline-none focus:border-brand/30 transition-all shadow-sm"
+                className="w-full bg-white border border-neutral-100 pl-12 pr-4 py-4 rounded-2xl text-md font-bold outline-none focus:border-brand/30 transition-all shadow-sm"
               />
             </div>
             <button 
               onClick={() => { setIsEditMode(false); setFormData({}); setShowModal(true); }}
-              className="bg-black text-white hover:bg-neutral-800 px-8 py-4 rounded-2xl font-black text-[11px] uppercase tracking-widest flex items-center gap-3 transition-all shadow-xl shadow-black/10 whitespace-nowrap"
+              className="bg-black text-white hover:bg-neutral-800 px-8 py-4 rounded-2xl font-black text-sm uppercase flex items-center gap-3 transition-all shadow-xl shadow-black/10 whitespace-nowrap"
             >
-              <Plus size={18} /> Nuevo {getTabLabel(activeTab).slice(0, -1).toLowerCase()}
+              <Plus size={18} /> Agregar { activeTab === 'institutions' ? 'institución' : getTabLabel(activeTab).slice(0, -1).toLowerCase()}
             </button>
           </div>
         </header>
@@ -218,238 +337,383 @@ const AdminPanel = () => {
           <AnimatePresence mode="wait">
             {activeTab === 'institutions' && data.institutions.filter(i => i.name.toLowerCase().includes(searchQuery.toLowerCase())).map((inst) => (
               <motion.div key={inst.id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="bg-white border border-neutral-100 p-8 rounded-[2.5rem] flex justify-between items-center shadow-lg shadow-neutral-200/40">
-                <div>
-                  <h3 className="text-2xl font-black text-black">{inst.name}</h3>
-                  <div className="flex gap-3 mt-3">
-                    {inst.members?.map((m: string, i: number) => (
-                      <span key={i} className="text-[9px] font-black text-neutral-400 uppercase tracking-widest px-4 py-1.5 bg-neutral-50 rounded-full border border-neutral-100">{m}</span>
-                    ))}
+                <div className="flex items-center gap-8 min-w-0 flex-1">
+                  <div className="w-16 h-16 bg-brand/5 rounded-3xl flex items-center justify-center text-brand border border-brand/10 shadow-inner flex-shrink-0"><Building2 size={32} /></div>
+                  <div className="min-w-0 flex-1">
+                  <div className="flex items-center gap-4">
+                    <h3 className="text-2xl font-black text-black">{inst.name}</h3>
+                    {inst.isPaid ? (
+                      <span className="bg-brand/10 text-brand text-xs font-black uppercase px-2 py-0.5 rounded-full border border-brand/20">PAGADO</span>
+                    ) : (
+                      <span className="bg-red-500/10 text-red-500 text-xs font-black uppercase px-2 py-0.5 rounded-full border border-red-500/20">PENDIENTE</span>
+                    )}
+                  </div>
+                  <div className="flex items-center gap-6 mt-3">
+                    <div className="flex gap-2">
+                      {inst.members?.map((m: string, i: number) => (
+                        <span key={i} className="text-xs font-black text-neutral-500 px-4 py-1.5 bg-neutral-50 rounded-lg border border-neutral-100">{m}</span>
+                      ))}
+                    </div>
+                    {inst.contactEmail && <span className="text-xs text-neutral-400 font-bold">{inst.contactEmail}</span>}
+                  </div>
                   </div>
                 </div>
                 <div className="flex gap-2">
-                  <button onClick={() => handleEdit(inst)} className="text-neutral-300 hover:text-black hover:bg-neutral-50 transition-all p-4 bg-neutral-50 rounded-2xl border border-neutral-100"><Edit2 size={20} /></button>
-                  <button onClick={() => handleDelete(inst.id)} className="text-neutral-300 hover:text-red-500 hover:bg-red-50 transition-all p-4 bg-neutral-50 rounded-2xl border border-neutral-100"><Trash2 size={20} /></button>
+                  <button onClick={() => handleEdit(inst)} className="text-neutral-400 hover:text-black hover:bg-neutral-50 transition-all p-4 bg-neutral-50 rounded-2xl border border-neutral-100"><Edit2 size={20} /></button>
+                  <button onClick={() => handleDelete(inst.id)} className="text-neutral-400 hover:text-red-500 hover:bg-red-50 transition-all p-4 bg-neutral-50 rounded-2xl border border-neutral-100"><Trash2 size={20} /></button>
                 </div>
               </motion.div>
             ))}
 
             {activeTab === 'robots' && data.robots.filter(r => r.name.toLowerCase().includes(searchQuery.toLowerCase())).map((robot) => (
               <motion.div key={robot.id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="bg-white border border-neutral-100 p-8 rounded-[2.5rem] flex justify-between items-center shadow-lg shadow-neutral-200/40">
-                <div className="flex items-center gap-8">
-                  <div className="w-16 h-16 bg-brand/5 rounded-3xl flex items-center justify-center text-brand border border-brand/10 shadow-inner"><Bot size={32} /></div>
-                  <div>
-                    <h3 className="text-2xl font-black text-black">{robot.name}</h3>
-                    <div className="flex items-center gap-4 mt-2">
-                      <p className="text-[10px] font-black text-brand uppercase tracking-widest px-3 py-1 bg-brand/5 rounded-lg">{robot.weightClass}</p>
-                      <p className="text-[10px] text-neutral-400 font-bold uppercase tracking-wider">{robot.Institution?.name}</p>
+                <div className="flex items-center gap-8 min-w-0 flex-1">
+                  <div className="w-16 h-16 bg-brand/5 rounded-3xl flex items-center justify-center text-brand border border-brand/10 shadow-inner flex-shrink-0"><Bot size={32} /></div>
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center gap-4">
+                      <h3 className="text-2xl font-black text-black">{robot.name}</h3>
+                      {robot.isHomologated && (
+                        <span className="bg-brand/10 text-brand text-xs font-black uppercase px-2 py-0.5 rounded-full border border-brand/20">Homologado</span>
+                      )}
+                    </div>
+                    <div className="flex flex-wrap items-center gap-4 mt-2">
+                      <p className="text-xs font-black text-brand px-3 py-1 bg-brand/5 rounded-lg border border-brand/10">{robot.level}</p>
+                      <p className="text-xs font-black text-neutral-500 px-3 py-1 bg-neutral-50 rounded-lg border border-neutral-100">{robot.category}</p>
+                      <p className="text-xs text-neutral-400 font-bold">@{robot.Institution?.name}</p>
                     </div>
                   </div>
                 </div>
-                <div className="flex gap-2">
-                  <button onClick={() => handleEdit(robot)} className="text-neutral-300 hover:text-black hover:bg-neutral-50 transition-all p-4 bg-neutral-50 rounded-2xl border border-neutral-100"><Edit2 size={20} /></button>
-                  <button onClick={() => handleDelete(robot.id)} className="text-neutral-300 hover:text-red-500 hover:bg-red-50 transition-all p-4 bg-neutral-50 rounded-2xl border border-neutral-100"><Trash2 size={20} /></button>
+                <div className="flex gap-2 ml-6">
+                  <button onClick={() => handleEdit(robot)} className="text-neutral-400 hover:text-black hover:bg-neutral-50 transition-all p-4 bg-neutral-50 rounded-2xl border border-neutral-100"><Edit2 size={20} /></button>
+                  <button onClick={() => handleDelete(robot.id)} className="text-neutral-400 hover:text-red-500 hover:bg-red-50 transition-all p-4 bg-neutral-50 rounded-2xl border border-neutral-100"><Trash2 size={20} /></button>
                 </div>
               </motion.div>
             ))}
 
-            {activeTab === 'referees' && data.referees.filter(r => r.username.toLowerCase().includes(searchQuery.toLowerCase())).map((ref) => (
-              <motion.div key={ref.id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="bg-white border border-neutral-100 p-8 rounded-[2.5rem] flex justify-between items-center shadow-lg shadow-neutral-200/40">
-                <div className="flex items-center gap-8">
-                  <div className="w-16 h-16 bg-neutral-50 rounded-3xl flex items-center justify-center text-neutral-400 border border-neutral-100"><Users size={32} /></div>
-                  <div>
-                    <h3 className="text-2xl font-black text-black">@{ref.username}</h3>
-                    <p className="text-[9px] font-black text-green-500 uppercase tracking-widest mt-2 px-3 py-1 bg-green-50 rounded-lg inline-block border border-green-100">Operador Activo</p>
+            {activeTab === 'referees' && data.referees.filter(u => u.username.toLowerCase().includes(searchQuery.toLowerCase())).map((u) => (
+              <motion.div key={u.id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="bg-white border border-neutral-100 p-8 rounded-[2.5rem] flex justify-between items-center shadow-lg shadow-neutral-200/40">
+                <div className="flex items-center gap-6">
+                  <div className="w-16 h-16 bg-brand/5 rounded-3xl flex items-center justify-center text-brand border border-brand/10 shadow-inner flex-shrink-0"><Users size={32} /></div>
+                  <div className="flex flex-wrap items-center gap-4">
+                    <h3 className="text-xl font-black text-black">@{u.username}</h3>
+                    <p className="text-xs font-black text-neutral-500 px-3 py-1 bg-neutral-50 rounded-lg border border-neutral-100">{u.role}</p>
                   </div>
                 </div>
                 <div className="flex gap-2">
-                  <button onClick={() => handleEdit(ref)} className="text-neutral-300 hover:text-black hover:bg-neutral-50 transition-all p-4 bg-neutral-50 rounded-2xl border border-neutral-100"><Edit2 size={20} /></button>
-                  <button onClick={() => handleDelete(ref.id)} className="text-neutral-300 hover:text-red-500 hover:bg-red-50 transition-all p-4 bg-neutral-50 rounded-2xl border border-neutral-100"><Trash2 size={20} /></button>
+                  <button onClick={() => handleEdit(u)} className="text-neutral-400 hover:text-black hover:bg-neutral-50 transition-all p-4 bg-neutral-50 rounded-2xl border border-neutral-100"><Edit2 size={20} /></button>
+                  <button onClick={() => handleDelete(u.id)} className="text-neutral-400 hover:text-red-500 hover:bg-red-50 transition-all p-4 bg-neutral-50 rounded-2xl border border-neutral-100"><Trash2 size={20} /></button>
                 </div>
               </motion.div>
             ))}
 
             {activeTab === 'matches' && data.matches.filter(m => m.robotA?.name.toLowerCase().includes(searchQuery.toLowerCase()) || m.robotB?.name.toLowerCase().includes(searchQuery.toLowerCase())).map((m) => (
-              <motion.div key={m.id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="bg-white border border-neutral-100 p-8 rounded-[2.5rem] flex justify-between items-center shadow-lg shadow-neutral-200/40">
-                <div className="flex items-center gap-8">
-                  <div className="w-16 h-16 bg-brand/5 rounded-3xl flex items-center justify-center text-brand border border-brand/10"><Target size={32} /></div>
-                  <div>
-                    <h3 className="text-xl font-black text-black">{m.robotA?.name} <span className="text-neutral-200 mx-2">VS</span> {m.robotB?.name}</h3>
-                    <p className="text-[10px] font-black text-neutral-400 uppercase tracking-[0.2em] mt-2 mb-1">{m.category}</p>
-                    <p className="text-[9px] font-bold text-neutral-300 uppercase tracking-tighter">ID: {m.id.slice(0, 12)}...</p>
+              <motion.div key={m.id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="bg-white border border-neutral-100 p-8 rounded-[3rem] flex flex-col gap-6 shadow-lg shadow-neutral-200/40 relative overflow-hidden group">
+                <div className="absolute top-0 left-0 w-full h-1 bg-brand/10 transition-all group-hover:bg-brand" />
+                <div className="flex justify-between items-start">
+                  <div className="flex flex-col gap-1">
+                    <span className="text-md font-black text-brand uppercase">{m.category}</span>
+                    <span className="text-sm font-black text-neutral-400 uppercase">{m.round}</span>
+                  </div>
+                  <div className="flex gap-2">
+                    <button 
+                      onClick={() => handleToggleDashboard(m)} 
+                      className={`transition-all p-4 rounded-2xl border ${m.showInDashboard ? 'bg-brand text-white border-brand' : 'bg-neutral-50 text-neutral-300 border-neutral-100'}`}
+                      title="Mostrar en Dashboard"
+                    >
+                      <LayoutDashboard size={20} />
+                    </button>
+                    <button onClick={() => handleEdit(m)} className="text-neutral-400 hover:text-black hover:bg-neutral-50 transition-all p-4 bg-neutral-50 rounded-2xl border border-neutral-100"><Edit2 size={20} /></button>
+                    <button onClick={() => handleDelete(m.id)} className="text-neutral-400 hover:text-red-500 hover:bg-red-50 transition-all p-4 bg-neutral-50 rounded-2xl border border-neutral-100"><Trash2 size={20} /></button>
                   </div>
                 </div>
-                <div className="flex gap-2">
-                  <button onClick={() => handleEdit(m)} className="text-neutral-300 hover:text-black hover:bg-neutral-50 transition-all p-4 bg-neutral-50 rounded-2xl border border-neutral-100"><Edit2 size={20} /></button>
-                  <button onClick={() => handleDelete(m.id)} className="text-neutral-300 hover:text-red-500 hover:bg-red-50 transition-all p-4 bg-neutral-50 rounded-2xl border border-neutral-100"><Trash2 size={20} /></button>
+                <div className="flex items-center justify-between gap-4">
+                  <div className="flex-1 text-center">
+                    <p className="text-lg font-black text-black leading-tight mb-1">{m.robotA?.name || '---'}</p>
+                    <p className="text-xs font-bold text-neutral-300 uppercase truncate">{m.robotA?.Institution?.name}</p>
+                  </div>
+                  <div className="flex flex-col items-center">
+                    <div className="bg-neutral-50 px-4 py-2 rounded-xl border border-neutral-100 font-mono font-black text-lg text-black">
+                      {m.scoreA} - {m.scoreB}
+                    </div>
+                  </div>
+                  <div className="flex-1 text-center">
+                    <p className="text-lg font-black text-black leading-tight mb-1">{m.robotB?.name || '---'}</p>
+                    <p className="text-xs font-bold text-neutral-300 uppercase truncate">{m.robotB?.Institution?.name}</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-3 pt-6 border-t border-neutral-50">
+                  <div className="w-10 h-10 bg-brand/5 rounded-2xl flex items-center justify-center text-brand border border-brand/10 shadow-inner flex-shrink-0"><Users size={20} /></div>
+                  <div className="flex flex-col">
+                    <span className="text-sm font-black text-neutral-400">Árbitro</span>
+                    <span className="text-sm font-black text-neutral-700">@{m.referee?.username || 'Sin asignar'}</span>
+                  </div>
                 </div>
               </motion.div>
             ))}
 
-            {activeTab === 'sponsors' && data.sponsors.filter(s => s.name.toLowerCase().includes(searchQuery.toLowerCase())).map((s) => (
-              <motion.div key={s.id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="bg-white border border-neutral-100 p-8 rounded-[2.5rem] flex justify-between items-center shadow-lg shadow-neutral-200/40">
-                <div className="flex items-center gap-8">
-                  <div className="w-16 h-16 bg-neutral-50 rounded-3xl flex items-center justify-center text-neutral-400 border border-neutral-100 overflow-hidden">
-                    {s.logoUrl ? <img src={s.logoUrl} className="w-full h-full object-contain" /> : <Star size={32} />}
+            {activeTab === 'sponsors' && data.sponsors.filter(s => s.name.toLowerCase().includes(searchQuery.toLowerCase())).map((sponsor) => (
+              <motion.div key={sponsor.id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="bg-white border border-neutral-100 p-8 rounded-[2.5rem] flex justify-between items-center shadow-lg shadow-neutral-200/40">
+                <div className="flex items-center gap-6">
+                  <div className="w-20 h-20 bg-neutral-50 rounded-2xl flex items-center justify-center p-4 border border-neutral-100">
+                    {sponsor.logoUrl ? <img src={sponsor.logoUrl} alt={sponsor.name} className="w-full h-full object-contain" /> : <Star size={32} className="text-neutral-200" />}
                   </div>
                   <div>
-                    <h3 className="text-2xl font-black text-black">{s.name}</h3>
-                    <div className="flex items-center gap-4 mt-2">
-                      <p className={`text-[10px] font-black uppercase tracking-widest px-3 py-1 rounded-lg ${
-                        s.tier === 'GOLD' ? 'bg-yellow-50 text-yellow-600' : 
-                        s.tier === 'SILVER' ? 'bg-slate-50 text-slate-400' : 'bg-orange-50 text-orange-600'
-                      }`}>{s.tier}</p>
-                      <p className="text-[10px] text-neutral-400 font-bold uppercase tracking-wider">{s.website}</p>
+                    <h3 className="text-xl font-black text-black">{sponsor.name}</h3>
+                    <div className="flex items-center gap-2 mt-2">
+                       <p className="text-xs font-black text-brand px-3 py-1 bg-brand/5 rounded-lg border border-brand/10">{sponsor.tier}</p>
+                       <span className="text-xs text-neutral-400 font-bold">{sponsor.website}</span>
                     </div>
                   </div>
                 </div>
                 <div className="flex gap-2">
-                  <button onClick={() => handleEdit(s)} className="text-neutral-300 hover:text-black hover:bg-neutral-50 transition-all p-4 bg-neutral-50 rounded-2xl border border-neutral-100"><Edit2 size={20} /></button>
-                  <button onClick={() => handleDelete(s.id)} className="text-neutral-300 hover:text-red-500 hover:bg-red-50 transition-all p-4 bg-neutral-50 rounded-2xl border border-neutral-100"><Trash2 size={20} /></button>
+                  <button onClick={() => handleEdit(sponsor)} className="text-neutral-400 hover:text-black hover:bg-neutral-50 transition-all p-4 bg-neutral-50 rounded-2xl border border-neutral-100"><Star size={20} /></button>
+                  <button onClick={() => handleDelete(sponsor.id)} className="text-neutral-400 hover:text-red-500 hover:bg-red-50 transition-all p-4 bg-neutral-50 rounded-2xl border border-neutral-100"><Trash2 size={20} /></button>
                 </div>
               </motion.div>
             ))}
+
+            {activeTab === 'brackets' && (
+              <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="col-span-full bg-white border border-neutral-100 rounded-[3rem] p-12 shadow-xl shadow-neutral-200/40">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
+                  <div className="space-y-8">
+                    <h3 className="text-2xl font-black uppercase tracking-tight">Configuración de Llave</h3>
+                    
+                    <div className="space-y-4">
+                      <div className="space-y-2">
+                        <label className="text-sm font-black text-neutral-400 px-2">Nivel de Competencia</label>
+                        <select value={formData.level || ''} onChange={e => setFormData({...formData, level: e.target.value, category: ''})} className="w-full text-neutral-500 bg-neutral-50 border border-neutral-100 rounded-2xl p-5 appearance-none">
+                          <option value="">Seleccionar...</option>
+                          {COMPETITION_LEVELS.map(l => <option key={l} value={l}>{l}</option>)}
+                        </select>
+                      </div>
+
+                      <div className="space-y-2">
+                        <label className="text-sm font-black text-neutral-400 px-2">Categoría</label>
+                        <select required disabled={!formData.level} value={formData.category || ''} className="w-full text-neutral-500 bg-neutral-50 border border-neutral-100 rounded-2xl p-5 appearance-none" onChange={e => setFormData({...formData, category: e.target.value})}>
+                          <option value="">Seleccionar...</option>
+                          {formData.level && CATEGORIES_BY_LEVEL[formData.level].map(cat => <option key={cat} value={cat}>{cat}</option>)}
+                        </select>
+                      </div>
+
+                      <div className="space-y-2">
+                        <label className="text-sm font-black text-neutral-400 px-2">Árbitro Oficial</label>
+                        <select value={formData.refereeId || ''} onChange={e => setFormData({...formData, refereeId: e.target.value})} className="w-full text-neutral-500 bg-neutral-50 border border-neutral-100 rounded-2xl p-5 appearance-none">
+                          <option value="">Seleccionar...</option>
+                          {data.referees.map(u => <option key={u.id} value={u.id}>@{u.username}</option>)}
+                        </select>
+                      </div>
+
+                      <button onClick={handleGenerateBracket} className="w-full bg-black text-white py-6 rounded-2xl font-black uppercase text-md shadow-2xl shadow-black/10 hover:bg-brand transition-all">
+                        Generar Llave Automática
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="space-y-8">
+                    <div className="flex justify-between items-center">
+                      <h3 className="text-2xl font-black uppercase tracking-tight">Robot Participantes</h3>
+                      <span className="bg-neutral-50 text-xs text-neutral-500 font-black px-4 py-2 rounded-full border border-neutral-100">
+                        {selectedRobots.length} Seleccionados
+                      </span>
+                    </div>
+
+                    <div className="grid grid-cols-1 gap-3 max-h-[400px] overflow-y-auto pr-4 custom-scrollbar">
+                      {data.robots
+                        .filter(r => !formData.level || r.level === formData.level)
+                        .filter(r => !formData.category || r.category === formData.category)
+                        .map(robot => (
+                        <div 
+                          key={robot.id} 
+                          onClick={() => {
+                            if (selectedRobots.includes(robot.id)) {
+                              setSelectedRobots(selectedRobots.filter(id => id !== robot.id));
+                            } else {
+                              setSelectedRobots([...selectedRobots, robot.id]);
+                            }
+                          }}
+                          className={`p-5 rounded-2xl border transition-all cursor-pointer flex justify-between items-center ${
+                            selectedRobots.includes(robot.id) ? 'bg-brand/5 border-brand/20' : 'bg-neutral-50 border-neutral-100'
+                          }`}
+                        >
+                          <div>
+                            <p className="font-black text-sm">{robot.name}</p>
+                            <p className="text-xs font-bold text-neutral-400">{robot.Institution?.name}</p>
+                          </div>
+                          {selectedRobots.includes(robot.id) && <div className="w-4 h-4 bg-brand rounded-full" />}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              </motion.div>
+            )}
           </AnimatePresence>
         </div>
 
-        {/* CRUD Modal */}
-        <AnimatePresence>
-          {showModal && (
-            <div className="fixed inset-0 z-50 flex items-center justify-center p-6 bg-white/60 backdrop-blur-md">
-              <motion.div initial={{ y: 20, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: 20, opacity: 0 }} className="bg-white border border-neutral-100 w-full max-w-xl rounded-[3rem] p-12 relative shadow-[0_32px_64px_-16px_rgba(0,0,0,0.1)]">
-                <button onClick={() => { setShowModal(false); setIsEditMode(false); setEditId(null); }} className="absolute top-8 right-8 text-neutral-300 hover:text-black transition-colors"><X size={32} /></button>
-                <div className="mb-10">
-                   <h2 className="text-4xl font-black tracking-tight mb-2">{isEditMode ? 'Modificar Registro' : 'Nuevo Registro'}</h2>
-                   <p className="text-neutral-400 font-bold uppercase tracking-widest text-[10px]">{isEditMode ? 'Actualizar información existente' : `Añadiendo nuevo ${getTabLabel(activeTab).slice(0, -1).toLowerCase()} al sistema`}</p>
+        {showModal && (
+          <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-6">
+            <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="bg-white w-full max-w-2xl rounded-[3rem] shadow-2xl overflow-hidden border border-neutral-100">
+              <div className="p-10 border-b border-neutral-50 flex justify-between items-center">
+                <div>
+                  <h2 className="text-3xl font-black text-black uppercase tracking-tight">{activeTab === 'institutions' ? (isEditMode ? 'Editar' : 'Nueva') : (isEditMode ? 'Editar' : 'Nuevo')} {activeTab === 'institutions' ? 'institución' : getTabLabel(activeTab).slice(0, -1)}</h2>
+                  <p className="text-[10px] font-black text-neutral-400 uppercase tracking-widest mt-1">Completa los datos del registro</p>
                 </div>
-                
-                <form onSubmit={handleSubmit} className="space-y-8">
-                  {activeTab === 'institutions' && (
-                    <div className="space-y-6">
+                <button onClick={() => setShowModal(false)} className="w-12 h-12 bg-neutral-50 rounded-2xl flex items-center justify-center text-neutral-300 hover:text-black transition-all">
+                  <X size={24} />
+                </button>
+              </div>
+
+              <form onSubmit={handleSubmit} className="p-10">
+                {activeTab === 'institutions' && (
+                  <div className="space-y-6">
+                    <div className="space-y-2">
+                      <label className="text-[10px] font-black uppercase text-neutral-400 px-2">Nombre de la Institución</label>
+                      <input required value={formData.name || ''} placeholder="ej. Universidad Nacional" className="w-full bg-neutral-50 border border-neutral-100 rounded-2xl p-5 text-sm font-bold" onChange={e => setFormData({...formData, name: e.target.value})} />
+                    </div>
+                    <div className="grid grid-cols-2 gap-4">
                       <div className="space-y-2">
-                        <label className="text-[10px] font-black uppercase text-neutral-400 px-2">Nombre</label>
-                        <input required value={formData.name || ''} placeholder="Nombre oficial" className="w-full bg-neutral-50 border border-neutral-100 rounded-2.5xl p-5 text-black placeholder:text-neutral-300 outline-none focus:border-brand/30 transition-all font-medium" onChange={e => setFormData({...formData, name: e.target.value})} />
+                        <label className="text-[10px] font-black uppercase text-neutral-400 px-2">Email de Contacto</label>
+                        <input type="email" value={formData.contactEmail || ''} placeholder="ej. contacto@uni.edu" className="w-full bg-neutral-50 border border-neutral-100 rounded-2xl p-5 text-sm font-bold" onChange={e => setFormData({...formData, contactEmail: e.target.value})} />
                       </div>
-                      <div className="grid grid-cols-2 gap-4">
-                        <div className="space-y-2">
-                           <label className="text-[10px] font-black uppercase text-neutral-400 px-2">Miembro 1</label>
-                           <input required value={formData.member1 || ''} placeholder="Nombre completo" className="bg-neutral-50 border border-neutral-100 rounded-2.5xl p-5 text-sm" onChange={e => setFormData({...formData, member1: e.target.value})} />
-                        </div>
-                        <div className="space-y-2">
-                           <label className="text-[10px] font-black uppercase text-neutral-400 px-2">Miembro 2</label>
-                           <input required value={formData.member2 || ''} placeholder="Nombre completo" className="bg-neutral-50 border border-neutral-100 rounded-2.5xl p-5 text-sm" onChange={e => setFormData({...formData, member2: e.target.value})} />
+                      <div className="space-y-2">
+                        <label className="text-[10px] font-black uppercase text-neutral-400 px-2">Estado de Pago ($10)</label>
+                        <div onClick={() => setFormData({...formData, isPaid: !formData.isPaid})} className={`w-full p-5 rounded-2xl border cursor-pointer transition-all flex items-center justify-between ${formData.isPaid ? 'bg-green-500/5 border-green-500/20 text-green-600' : 'bg-neutral-50 border-neutral-100 text-neutral-400'}`}>
+                          <span className="text-xs font-black uppercase">{formData.isPaid ? 'Pagado' : 'Pendiente'}</span>
+                          <ShieldCheck size={18} />
                         </div>
                       </div>
                     </div>
-                  )}
+                  </div>
+                )}
 
-                  {activeTab === 'robots' && (
-                    <div className="space-y-6">
+                {activeTab === 'robots' && (
+                  <div className="space-y-6">
+                    <div className="grid grid-cols-2 gap-4">
                       <div className="space-y-2">
                         <label className="text-[10px] font-black uppercase text-neutral-400 px-2">Nombre del Robot</label>
-                        <input required value={formData.name || ''} placeholder="Identificador de combate" className="w-full bg-neutral-50 border border-neutral-100 rounded-2.5xl p-5" onChange={e => setFormData({...formData, name: e.target.value})} />
-                      </div>
-                      <div className="grid grid-cols-2 gap-4">
-                        <div className="space-y-2">
-                          <label className="text-[10px] font-black uppercase text-neutral-400 px-2">Categoría de peso</label>
-                          <select required value={formData.weightClass || ''} className="w-full bg-neutral-50 border border-neutral-100 rounded-2.5xl p-5 appearance-none text-sm" onChange={e => setFormData({...formData, weightClass: e.target.value})}>
-                            <option value="">Seleccionar...</option>
-                            <option value="Heavyweight">Heavyweight</option>
-                            <option value="Lightweight">Lightweight</option>
-                            <option value="Mini-Sumo">Mini-Sumo</option>
-                          </select>
-                        </div>
-                        <div className="space-y-2">
-                          <label className="text-[10px] font-black uppercase text-neutral-400 px-2">Institución</label>
-                          <select required value={formData.institutionId || ''} className="w-full bg-neutral-50 border border-neutral-100 rounded-2.5xl p-5 appearance-none text-sm" onChange={e => setFormData({...formData, institutionId: e.target.value})}>
-                            <option value="">Seleccionar...</option>
-                            {data.institutions.map(i => <option key={i.id} value={i.id}>{i.name}</option>)}
-                          </select>
-                        </div>
-                      </div>
-                    </div>
-                  )}
-
-                  {activeTab === 'referees' && (
-                    <div className="space-y-6">
-                      <div className="space-y-2">
-                        <label className="text-[10px] font-black uppercase text-neutral-400 px-2">Nombre de Usuario</label>
-                        <input required value={formData.username || ''} placeholder="Login de operador" className="w-full bg-neutral-50 border border-neutral-100 rounded-2.5xl p-5" onChange={e => setFormData({...formData, username: e.target.value})} />
+                        <input required value={formData.name || ''} placeholder="ej. Destroyer 3000" className="w-full bg-neutral-50 border border-neutral-100 rounded-2xl p-5" onChange={e => setFormData({...formData, name: e.target.value})} />
                       </div>
                       <div className="space-y-2">
-                        <label className="text-[10px] font-black uppercase text-neutral-400 px-2">Clave Secreta {isEditMode && '(Dejar en blanco para mantener actual)'}</label>
-                        <input required={!isEditMode} type="password" placeholder="Credenciales de acceso" className="w-full bg-neutral-50 border border-neutral-100 rounded-2.5xl p-5" onChange={e => setFormData({...formData, password: e.target.value})} />
+                        <label className="text-[10px] font-black uppercase text-neutral-400 px-2">Nivel de Competencia</label>
+                        <select required value={formData.level || ''} className="w-full bg-neutral-50 border border-neutral-100 rounded-2xl p-5 appearance-none text-sm" onChange={e => setFormData({...formData, level: e.target.value, category: ''})}>
+                          <option value="">Seleccionar...</option>
+                          {COMPETITION_LEVELS.map(level => <option key={level} value={level}>{level}</option>)}
+                        </select>
                       </div>
                     </div>
-                  )}
 
-                  {activeTab === 'matches' && (
-                    <div className="space-y-6">
-                      <div className="grid grid-cols-2 gap-4">
-                        <div className="space-y-2">
-                          <label className="text-[10px] font-black uppercase text-neutral-400 px-2">Robot A (Rojo)</label>
-                          <select required value={formData.robotAId || ''} className="w-full bg-neutral-50 border border-neutral-100 rounded-2.5xl p-5 appearance-none text-xs" onChange={e => setFormData({...formData, robotAId: e.target.value})}>
-                            <option value="">Seleccionar...</option>
-                            {data.robots.map(r => <option key={r.id} value={r.id}>{r.name}</option>)}
-                          </select>
-                        </div>
-                        <div className="space-y-2">
-                          <label className="text-[10px] font-black uppercase text-neutral-400 px-2">Robot B (Azul)</label>
-                          <select required value={formData.robotBId || ''} className="w-full bg-neutral-50 border border-neutral-100 rounded-2.5xl p-5 appearance-none text-xs" onChange={e => setFormData({...formData, robotBId: e.target.value})}>
-                            <option value="">Seleccionar...</option>
-                            {data.robots.map(r => <option key={r.id} value={r.id}>{r.name}</option>)}
-                          </select>
-                        </div>
-                      </div>
-                      <div className="grid grid-cols-2 gap-4">
-                        <div className="space-y-2">
-                          <label className="text-[10px] font-black uppercase text-neutral-400 px-2">Categoría</label>
-                          <input required value={formData.category || ''} placeholder="ej. Cuartos de Final" className="w-full bg-neutral-50 border border-neutral-100 rounded-2.5xl p-5 text-sm" onChange={e => setFormData({...formData, category: e.target.value})} />
-                        </div>
-                        <div className="space-y-2">
-                          <label className="text-[10px] font-black uppercase text-neutral-400 px-2">Árbitro Asignado</label>
-                          <select required value={formData.refereeId || ''} className="w-full bg-neutral-50 border border-neutral-100 rounded-2.5xl p-5 appearance-none text-sm" onChange={e => setFormData({...formData, refereeId: e.target.value})}>
-                            <option value="">Seleccionar...</option>
-                            {data.referees.map(u => <option key={u.id} value={u.id}>@{u.username}</option>)}
-                          </select>
-                        </div>
-                      </div>
-                    </div>
-                  )}
-
-                  {activeTab === 'sponsors' && (
-                    <div className="space-y-6">
+                    <div className="grid grid-cols-2 gap-4">
                       <div className="space-y-2">
-                        <label className="text-[10px] font-black uppercase text-neutral-400 px-2">Nombre del Sponsor</label>
-                        <input required value={formData.name || ''} placeholder="Nombre oficial" className="w-full bg-neutral-50 border border-neutral-100 rounded-2.5xl p-5" onChange={e => setFormData({...formData, name: e.target.value})} />
+                        <label className="text-[10px] font-black uppercase text-neutral-400 px-2">Categoría</label>
+                        <select required disabled={!formData.level} value={formData.category || ''} className="w-full bg-neutral-50 border border-neutral-100 rounded-2xl p-5 appearance-none text-sm" onChange={e => setFormData({...formData, category: e.target.value})}>
+                          <option value="">Seleccionar...</option>
+                          {formData.level && CATEGORIES_BY_LEVEL[formData.level].map(cat => <option key={cat} value={cat}>{cat}</option>)}
+                        </select>
                       </div>
                       <div className="space-y-2">
-                        <label className="text-[10px] font-black uppercase text-neutral-400 px-2">Logo URL</label>
-                        <input value={formData.logoUrl || ''} placeholder="https://..." className="w-full bg-neutral-50 border border-neutral-100 rounded-2.5xl p-5" onChange={e => setFormData({...formData, logoUrl: e.target.value})} />
-                      </div>
-                      <div className="grid grid-cols-2 gap-4">
-                        <div className="space-y-2">
-                          <label className="text-[10px] font-black uppercase text-neutral-400 px-2">Sitio Web</label>
-                          <input value={formData.website || ''} placeholder="www.sponsor.com" className="w-full bg-neutral-50 border border-neutral-100 rounded-2.5xl p-5" onChange={e => setFormData({...formData, website: e.target.value})} />
-                        </div>
-                        <div className="space-y-2">
-                          <label className="text-[10px] font-black uppercase text-neutral-400 px-2">Nivel (Tier)</label>
-                          <select required value={formData.tier || ''} className="w-full bg-neutral-50 border border-neutral-100 rounded-2.5xl p-5 appearance-none" onChange={e => setFormData({...formData, tier: e.target.value})}>
-                            <option value="">Seleccionar...</option>
-                            <option value="GOLD">GOLD</option>
-                            <option value="SILVER">SILVER</option>
-                            <option value="BRONZE">BRONZE</option>
-                          </select>
-                        </div>
+                        <label className="text-[10px] font-black uppercase text-neutral-400 px-2">Institución</label>
+                        <select required value={formData.institutionId || ''} className="w-full bg-neutral-50 border border-neutral-100 rounded-2xl p-5 appearance-none text-sm" onChange={e => setFormData({...formData, institutionId: e.target.value})}>
+                          <option value="">Seleccionar...</option>
+                          {data.institutions.map(i => <option key={i.id} value={i.id}>{i.name}</option>)}
+                        </select>
                       </div>
                     </div>
-                  )}
 
-                  <button type="submit" className="w-full bg-brand text-white font-black py-6 rounded-2.5xl shadow-xl shadow-brand/20 hover:shadow-brand/40 transition-all mt-4 text-xs uppercase tracking-[0.2em]">{isEditMode ? 'Guardar Cambios' : 'Desplegar Cambios'}</button>
-                </form>
-              </motion.div>
-            </div>
-          )}
-        </AnimatePresence>
+                    <div className="flex items-center gap-4 p-4 bg-neutral-50 rounded-2xl border border-neutral-100">
+                      <input type="checkbox" id="homologated" checked={formData.isHomologated || false} onChange={e => setFormData({...formData, isHomologated: e.target.checked})} className="w-5 h-5 accent-brand" />
+                      <label htmlFor="homologated" className="text-xs font-black uppercase text-neutral-500 cursor-pointer">Robot Homologado (Pasó revisión técnica)</label>
+                    </div>
+                  </div>
+                )}
+
+                {activeTab === 'referees' && (
+                  <div className="space-y-6">
+                    <div className="space-y-2">
+                      <label className="text-[10px] font-black uppercase text-neutral-400 px-2">Nombre de Usuario</label>
+                      <input required value={formData.username || ''} placeholder="Login de operador" className="w-full bg-neutral-50 border border-neutral-100 rounded-2xl p-5" onChange={e => setFormData({...formData, username: e.target.value})} />
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-[10px] font-black uppercase text-neutral-400 px-2">Clave Secreta {isEditMode && '(Dejar en blanco para mantener actual)'}</label>
+                      <input required={!isEditMode} type="password" placeholder="Credenciales de acceso" className="w-full bg-neutral-50 border border-neutral-100 rounded-2xl p-5" onChange={e => setFormData({...formData, password: e.target.value})} />
+                    </div>
+                  </div>
+                )}
+
+                {activeTab === 'matches' && (
+                  <div className="space-y-6">
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <label className="text-[10px] font-black uppercase text-neutral-400 px-2">Robot A (Rojo)</label>
+                        <select required value={formData.robotAId || ''} className="w-full bg-neutral-50 border border-neutral-100 rounded-2xl p-5 appearance-none text-xs" onChange={e => setFormData({...formData, robotAId: e.target.value})}>
+                          <option value="">Seleccionar...</option>
+                          {data.robots.map(r => <option key={r.id} value={r.id}>{r.name}</option>)}
+                        </select>
+                      </div>
+                      <div className="space-y-2">
+                        <label className="text-[10px] font-black uppercase text-neutral-400 px-2">Robot B (Azul)</label>
+                        <select required value={formData.robotBId || ''} className="w-full bg-neutral-50 border border-neutral-100 rounded-2xl p-5 appearance-none text-xs" onChange={e => setFormData({...formData, robotBId: e.target.value})}>
+                          <option value="">Seleccionar...</option>
+                          {data.robots.map(r => <option key={r.id} value={r.id}>{r.name}</option>)}
+                        </select>
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <label className="text-[10px] font-black uppercase text-neutral-400 px-2">Categoría / Grupo</label>
+                        <input required value={formData.category || ''} placeholder="ej. Grupo A / Juvenil" className="w-full bg-neutral-50 border border-neutral-100 rounded-2xl p-5 text-sm" onChange={e => setFormData({...formData, category: e.target.value})} />
+                      </div>
+                      <div className="space-y-2">
+                        <label className="text-[10px] font-black uppercase text-neutral-400 px-2">Ronda del Torneo</label>
+                        <select required value={formData.round || 'QUARTERS'} className="w-full bg-neutral-50 border border-neutral-100 rounded-2xl p-5 appearance-none text-sm" onChange={e => setFormData({...formData, round: e.target.value})}>
+                          <option value="QUARTERS">Cuartos de Final</option>
+                          <option value="SEMIS">Semifinal</option>
+                          <option value="FINAL">Gran Final</option>
+                        </select>
+                      </div>
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-[10px] font-black uppercase text-neutral-400 px-2">Árbitro Asignado</label>
+                      <select required value={formData.refereeId || ''} className="w-full bg-neutral-50 border border-neutral-100 rounded-2xl p-5 appearance-none text-sm" onChange={e => setFormData({...formData, refereeId: e.target.value})}>
+                        <option value="">Seleccionar...</option>
+                        {data.referees.map(u => <option key={u.id} value={u.id}>@{u.username}</option>)}
+                      </select>
+                    </div>
+                  </div>
+                )}
+
+                {activeTab === 'sponsors' && (
+                  <div className="space-y-6">
+                    <div className="space-y-2">
+                      <label className="text-[10px] font-black uppercase text-neutral-400 px-2">Nombre del Sponsor</label>
+                      <input required value={formData.name || ''} placeholder="Nombre oficial" className="w-full bg-neutral-50 border border-neutral-100 rounded-2xl p-5" onChange={e => setFormData({...formData, name: e.target.value})} />
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-[10px] font-black uppercase text-neutral-400 px-2">Logo URL</label>
+                      <input value={formData.logoUrl || ''} placeholder="https://..." className="w-full bg-neutral-50 border border-neutral-100 rounded-2xl p-5" onChange={e => setFormData({...formData, logoUrl: e.target.value})} />
+                    </div>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <label className="text-[10px] font-black uppercase text-neutral-400 px-2">Sitio Web</label>
+                        <input value={formData.website || ''} placeholder="www.sponsor.com" className="w-full bg-neutral-50 border border-neutral-100 rounded-2xl p-5" onChange={e => setFormData({...formData, website: e.target.value})} />
+                      </div>
+                      <div className="space-y-2">
+                        <label className="text-[10px] font-black uppercase text-neutral-400 px-2">Nivel (Tier)</label>
+                        <select required value={formData.tier || ''} className="w-full bg-neutral-50 border border-neutral-100 rounded-2xl p-5 appearance-none" onChange={e => setFormData({...formData, tier: e.target.value})}>
+                          <option value="">Seleccionar...</option>
+                          <option value="GOLD">GOLD</option>
+                          <option value="SILVER">SILVER</option>
+                          <option value="BRONZE">BRONZE</option>
+                        </select>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                <button type="submit" className="w-full bg-brand text-white font-black py-6 rounded-2xl shadow-xl shadow-brand/20 hover:shadow-brand/40 transition-all mt-4 text-xs uppercase tracking-[0.2em]">{isEditMode ? 'Guardar Cambios' : 'Desplegar Cambios'}</button>
+              </form>
+            </motion.div>
+          </div>
+        )}
       </main>
     </div>
   );

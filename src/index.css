@@ -1,7 +1,8 @@
 @import "tailwindcss";
 
 @theme {
-  --color-brand: #e63946;
+  --color-brand: #03E2D9;
+  --color-background: #01122e;
 }
 
 @layer base {

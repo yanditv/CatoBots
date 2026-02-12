@@ -81,6 +81,23 @@ app.delete('/api/institutions/:id', authenticateJWT, isAdmin, async (req, res) =
 // Robots
 app.get('/api/robots', async (req, res) => res.json(await Robot.findAll({ include: [Institution] })));
 app.post('/api/robots', authenticateJWT, isAdmin, async (req, res) => {
+  const { institutionId, category, level } = req.body;
+  
+  // Restriction: Max 3 robots per category per institution
+  const count = await Robot.count({ 
+    where: { 
+      institutionId, 
+      category,
+      level
+    } 
+  });
+
+  if (count >= 3) {
+    return res.status(400).send({ 
+      message: `La institución ya tiene el máximo de 3 robots en la categoría ${category} (${level})` 
+    });
+  }
+
   res.json(await Robot.create(req.body));
 });
 app.put('/api/robots/:id', authenticateJWT, isAdmin, async (req, res) => {
@@ -146,24 +163,103 @@ app.delete('/api/matches/:id', authenticateJWT, isAdmin, async (req, res) => {
   res.sendStatus(204);
 });
 
+// --- Bracket Generation ---
+
+app.post('/api/brackets/generate', authenticateJWT, isAdmin, async (req, res) => {
+  const { category, level, robotIds, refereeId } = req.body;
+  if (!robotIds || robotIds.length < 2) return res.status(400).send({ message: 'At least 2 robots required' });
+
+  // Shuffle robots for fair seeding
+  const shuffled = [...robotIds].sort(() => Math.random() - 0.5);
+  
+  // Calculate depth
+  const numRobots = shuffled.length;
+  const powerOf2 = Math.ceil(Math.log2(numRobots));
+  const totalSlots = Math.pow(2, powerOf2);
+  
+  // Fill with nulls if not power of 2
+  const filledRobots = [...shuffled];
+  while (filledRobots.length < totalSlots) filledRobots.push(null as any);
+
+  try {
+    const rounds = []; // To keep track of matches created per round
+    let currentRoundSlots = totalSlots;
+    let currentRoundMatches: any[] = [];
+    let prevRoundMatches: any[] = [];
+    let roundLevel = 0;
+
+    // We build from the bottom up? No, top down is easier to link nextMatchId
+    // Let's create the final first, then semis, then quarters...
+    
+    const roundNames = ['FINAL', 'SEMIS', 'QUARTERS', 'OCTAVOS', '16VOS', '32VOS'];
+    
+    let nextRoundMatches: any[] = [];
+    
+    // Total matches to create: totalSlots - 1
+    // Loop from level 0 (Final) to level powerOf2 - 1
+    for (let level = 0; level < powerOf2; level++) {
+      const numMatchesInRound = Math.pow(2, level);
+      const roundName = roundNames[level] || `ROUND_${level}`;
+      const matchesInThisRound: any[] = [];
+
+      for (let i = 0; i < numMatchesInRound; i++) {
+        const nextMatch = nextRoundMatches[Math.floor(i / 2)];
+        const match = await Match.create({
+          category,
+          level,
+          refereeId,
+          round: roundName,
+          nextMatchId: nextMatch ? nextMatch.id : null,
+          positionInNextMatch: nextMatch ? (i % 2 === 0 ? 'A' : 'B') : null,
+          scoreA: 0, scoreB: 0, timeLeft: 180,
+          robotAId: null, robotBId: null
+        });
+        matchesInThisRound.push(match);
+      }
+      
+      rounds.push(matchesInThisRound);
+      nextRoundMatches = matchesInThisRound;
+    }
+
+    // Now initialize the first round (the deepest one) with the robots
+    const firstRoundMatches = rounds[rounds.length - 1];
+    for (let i = 0; i < firstRoundMatches.length; i++) {
+      const match = firstRoundMatches[i];
+      match.robotAId = filledRobots[i * 2];
+      match.robotBId = filledRobots[i * 2 + 1];
+      await match.save();
+    }
+
+    broadcastState();
+    res.json({ message: 'Bracket generated successfully', matchesCount: totalSlots - 1 });
+  } catch (err) {
+    console.error('Bracket gen error:', err);
+    res.status(500).send({ message: 'Error generating bracket' });
+  }
+});
+
 // --- Socket.io Real-time Logic ---
 
 const broadcastState = async () => {
-  const allMatches = await Match.findAll({
-    include: [
-      { model: Robot, as: 'robotA', include: [Institution] },
-      { model: Robot, as: 'robotB', include: [Institution] },
-    ]
-  });
+  try {
+    const allMatches = await Match.findAll({
+      include: [
+        { model: Robot, as: 'robotA', include: [Institution] },
+        { model: Robot, as: 'robotB', include: [Institution] },
+      ]
+    });
 
-  const fullMatches = allMatches.map(m => {
-    const json = m.toJSON() as any;
-    if (json.robotA) json.robotA.institution = json.robotA.Institution?.name;
-    if (json.robotB) json.robotB.institution = json.robotB.Institution?.name;
-    return json;
-  });
+    const fullMatches = allMatches.map(m => {
+      const json = m.toJSON() as any;
+      if (json.robotA) json.robotA.institution = json.robotA.Institution?.name;
+      if (json.robotB) json.robotB.institution = json.robotB.Institution?.name;
+      return json;
+    });
 
-  io.emit('all_matches', fullMatches);
+    io.emit('all_matches', fullMatches);
+  } catch (err) {
+    console.error('Error broadcasting state:', err);
+  }
 };
 
 // Global Timer
@@ -203,6 +299,32 @@ io.on('connection', (socket) => {
       case 'ADD_PENALTY_A': match.penaltiesA = [...match.penaltiesA, payload || 'Warning']; break;
       case 'ADD_PENALTY_B': match.penaltiesB = [...match.penaltiesB, payload || 'Warning']; break;
       case 'ADD_TIME': match.timeLeft += Number(payload) || 30; break;
+      case 'FINISH':
+        match.isActive = false;
+        match.isFinished = true;
+        let winnerId = null;
+        if (match.scoreA > match.scoreB) winnerId = match.robotAId;
+        else if (match.scoreB > match.scoreA) winnerId = match.robotBId;
+        
+        match.winnerId = winnerId as any;
+
+        // Auto-advance logic
+        if (winnerId && match.nextMatchId) {
+          const nextMatch = await Match.findByPk(match.nextMatchId);
+          if (nextMatch) {
+            if (match.positionInNextMatch === 'A') {
+              nextMatch.robotAId = winnerId as any;
+            } else {
+              nextMatch.robotBId = winnerId as any;
+            }
+            await nextMatch.save();
+          }
+        }
+        break;
+      case 'UNFINISH':
+        match.isFinished = false;
+        match.winnerId = null as any;
+        break;
     }
     await match.save();
     broadcastState();
@@ -211,6 +333,49 @@ io.on('connection', (socket) => {
 
 const PORT = Number(process.env.PORT) || 3001;
 sequelize.sync().then(async () => {
+  // Idempotent migration for missing columns
+  try {
+    const [cols]: any = await sequelize.query("SHOW COLUMNS FROM Matches");
+    const fields = cols.map((c: any) => c.Field);
+    if (!fields.includes('isFinished')) {
+      await sequelize.query("ALTER TABLE Matches ADD COLUMN isFinished BOOLEAN DEFAULT false");
+    }
+    if (!fields.includes('round')) {
+      await sequelize.query("ALTER TABLE Matches ADD COLUMN round VARCHAR(255) DEFAULT 'QUARTERS'");
+    }
+    if (!fields.includes('level')) {
+      await sequelize.query("ALTER TABLE Matches ADD COLUMN level VARCHAR(255)");
+    }
+    if (!fields.includes('winnerId')) {
+      await sequelize.query("ALTER TABLE Matches ADD COLUMN winnerId CHAR(36) BINARY");
+    }
+    if (!fields.includes('nextMatchId')) {
+      await sequelize.query("ALTER TABLE Matches ADD COLUMN nextMatchId CHAR(36) BINARY");
+    }
+    if (!fields.includes('positionInNextMatch')) {
+      await sequelize.query("ALTER TABLE Matches ADD COLUMN positionInNextMatch VARCHAR(255)");
+    }
+    if (!fields.includes('showInDashboard')) {
+      await sequelize.query("ALTER TABLE Matches ADD COLUMN showInDashboard BOOLEAN DEFAULT false");
+    }
+
+    // Migration for Robots
+    const [robotCols]: any = await sequelize.query("SHOW COLUMNS FROM Robots");
+    const rFields = robotCols.map((c: any) => c.Field);
+    if (!rFields.includes('level')) await sequelize.query("ALTER TABLE Robots ADD COLUMN level VARCHAR(50) DEFAULT 'JUNIOR'");
+    if (!rFields.includes('category')) await sequelize.query("ALTER TABLE Robots ADD COLUMN category VARCHAR(100) DEFAULT 'Minisumo Autónomo'");
+    if (!rFields.includes('isHomologated')) await sequelize.query("ALTER TABLE Robots ADD COLUMN isHomologated BOOLEAN DEFAULT false");
+
+    // Migration for Institutions
+    const [instCols]: any = await sequelize.query("SHOW COLUMNS FROM Institutions");
+    const iFields = instCols.map((c: any) => c.Field);
+    if (!iFields.includes('contactEmail')) await sequelize.query("ALTER TABLE Institutions ADD COLUMN contactEmail VARCHAR(255)");
+    if (!iFields.includes('isPaid')) await sequelize.query("ALTER TABLE Institutions ADD COLUMN isPaid BOOLEAN DEFAULT false");
+
+  } catch (err) {
+    console.log('Migration info: Columns check finished.');
+  }
+
   // Seed admin if not exist
   const adminExists = await User.findOne({ where: { username: 'admin' } });
   if (!adminExists) {

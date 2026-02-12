@@ -26,7 +26,7 @@ const MatchCard = ({ match, isPinned, onPin }: MatchCardProps) => {
       animate={{ scale: 1, opacity: 1 }}
       exit={{ scale: 0.9, opacity: 0 }}
       whileHover={{ y: -4 }}
-      className={`relative rounded-4xl flex flex-col items-center justify-between overflow-hidden transition-all duration-500 border shadow-xl h-full w-full ${
+      className={`relative rounded flex flex-col items-center justify-between overflow-hidden transition-all duration-500 border  h-full w-full ${
         isPinned 
         ? 'bg-white border-brand/20 p-12 ring-5 ring-brand/20 scale-100 z-20' 
         : 'bg-white/80 backdrop-blur-sm border-white p-6 opacity-90 hover:opacity-100 z-10'
@@ -56,7 +56,7 @@ const MatchCard = ({ match, isPinned, onPin }: MatchCardProps) => {
           </div>
         )}
         <span className={`font-black uppercase text-neutral-400 ${isPinned ? 'text-sm' : 'text-sm'}`}>
-          {match.category}
+          {match.category} <span className="mx-2 opacity-30">|</span> {match.round}
         </span>
       </div>
 
@@ -67,9 +67,7 @@ const MatchCard = ({ match, isPinned, onPin }: MatchCardProps) => {
           <h3 className={`font-black leading-[1.1] text-black overflow-hidden break-words line-clamp-2 ${isPinned ? 'text-5xl' : 'text-base'}`}>
             {match.robotA?.name || '---'}
           </h3>
-          <p className={`font-bold text-neutral-400 uppercase truncate ${isPinned ? 'text-xl' : 'text-[10px]'}`}>
-            {match.robotA?.institution || '---'}
-          </p>
+          
         </div>
 
         {/* Score Center */}
@@ -100,13 +98,6 @@ const MatchCard = ({ match, isPinned, onPin }: MatchCardProps) => {
             </AnimatePresence>
           </div>
           
-          {isPinned && match.penaltiesA.length + match.penaltiesB.length > 0 && (
-            <div className="mt-4 flex gap-4">
-               {match.penaltiesA.slice(0, 3).map((_, i) => <div key={i} className="w-4 h-6 bg-red-500 rounded-sm border border-red-600 shadow-lg" />)}
-               <div className="w-px h-6 bg-neutral-200" />
-               {match.penaltiesB.slice(0, 3).map((_, i) => <div key={i} className="w-4 h-6 bg-red-500 rounded-sm border border-red-600 shadow-lg" />)}
-            </div>
-          )}
         </div>
 
         {/* Robot B */}
@@ -114,11 +105,53 @@ const MatchCard = ({ match, isPinned, onPin }: MatchCardProps) => {
           <h3 className={`font-black leading-[1.1] text-black overflow-hidden break-words line-clamp-2 ${isPinned ? 'text-5xl' : 'text-base'}`}>
             {match.robotB?.name || '---'}
           </h3>
-          <p className={`font-bold text-neutral-400 uppercase truncate ${isPinned ? 'text-xl' : 'text-[10px]'}`}>
-            {match.robotB?.institution || '---'}
-          </p>
+          
         </div>
+
       </div>
+          {isPinned && (match.penaltiesA.length > 0 || match.penaltiesB.length > 0) && (
+            <div className="mt-8 flex justify-between items-center w-full px-4 relative z-20">
+              {/* Penalties Robot A (Aligned with beginning) */}
+              <div className="flex gap-2.5">
+                <AnimatePresence mode="popLayout">
+                  {match.penaltiesA.slice(0, 3).map((_, i) => (
+                    <motion.div 
+                      key={`penalty-a-${i}`}
+                      initial={{ opacity: 0, scale: 0.5, x: -30, rotate: -15 }}
+                      animate={{ opacity: 1, scale: 1, x: 0, rotate: 0 }}
+                      exit={{ opacity: 0, scale: 0.5, x: -20 }}
+                      className="w-7 h-11 bg-gradient-to-br from-red-500 to-red-600 rounded-md border-2 border-red-700 flex items-center justify-center"
+                    >
+                      <div className="w-1 h-5 bg-white/20 rounded-full" />
+                    </motion.div>
+                  ))}
+                </AnimatePresence>
+                {match.penaltiesA.length > 3 && (
+                  <div className="flex items-center text-red-600 font-black text-xl ml-1">+{match.penaltiesA.length - 3}</div>
+                )}
+              </div>
+
+              {/* Penalties Robot B (Aligned with end) */}
+              <div className="flex gap-2.5 flex-row-reverse">
+                <AnimatePresence mode="popLayout">
+                  {match.penaltiesB.slice(0, 3).map((_, i) => (
+                    <motion.div 
+                      key={`penalty-b-${i}`}
+                      initial={{ opacity: 0, scale: 0.5, x: 30, rotate: 15 }}
+                      animate={{ opacity: 1, scale: 1, x: 0, rotate: 0 }}
+                      exit={{ opacity: 0, scale: 0.5, x: 20 }}
+                      className="w-7 h-11 bg-gradient-to-br from-red-500 to-red-600 rounded-md border-2 border-red-700 flex items-center justify-center"
+                    >
+                      <div className="w-1 h-5 bg-white/20 rounded-full" />
+                    </motion.div>
+                  ))}
+                </AnimatePresence>
+                {match.penaltiesB.length > 3 && (
+                  <div className="flex items-center text-red-600 font-black text-xl mr-1">+{match.penaltiesB.length - 3}</div>
+                )}
+              </div>
+            </div>
+          )}
 
       {/* Footer: Timer & Status */}
       <div className="w-full mt-auto space-y-2 py-2">
@@ -162,9 +195,9 @@ const Dashboard = ({ matches }: { matches: MatchState[] }) => {
       .catch(console.error);
   }, []);
 
-  const activeMatches = matches.filter(m => m.isActive);
-  const pinnedMatch = matches.find(m => m.id === pinnedMatchId) || activeMatches[0] || matches[0];
-  const otherMatches = matches.filter(m => m.id !== pinnedMatch?.id);
+  const activeMatches = matches.filter(m => m.isActive || m.showInDashboard);
+  const pinnedMatch = activeMatches.find(m => m.id === pinnedMatchId) || activeMatches[0];
+  const otherMatches = activeMatches.filter(m => m.id !== pinnedMatch?.id);
   
   const getGridArea = (matchId: string) => {
     if (matchId === pinnedMatch?.id) return "col-start-2 col-end-4 row-start-1 row-end-3";
@@ -188,9 +221,9 @@ const Dashboard = ({ matches }: { matches: MatchState[] }) => {
       {/* Background Grid Pattern - Stable and Persistent */}
       <div className="absolute inset-0 bg-[linear-gradient(to_right,#8080800a_1px,transparent_1px),linear-gradient(to_bottom,#8080800a_1px,transparent_1px)] bg-[size:100px_100px] pointer-events-none" />
 
-      {matches.length > 0 ? (
+      {activeMatches.length > 0 ? (
         <main className="flex-1 p-6 grid grid-cols-4 grid-rows-3 gap-6 max-h-full min-h-0 relative z-10">
-          {matches.map((match) => {
+          {activeMatches.map((match) => {
             const gridArea = getGridArea(match.id);
             if (gridArea === "hidden") return null;
             

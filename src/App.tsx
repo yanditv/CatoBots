@@ -6,6 +6,7 @@ import RefereeControl from './pages/RefereeControl'
 import Registration from './pages/Registration'
 import Login from './pages/Login'
 import AdminPanel from './pages/Admin/AdminPanel'
+import Brackets from './pages/Brackets'
 import { AuthProvider, useAuth } from './context/AuthContext'
 
 export interface Robot {
@@ -25,7 +26,11 @@ export interface MatchState {
   penaltiesB: string[];
   timeLeft: number;
   isActive: boolean;
+  isFinished: boolean;
+  round: string;
   category: string;
+  showInDashboard: boolean;
+  winnerId: string | null;
   refereeId: string | null;
 }
 
@@ -63,6 +68,7 @@ function AppContent() {
       <Routes>
         {/* Public Scoreboard */}
         <Route path="/" element={<Dashboard matches={matches} />} />
+        <Route path="/keys" element={<Brackets />} />
         
         {/* Auth */}
         <Route path="/login" element={<Login />} />
