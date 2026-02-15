@@ -16,13 +16,13 @@ const RuleCard: React.FC<RuleLink> = ({ title, icon: Icon, url }) => (
         href={url}
         target="_blank"
         rel="noopener noreferrer"
-        className="flex items-center gap-4 p-4 rounded-xl border border-gray-100 bg-gray-50 hover:bg-white hover:border-[#673ab7] hover:shadow-md transition-all duration-200 group no-underline"
+        className="flex items-center gap-4 p-4 rounded-xl border border-neutral-800 bg-neutral-900/50 hover:bg-neutral-800 hover:border-purple-600/50 hover:shadow-lg hover:shadow-purple-900/20 transition-all duration-200 group no-underline"
     >
-        <div className="bg-white p-2 rounded-lg shadow-sm group-hover:bg-[#673ab7] transition-colors duration-200">
-            <Icon className="w-6 h-6 text-[#673ab7] group-hover:text-white" />
+        <div className="bg-neutral-800 p-2 rounded-lg shadow-sm group-hover:bg-purple-600/20 transition-colors duration-200">
+            <Icon className="w-6 h-6 text-purple-400 group-hover:text-purple-300" />
         </div>
-        <span className="font-semibold text-gray-700 group-hover:text-[#673ab7] text-sm flex-1">{title}</span>
-        <ExternalLink className="w-4 h-4 text-gray-400 group-hover:text-[#673ab7]" />
+        <span className="font-semibold text-neutral-300 group-hover:text-white text-sm flex-1">{title}</span>
+        <ExternalLink className="w-4 h-4 text-neutral-500 group-hover:text-purple-400" />
     </a>
 );
 
@@ -51,9 +51,9 @@ const Rules: React.FC<RulesProps> = ({ category, onClose }) => {
         case 'Junior':
             rulesContent = (
                 <div className="space-y-4">
-                    <div className="bg-purple-50 p-4 rounded-lg border border-purple-100">
-                        <p className="text-gray-700 text-sm">
-                            Consulta el reglamento específico para la categoría <span className="font-bold text-[#673ab7]">Junior</span>:
+                    <div className="bg-purple-900/20 p-4 rounded-lg border border-purple-500/30">
+                        <p className="text-neutral-300 text-sm">
+                            Consulta el reglamento específico para la categoría <span className="font-bold text-purple-400">Junior</span>:
                         </p>
                     </div>
                     {renderGrid([
@@ -71,9 +71,9 @@ const Rules: React.FC<RulesProps> = ({ category, onClose }) => {
         case 'Senior':
             rulesContent = (
                 <div className="space-y-4">
-                    <div className="bg-purple-50 p-4 rounded-lg border border-purple-100">
-                        <p className="text-gray-700 text-sm">
-                            Consulta el reglamento específico para la categoría <span className="font-bold text-[#673ab7]">Senior</span>:
+                    <div className="bg-purple-900/20 p-4 rounded-lg border border-purple-500/30">
+                        <p className="text-neutral-300 text-sm">
+                            Consulta el reglamento específico para la categoría <span className="font-bold text-purple-400">Senior</span>:
                         </p>
                     </div>
                     {renderGrid([
@@ -92,9 +92,9 @@ const Rules: React.FC<RulesProps> = ({ category, onClose }) => {
         case 'Master':
             rulesContent = (
                 <div className="space-y-4">
-                    <div className="bg-purple-50 p-4 rounded-lg border border-purple-100">
-                        <p className="text-gray-700 text-sm">
-                            Consulta el reglamento específico para la categoría <span className="font-bold text-[#673ab7]">Master</span>:
+                    <div className="bg-purple-900/20 p-4 rounded-lg border border-purple-500/30">
+                        <p className="text-neutral-300 text-sm">
+                            Consulta el reglamento específico para la categoría <span className="font-bold text-purple-400">Master</span>:
                         </p>
                     </div>
                     {renderGrid([
@@ -107,37 +107,37 @@ const Rules: React.FC<RulesProps> = ({ category, onClose }) => {
             );
             break;
         default:
-            rulesContent = <p className="text-gray-500 text-center py-8">Selecciona una categoría.</p>;
+            rulesContent = <p className="text-neutral-500 text-center py-8">Selecciona una categoría.</p>;
     }
 
     return (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-50 animate-in fade-in duration-200">
-            <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl p-0 relative flex flex-col max-h-[90vh]">
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 z-50 animate-in fade-in duration-200">
+            <div className="bg-neutral-900 border border-neutral-800 rounded-2xl shadow-2xl shadow-purple-900/20 w-full max-w-2xl p-0 relative flex flex-col max-h-[90vh]">
 
                 {/* Header */}
-                <div className="p-6 border-b border-gray-100 flex items-center justify-between">
+                <div className="p-6 border-b border-neutral-800 flex items-center justify-between bg-neutral-900/50">
                     <div>
-                        <h2 className="text-2xl font-bold text-gray-900">Reglamentos</h2>
-                        <p className="text-gray-500 text-sm mt-1">Normativa oficial CatoBots IV</p>
+                        <h2 className="text-2xl font-bold text-white">Reglamentos</h2>
+                        <p className="text-neutral-400 text-sm mt-1">Normativa oficial CatoBots IV</p>
                     </div>
                     <button
                         onClick={onClose}
-                        className="p-2 hover:bg-gray-100 rounded-full transition-colors text-gray-500 hover:text-gray-700"
+                        className="p-2 hover:bg-neutral-800 rounded-full transition-colors text-neutral-400 hover:text-white"
                     >
                         ✕
                     </button>
                 </div>
 
                 {/* Content */}
-                <div className="p-6 overflow-y-auto custom-scrollbar">
+                <div className="p-6 overflow-y-auto custom-scrollbar bg-neutral-900">
                     {rulesContent}
                 </div>
 
                 {/* Footer */}
-                <div className="p-4 border-t border-gray-100 bg-gray-50 rounded-b-2xl flex justify-end">
+                <div className="p-4 border-t border-neutral-800 bg-neutral-900/50 rounded-b-2xl flex justify-end">
                     <button
                         onClick={onClose}
-                        className="px-6 py-2 bg-white border border-gray-300 text-gray-700 font-medium rounded-lg hover:bg-gray-50 transition-colors shadow-sm"
+                        className="px-6 py-2 bg-neutral-800 border border-neutral-700 text-neutral-300 font-medium rounded-lg hover:bg-neutral-700 hover:text-white transition-colors shadow-sm"
                     >
                         Cerrar
                     </button>

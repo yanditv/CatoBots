@@ -1,7 +1,9 @@
 import { Routes, Route, Navigate } from 'react-router-dom'
 import { useEffect, useState } from 'react'
 import { io, Socket } from 'socket.io-client'
-import Form from './pages/Form/Form'
+import OldForm from './pages/Form/OldForm'
+import WizardForm from './pages/WizardForm/WizardForm'
+import LandingPage from './pages/Landing/LandingPage'
 import Dashboard from './pages/Dashboard'
 import RefereeControl from './pages/RefereeControl'
 import Registration from './pages/Registration'
@@ -68,15 +70,17 @@ function AppContent() {
     <div className="min-h-screen bg-neutral-950 text-neutral-100 font-sans selection:bg-brand/30">
       <Routes>
         {/* Public Form */}
-        <Route path="/" element={<Form />} />
+        <Route path="/" element={<LandingPage />} />
+        <Route path="/registro" element={<WizardForm />} />
+        <Route path="/old-form" element={<OldForm />} />
 
         {/* Public Scoreboard */}
         <Route path="/dashboard" element={<Dashboard matches={matches} />} />
         <Route path="/keys" element={<Brackets />} />
-        
+
         {/* Auth */}
         <Route path="/login" element={<Login />} />
-        
+
         {/* Referee (Controlled) */}
         <Route path="/referee" element={
           <ProtectedRoute role="REFEREE">
