@@ -1,4 +1,5 @@
 import { createContext, useContext, useState, type ReactNode } from 'react';
+import { googleLogout } from '@react-oauth/google';
 
 interface User {
   id: string;
@@ -12,6 +13,17 @@ interface AuthContextType {
   login: (token: string, role: 'ADMIN' | 'REFEREE', username: string, id: string) => void;
   logout: () => void;
   isAuthenticated: boolean;
+  // Google Auth
+  googleUser: GoogleUser | null;
+  loginGoogle: (user: GoogleUser) => void;
+  logoutGoogle: () => void;
+}
+
+interface GoogleUser {
+  email: string;
+  name: string;
+  picture: string;
+  sub: string;
 }
 
 const AuthContext = createContext<AuthContextType | null>(null);
@@ -26,6 +38,16 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   });
   const [token, setToken] = useState<string | null>(() => localStorage.getItem('token'));
+
+  // Google State
+  const [googleUser, setGoogleUser] = useState<GoogleUser | null>(() => {
+    const saved = localStorage.getItem('google_user');
+    try {
+      return saved ? JSON.parse(saved) : null;
+    } catch {
+      return null;
+    }
+  });
 
   const login = (newToken: string, role: 'ADMIN' | 'REFEREE', username: string, id: string) => {
     const userData: User = { id, username, role };
@@ -42,8 +64,28 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     localStorage.removeItem('user');
   };
 
+  const loginGoogle = (userData: GoogleUser) => {
+    setGoogleUser(userData);
+    localStorage.setItem('google_user', JSON.stringify(userData));
+  };
+
+  const logoutGoogle = () => {
+    googleLogout();
+    setGoogleUser(null);
+    localStorage.removeItem('google_user');
+  };
+
   return (
-    <AuthContext.Provider value={{ user, token, login, logout, isAuthenticated: !!token }}>
+    <AuthContext.Provider value={{
+      user,
+      token,
+      login,
+      logout,
+      isAuthenticated: !!token,
+      googleUser,
+      loginGoogle,
+      logoutGoogle
+    }}>
       {children}
     </AuthContext.Provider>
   );

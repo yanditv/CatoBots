@@ -298,7 +298,7 @@ const AdminPanel = () => {
         </nav>
 
         <div className="flex flex-col gap-2 pt-8 border-t border-neutral-50">
-          <button onClick={() => navigate('/')} className="flex items-center gap-4 px-6 py-4 rounded-2xl text-neutral-400 font-black hover:bg-neutral-100 hover:text-black transition-all text-sm uppercase">
+          <button onClick={() => navigate('/dashboard')} className="flex items-center gap-4 px-6 py-4 rounded-2xl text-neutral-400 font-black hover:bg-neutral-100 hover:text-black transition-all text-sm uppercase">
             <LayoutDashboard size={18} /> Vista Pública
           </button>
           <button onClick={logout} className="flex items-center gap-4 px-6 py-4 rounded-2xl text-red-500 font-black hover:bg-red-50 transition-all text-sm uppercase">
