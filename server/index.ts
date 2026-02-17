@@ -323,6 +323,27 @@ app.post('/api/registrations/submit', async (req, res) => {
   res.json({ success: true });
 });
 
+// Admin Registration Routes
+app.get('/api/registrations', authenticateJWT, isAdmin, async (req, res) => {
+  // Return all SUBMITTED registrations
+  const registrations = await Registration.findAll({
+    where: { status: 'SUBMITTED' },
+    order: [['createdAt', 'DESC']]
+  });
+  res.json(registrations);
+});
+
+app.put('/api/registrations/:id', authenticateJWT, isAdmin, async (req, res) => {
+  const { paymentStatus } = req.body;
+
+  let isPaid = false;
+  if (paymentStatus === 'APPROVED') isPaid = true;
+  // If REJECTED or PENDING, isPaid remains false (or becomes false)
+
+  await Registration.update({ isPaid, paymentStatus }, { where: { id: req.params.id } });
+  res.json(await Registration.findByPk(req.params.id));
+});
+
 // --- Socket.io Real-time Logic ---
 
 const broadcastState = async () => {
@@ -456,6 +477,12 @@ sequelize.sync().then(async () => {
     const iFields = instCols.map((c: any) => c.Field);
     if (!iFields.includes('contactEmail')) await sequelize.query("ALTER TABLE Institutions ADD COLUMN contactEmail VARCHAR(255)");
     if (!iFields.includes('isPaid')) await sequelize.query("ALTER TABLE Institutions ADD COLUMN isPaid BOOLEAN DEFAULT false");
+
+    // Migration for Registrations
+    const [regCols]: any = await sequelize.query("SHOW COLUMNS FROM Registrations");
+    const regFields = regCols.map((c: any) => c.Field);
+    if (!regFields.includes('isPaid')) await sequelize.query("ALTER TABLE Registrations ADD COLUMN isPaid BOOLEAN DEFAULT false");
+    if (!regFields.includes('paymentStatus')) await sequelize.query("ALTER TABLE Registrations ADD COLUMN paymentStatus ENUM('PENDING', 'APPROVED', 'REJECTED') DEFAULT 'PENDING'");
 
   } catch (err) {
     console.log('Migration info: Columns check finished.');

@@ -8,9 +8,10 @@ interface Step2Props {
     updateData: (data: any) => void;
     handleNext: () => void;
     handleBack: () => void;
+    showBackButton?: boolean;
 }
 
-export default function Step2_Category({ data, updateData, handleNext, handleBack }: Step2Props) {
+export default function Step2_Category({ data, updateData, handleNext, handleBack, showBackButton = true }: Step2Props) {
     const categories = [
         {
             id: "Junior",
@@ -77,20 +78,22 @@ export default function Step2_Category({ data, updateData, handleNext, handleBac
 
                         {/* Selection Indicator */}
                         <div className={`absolute top-4 right-4 w-4 h-4 rounded-full border-2 transition-all ${data.category === cat.id
-                                ? "border-purple-500 bg-purple-500"
-                                : "border-neutral-700"
+                            ? "border-purple-500 bg-purple-500"
+                            : "border-neutral-700"
                             }`} />
                     </motion.button>
                 ))}
             </div>
 
             <div className="flex justify-between pt-6 border-t border-neutral-800">
-                <button
-                    onClick={handleBack}
-                    className="px-6 py-2 rounded-lg font-medium text-neutral-400 hover:text-white transition-colors"
-                >
-                    Atrás
-                </button>
+                {showBackButton ? (
+                    <button
+                        onClick={handleBack}
+                        className="px-6 py-2 rounded-lg font-medium text-neutral-400 hover:text-white transition-colors"
+                    >
+                        Atrás
+                    </button>
+                ) : <div />}
                 <button
                     onClick={handleNext}
                     disabled={!data.category}

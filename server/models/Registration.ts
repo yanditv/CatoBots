@@ -8,6 +8,8 @@ export class Registration extends Model {
     declare status: 'DRAFT' | 'SUBMITTED';
     declare data: any;            // JSON payload of form state
     declare payment_proof_filename: string | null;
+    declare isPaid: boolean;
+    declare paymentStatus: 'PENDING' | 'APPROVED' | 'REJECTED';
 }
 
 Registration.init({
@@ -36,6 +38,14 @@ Registration.init({
     payment_proof_filename: {
         type: DataTypes.STRING,
         allowNull: true,
+    },
+    isPaid: {
+        type: DataTypes.BOOLEAN,
+        defaultValue: false,
+    },
+    paymentStatus: {
+        type: DataTypes.ENUM('PENDING', 'APPROVED', 'REJECTED'),
+        defaultValue: 'PENDING',
     }
 }, {
     sequelize,

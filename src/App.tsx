@@ -1,7 +1,6 @@
 import { Routes, Route, Navigate } from 'react-router-dom'
 import { useEffect, useState } from 'react'
 import { io, Socket } from 'socket.io-client'
-import OldForm from './pages/Form/OldForm'
 import WizardForm from './pages/WizardForm/WizardForm'
 import LandingPage from './pages/Landing/LandingPage'
 import Dashboard from './pages/Dashboard'
@@ -72,7 +71,7 @@ function AppContent() {
         {/* Public Form */}
         <Route path="/" element={<LandingPage />} />
         <Route path="/registro" element={<WizardForm />} />
-        <Route path="/old-form" element={<OldForm />} />
+        <Route path="/registro" element={<WizardForm />} />
 
         {/* Public Scoreboard */}
         <Route path="/dashboard" element={<Dashboard matches={matches} />} />

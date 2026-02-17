@@ -1,19 +1,21 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { 
-  Building2, 
-  Bot, 
-  Users, 
-  Plus, 
-  Trash2, 
-  LogOut, 
-  LayoutDashboard, 
-  ShieldCheck, 
-  X, 
-  Target, 
-  Search, 
-  Edit2, 
+import {
+  Building2,
+  Bot,
+  Users,
+  Plus,
+  Trash2,
+  LogOut,
+  LayoutDashboard,
+  ShieldCheck,
+  X,
+  Target,
+  Search,
+  Edit2,
   Star,
+  CreditCard,
+  FileText,
   Share2
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
@@ -66,6 +68,16 @@ interface Sponsor {
   tier: string;
 }
 
+interface Registration {
+  id: string;
+  google_email: string;
+  data: any;
+  payment_proof_filename: string;
+  isPaid: boolean;
+  paymentStatus: 'PENDING' | 'APPROVED' | 'REJECTED';
+  createdAt: string;
+}
+
 const COMPETITION_LEVELS = ['JUNIOR', 'SENIOR', 'MASTER'] as const;
 
 const CATEGORIES_BY_LEVEL: Record<string, string[]> = {
@@ -99,7 +111,7 @@ const CATEGORIES_BY_LEVEL: Record<string, string[]> = {
 const AdminPanel = () => {
   const { logout, token } = useAuth();
   const navigate = useNavigate();
-  const [activeTab, setActiveTab] = useState<'institutions' | 'robots' | 'referees' | 'matches' | 'sponsors' | 'brackets'>('institutions');
+  const [activeTab, setActiveTab] = useState<'institutions' | 'robots' | 'referees' | 'matches' | 'sponsors' | 'brackets' | 'payments'>('institutions');
   const [showModal, setShowModal] = useState(false);
   const [isEditMode, setIsEditMode] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -111,32 +123,36 @@ const AdminPanel = () => {
     robots: Robot[],
     referees: User[],
     matches: Match[],
-    sponsors: Sponsor[]
+    sponsors: Sponsor[],
+    registrations: Registration[]
   }>({
     institutions: [],
     robots: [],
     referees: [],
     matches: [],
-    sponsors: []
+    sponsors: [],
+    registrations: []
   });
 
   const fetchData = async () => {
     try {
       const hostname = window.location.hostname;
       const authHeader = { 'Authorization': `Bearer ${token}` };
-      const [inst, robots, users, matches, sponsors] = await Promise.all([
+      const [inst, robots, users, matches, sponsors, regs] = await Promise.all([
         fetch(`http://${hostname}:3001/api/institutions`, { headers: authHeader }).then(res => res.json()),
         fetch(`http://${hostname}:3001/api/robots`, { headers: authHeader }).then(res => res.json()),
         fetch(`http://${hostname}:3001/api/users`, { headers: authHeader }).then(res => res.json()),
         fetch(`http://${hostname}:3001/api/matches`, { headers: authHeader }).then(res => res.json()),
-        fetch(`http://${hostname}:3001/api/sponsors`, { headers: authHeader }).then(res => res.json())
+        fetch(`http://${hostname}:3001/api/sponsors`, { headers: authHeader }).then(res => res.json()),
+        fetch(`http://${hostname}:3001/api/registrations`, { headers: authHeader }).then(res => res.json())
       ]);
       setData({
         institutions: inst,
         robots: robots,
         referees: users.filter((u: any) => u.role === 'REFEREE'),
         matches: matches,
-        sponsors: sponsors
+        sponsors: sponsors,
+        registrations: regs || []
       });
     } catch (err) {
       console.error('Error fetching admin data:', err);
@@ -218,6 +234,23 @@ const AdminPanel = () => {
     }
   };
 
+  const handleUpdatePaymentStatus = async (reg: Registration, status: 'APPROVED' | 'REJECTED' | 'PENDING') => {
+    const hostname = window.location.hostname;
+    try {
+      const resp = await fetch(`http://${hostname}:3001/api/registrations/${reg.id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ paymentStatus: status })
+      });
+      if (resp.ok) fetchData();
+    } catch (err) {
+      console.error('Error updating payment status:', err);
+    }
+  };
+
   const handleGenerateBracket = async () => {
     if (!formData.category || !formData.level || selectedRobots.length < 2 || !formData.refereeId) {
       alert('Completa Nivel, Categoría, Árbitro y selecciona al menos 2 robots');
@@ -251,21 +284,21 @@ const AdminPanel = () => {
   const TabButton = ({ id, icon: Icon, label }: any) => (
     <button
       onClick={() => { setActiveTab(id); setSearchQuery(''); }}
-      className={`flex items-center gap-4 px-6 py-4 rounded-2xl transition-all font-black text-sm uppercase ${
-        activeTab === id ? 'bg-black text-white shadow-xl shadow-black/10' : 'text-neutral-500 hover:bg-neutral-100 hover:text-black'
-      }`}
+      className={`flex items-center gap-4 px-6 py-4 rounded-2xl transition-all font-black text-sm uppercase ${activeTab === id ? 'bg-black text-white shadow-xl shadow-black/10' : 'text-neutral-500 hover:bg-neutral-100 hover:text-black'
+        }`}
     >
       <Icon size={18} /> {label}
     </button>
   );
 
   const getTabLabel = (id: string) => {
-    switch(id) {
+    switch (id) {
       case 'institutions': return 'Instituciones';
       case 'robots': return 'Robots';
       case 'referees': return 'Árbitros';
       case 'matches': return 'Encuentros';
       case 'sponsors': return 'Sponsors';
+      case 'payments': return 'Pagos';
       default: return id;
     }
   };
@@ -279,8 +312,8 @@ const AdminPanel = () => {
           </div>
           <div>
             <h2 className="text-2xl font-black tracking-tighter leading-none">
-               Cato<span className="text-brand">Bots IV</span>
-             </h2>
+              Cato<span className="text-brand">Bots IV</span>
+            </h2>
             <p className="text-sm font-black text-neutral-400 uppercase">Centro de Gestión</p>
           </div>
         </div>
@@ -291,6 +324,7 @@ const AdminPanel = () => {
           <TabButton id="referees" icon={Users} label="Árbitros" />
           <TabButton id="matches" icon={Target} label="Encuentros" />
           <TabButton id="sponsors" icon={Star} label="Sponsors" />
+          <TabButton id="payments" icon={CreditCard} label="Pagos" />
           <TabButton id="brackets" icon={Share2} label="Generador" />
           <button onClick={() => navigate('/keys')} className="flex items-center gap-4 px-6 py-4 rounded-2xl text-neutral-500 font-black hover:bg-neutral-100 hover:text-black transition-all text-sm uppercase">
             <Share2 size={18} /> Llaves del Torneo
@@ -313,23 +347,28 @@ const AdminPanel = () => {
             <span className="text-md font-black uppercase text-neutral-400 mb-2 block px-2">Nodo Administrativo</span>
             <h1 className="text-6xl font-black tracking-tighter uppercase text-black">{getTabLabel(activeTab)}</h1>
           </div>
-          
+
           <div className="flex items-center gap-4 w-full sm:w-auto mt-4 sm:mt-0">
-            <div className="relative flex-1 sm:w-64">
-              <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-neutral-300" size={18} />
-              <input 
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder={`Buscar ${getTabLabel(activeTab).toLowerCase()}...`}
-                className="w-full bg-white border border-neutral-100 pl-12 pr-4 py-4 rounded-2xl text-md font-bold outline-none focus:border-brand/30 transition-all shadow-sm"
-              />
-            </div>
-            <button 
-              onClick={() => { setIsEditMode(false); setFormData({}); setShowModal(true); }}
-              className="bg-black text-white hover:bg-neutral-800 px-8 py-4 rounded-2xl font-black text-sm uppercase flex items-center gap-3 transition-all shadow-xl shadow-black/10 whitespace-nowrap"
-            >
-              <Plus size={18} /> Agregar { activeTab === 'institutions' ? 'institución' : getTabLabel(activeTab).slice(0, -1).toLowerCase()}
-            </button>
+            {activeTab !== 'payments' && activeTab !== 'brackets' && (
+              <div className="relative flex-1 sm:w-64">
+                <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-neutral-300" size={18} />
+                <input
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder={`Buscar...`}
+                  className="w-full bg-white border border-neutral-100 pl-12 pr-4 py-4 rounded-2xl text-md font-bold outline-none focus:border-brand/30 transition-all shadow-sm"
+                />
+              </div>
+            )}
+
+            {activeTab !== 'payments' && activeTab !== 'brackets' && (
+              <button
+                onClick={() => { setIsEditMode(false); setFormData({}); setShowModal(true); }}
+                className="bg-black text-white hover:bg-neutral-800 px-8 py-4 rounded-2xl font-black text-sm uppercase flex items-center gap-3 transition-all shadow-xl shadow-black/10 whitespace-nowrap"
+              >
+                <Plus size={18} /> Agregar
+              </button>
+            )}
           </div>
         </header>
 
@@ -340,22 +379,22 @@ const AdminPanel = () => {
                 <div className="flex items-center gap-8 min-w-0 flex-1">
                   <div className="w-16 h-16 bg-brand/5 rounded-3xl flex items-center justify-center text-brand border border-brand/10 shadow-inner flex-shrink-0"><Building2 size={32} /></div>
                   <div className="min-w-0 flex-1">
-                  <div className="flex items-center gap-4">
-                    <h3 className="text-2xl font-black text-black">{inst.name}</h3>
-                    {inst.isPaid ? (
-                      <span className="bg-brand/10 text-brand text-xs font-black uppercase px-2 py-0.5 rounded-full border border-brand/20">PAGADO</span>
-                    ) : (
-                      <span className="bg-red-500/10 text-red-500 text-xs font-black uppercase px-2 py-0.5 rounded-full border border-red-500/20">PENDIENTE</span>
-                    )}
-                  </div>
-                  <div className="flex items-center gap-6 mt-3">
-                    <div className="flex gap-2">
-                      {inst.members?.map((m: string, i: number) => (
-                        <span key={i} className="text-xs font-black text-neutral-500 px-4 py-1.5 bg-neutral-50 rounded-lg border border-neutral-100">{m}</span>
-                      ))}
+                    <div className="flex items-center gap-4">
+                      <h3 className="text-2xl font-black text-black">{inst.name}</h3>
+                      {inst.isPaid ? (
+                        <span className="bg-brand/10 text-brand text-xs font-black uppercase px-2 py-0.5 rounded-full border border-brand/20">PAGADO</span>
+                      ) : (
+                        <span className="bg-red-500/10 text-red-500 text-xs font-black uppercase px-2 py-0.5 rounded-full border border-red-500/20">PENDIENTE</span>
+                      )}
                     </div>
-                    {inst.contactEmail && <span className="text-xs text-neutral-400 font-bold">{inst.contactEmail}</span>}
-                  </div>
+                    <div className="flex items-center gap-6 mt-3">
+                      <div className="flex gap-2">
+                        {inst.members?.map((m: string, i: number) => (
+                          <span key={i} className="text-xs font-black text-neutral-500 px-4 py-1.5 bg-neutral-50 rounded-lg border border-neutral-100">{m}</span>
+                        ))}
+                      </div>
+                      {inst.contactEmail && <span className="text-xs text-neutral-400 font-bold">{inst.contactEmail}</span>}
+                    </div>
                   </div>
                 </div>
                 <div className="flex gap-2">
@@ -415,8 +454,8 @@ const AdminPanel = () => {
                     <span className="text-sm font-black text-neutral-400 uppercase">{m.round}</span>
                   </div>
                   <div className="flex gap-2">
-                    <button 
-                      onClick={() => handleToggleDashboard(m)} 
+                    <button
+                      onClick={() => handleToggleDashboard(m)}
                       className={`transition-all p-4 rounded-2xl border ${m.showInDashboard ? 'bg-brand text-white border-brand' : 'bg-neutral-50 text-neutral-300 border-neutral-100'}`}
                       title="Mostrar en Dashboard"
                     >
@@ -460,8 +499,8 @@ const AdminPanel = () => {
                   <div>
                     <h3 className="text-xl font-black text-black">{sponsor.name}</h3>
                     <div className="flex items-center gap-2 mt-2">
-                       <p className="text-xs font-black text-brand px-3 py-1 bg-brand/5 rounded-lg border border-brand/10">{sponsor.tier}</p>
-                       <span className="text-xs text-neutral-400 font-bold">{sponsor.website}</span>
+                      <p className="text-xs font-black text-brand px-3 py-1 bg-brand/5 rounded-lg border border-brand/10">{sponsor.tier}</p>
+                      <span className="text-xs text-neutral-400 font-bold">{sponsor.website}</span>
                     </div>
                   </div>
                 </div>
@@ -472,16 +511,118 @@ const AdminPanel = () => {
               </motion.div>
             ))}
 
+            {activeTab === 'payments' && data.registrations.map((reg) => (
+              <motion.div key={reg.id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="bg-white border border-neutral-100 p-8 rounded-[2.5rem] flex flex-col gap-6 shadow-lg shadow-neutral-200/40 col-span-1">
+                <div className="flex justify-between items-start">
+                  <div className="flex items-center gap-4">
+                    <div className="w-16 h-16 bg-neutral-50 rounded-3xl flex items-center justify-center text-neutral-400 border border-neutral-100 shadow-inner flex-shrink-0">
+                      <FileText size={24} />
+                    </div>
+                    <div>
+                      <h3 className="text-lg font-black text-black break-all">{reg.google_email}</h3>
+                      <div className="flex items-center gap-2 mt-1">
+                        <span className="text-xs font-bold text-neutral-400 uppercase">{reg.data?.category} - {reg.data?.level || reg.data?.institution}</span>
+                      </div>
+                    </div>
+                  </div>
+                  {reg.paymentStatus === 'APPROVED' && (
+                    <span className="bg-brand/10 text-brand text-xs font-black uppercase px-3 py-1 rounded-full border border-brand/20 flex items-center gap-2">
+                      <ShieldCheck size={14} /> Pagado
+                    </span>
+                  )}
+                  {reg.paymentStatus === 'REJECTED' && (
+                    <span className="bg-red-500/10 text-red-500 text-xs font-black uppercase px-3 py-1 rounded-full border border-red-500/20 flex items-center gap-2">
+                      Denegado
+                    </span>
+                  )}
+                  {(reg.paymentStatus === 'PENDING' || !reg.paymentStatus) && (
+                    <span className="bg-neutral-100 text-neutral-500 text-xs font-black uppercase px-3 py-1 rounded-full border border-neutral-200 flex items-center gap-2">
+                      Pendiente
+                    </span>
+                  )}
+                </div>
+
+                <div className="space-y-4">
+                  <div className="p-4 bg-neutral-50 rounded-2xl border border-neutral-100 flex items-center justify-between">
+                    <span className="text-xs font-black uppercase text-neutral-400">Comprobante</span>
+                    {reg.payment_proof_filename ? (
+                      <a
+                        href={`http://${window.location.hostname}:3001/uploads/${reg.payment_proof_filename}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-brand font-bold text-sm hover:underline"
+                      >
+                        Ver Imagen
+                      </a>
+                    ) : (
+                      <span className="text-xs text-red-400 font-bold">Sin comprobante</span>
+                    )}
+                  </div>
+
+                  {/* Action Buttons */}
+                  <div className="grid grid-cols-2 gap-3">
+                    {reg.paymentStatus !== 'APPROVED' && (
+                      <button
+                        onClick={() => handleUpdatePaymentStatus(reg, 'APPROVED')}
+                        className="w-full py-4 rounded-xl font-black uppercase text-xs transition-all bg-black text-white hover:bg-neutral-800 shadow-xl shadow-black/10 flex items-center justify-center gap-2"
+                      >
+                        Aprobar
+                      </button>
+                    )}
+
+                    {reg.paymentStatus !== 'REJECTED' && (
+                      <button
+                        onClick={() => handleUpdatePaymentStatus(reg, 'REJECTED')}
+                        className="w-full py-4 rounded-xl font-black uppercase text-xs transition-all bg-red-50 text-red-500 hover:bg-red-100 border border-red-100 flex items-center justify-center gap-2"
+                      >
+                        Rechazar
+                      </button>
+                    )}
+
+                    {reg.paymentStatus === 'APPROVED' && (
+                      <button
+                        onClick={() => handleUpdatePaymentStatus(reg, 'PENDING')}
+                        className="w-full py-4 rounded-xl font-black uppercase text-xs transition-all bg-neutral-100 text-neutral-500 hover:bg-neutral-200 col-span-2"
+                      >
+                        Marcar como Pendiente
+                      </button>
+                    )}
+
+                    {reg.paymentStatus === 'REJECTED' && (
+                      <button
+                        onClick={() => handleUpdatePaymentStatus(reg, 'PENDING')}
+                        className="col-span-1 py-4 rounded-xl font-black uppercase text-xs transition-all bg-neutral-100 text-neutral-500 hover:bg-neutral-200"
+                      >
+                        Restaurar
+                      </button>
+                    )}
+                  </div>
+                </div>
+
+                {/* Details Dropdown/Expand could go here */}
+                <div className="pt-4 border-t border-neutral-50 grid grid-cols-2 gap-4 text-xs">
+                  <div>
+                    <span className="text-neutral-400 font-bold block">Robot/Equipo</span>
+                    <span className="font-black">{reg.data?.robotName || reg.data?.teamName || '---'}</span>
+                  </div>
+                  <div>
+                    <span className="text-neutral-400 font-bold block">Asesor</span>
+                    <span className="font-black">{reg.data?.advisorName || '---'}</span>
+                  </div>
+                </div>
+              </motion.div>
+            ))}
+
             {activeTab === 'brackets' && (
               <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="col-span-full bg-white border border-neutral-100 rounded-[3rem] p-12 shadow-xl shadow-neutral-200/40">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
                   <div className="space-y-8">
                     <h3 className="text-2xl font-black uppercase tracking-tight">Configuración de Llave</h3>
-                    
+
                     <div className="space-y-4">
                       <div className="space-y-2">
                         <label className="text-sm font-black text-neutral-400 px-2">Nivel de Competencia</label>
-                        <select value={formData.level || ''} onChange={e => setFormData({...formData, level: e.target.value, category: ''})} className="w-full text-neutral-500 bg-neutral-50 border border-neutral-100 rounded-2xl p-5 appearance-none">
+                        <select value={formData.level || ''} onChange={e => setFormData({ ...formData, level: e.target.value, category: '' })} className="w-full text-neutral-500 bg-neutral-50 border border-neutral-100 rounded-2xl p-5 appearance-none">
                           <option value="">Seleccionar...</option>
                           {COMPETITION_LEVELS.map(l => <option key={l} value={l}>{l}</option>)}
                         </select>
@@ -489,7 +630,7 @@ const AdminPanel = () => {
 
                       <div className="space-y-2">
                         <label className="text-sm font-black text-neutral-400 px-2">Categoría</label>
-                        <select required disabled={!formData.level} value={formData.category || ''} className="w-full text-neutral-500 bg-neutral-50 border border-neutral-100 rounded-2xl p-5 appearance-none" onChange={e => setFormData({...formData, category: e.target.value})}>
+                        <select required disabled={!formData.level} value={formData.category || ''} className="w-full text-neutral-500 bg-neutral-50 border border-neutral-100 rounded-2xl p-5 appearance-none" onChange={e => setFormData({ ...formData, category: e.target.value })}>
                           <option value="">Seleccionar...</option>
                           {formData.level && CATEGORIES_BY_LEVEL[formData.level].map(cat => <option key={cat} value={cat}>{cat}</option>)}
                         </select>
@@ -497,7 +638,7 @@ const AdminPanel = () => {
 
                       <div className="space-y-2">
                         <label className="text-sm font-black text-neutral-400 px-2">Árbitro Oficial</label>
-                        <select value={formData.refereeId || ''} onChange={e => setFormData({...formData, refereeId: e.target.value})} className="w-full text-neutral-500 bg-neutral-50 border border-neutral-100 rounded-2xl p-5 appearance-none">
+                        <select value={formData.refereeId || ''} onChange={e => setFormData({ ...formData, refereeId: e.target.value })} className="w-full text-neutral-500 bg-neutral-50 border border-neutral-100 rounded-2xl p-5 appearance-none">
                           <option value="">Seleccionar...</option>
                           {data.referees.map(u => <option key={u.id} value={u.id}>@{u.username}</option>)}
                         </select>
@@ -522,26 +663,25 @@ const AdminPanel = () => {
                         .filter(r => !formData.level || r.level === formData.level)
                         .filter(r => !formData.category || r.category === formData.category)
                         .map(robot => (
-                        <div 
-                          key={robot.id} 
-                          onClick={() => {
-                            if (selectedRobots.includes(robot.id)) {
-                              setSelectedRobots(selectedRobots.filter(id => id !== robot.id));
-                            } else {
-                              setSelectedRobots([...selectedRobots, robot.id]);
-                            }
-                          }}
-                          className={`p-5 rounded-2xl border transition-all cursor-pointer flex justify-between items-center ${
-                            selectedRobots.includes(robot.id) ? 'bg-brand/5 border-brand/20' : 'bg-neutral-50 border-neutral-100'
-                          }`}
-                        >
-                          <div>
-                            <p className="font-black text-sm">{robot.name}</p>
-                            <p className="text-xs font-bold text-neutral-400">{robot.Institution?.name}</p>
+                          <div
+                            key={robot.id}
+                            onClick={() => {
+                              if (selectedRobots.includes(robot.id)) {
+                                setSelectedRobots(selectedRobots.filter(id => id !== robot.id));
+                              } else {
+                                setSelectedRobots([...selectedRobots, robot.id]);
+                              }
+                            }}
+                            className={`p-5 rounded-2xl border transition-all cursor-pointer flex justify-between items-center ${selectedRobots.includes(robot.id) ? 'bg-brand/5 border-brand/20' : 'bg-neutral-50 border-neutral-100'
+                              }`}
+                          >
+                            <div>
+                              <p className="font-black text-sm">{robot.name}</p>
+                              <p className="text-xs font-bold text-neutral-400">{robot.Institution?.name}</p>
+                            </div>
+                            {selectedRobots.includes(robot.id) && <div className="w-4 h-4 bg-brand rounded-full" />}
                           </div>
-                          {selectedRobots.includes(robot.id) && <div className="w-4 h-4 bg-brand rounded-full" />}
-                        </div>
-                      ))}
+                        ))}
                     </div>
                   </div>
                 </div>
@@ -568,16 +708,16 @@ const AdminPanel = () => {
                   <div className="space-y-6">
                     <div className="space-y-2">
                       <label className="text-[10px] font-black uppercase text-neutral-400 px-2">Nombre de la Institución</label>
-                      <input required value={formData.name || ''} placeholder="ej. Universidad Nacional" className="w-full bg-neutral-50 border border-neutral-100 rounded-2xl p-5 text-sm font-bold" onChange={e => setFormData({...formData, name: e.target.value})} />
+                      <input required value={formData.name || ''} placeholder="ej. Universidad Nacional" className="w-full bg-neutral-50 border border-neutral-100 rounded-2xl p-5 text-sm font-bold" onChange={e => setFormData({ ...formData, name: e.target.value })} />
                     </div>
                     <div className="grid grid-cols-2 gap-4">
                       <div className="space-y-2">
                         <label className="text-[10px] font-black uppercase text-neutral-400 px-2">Email de Contacto</label>
-                        <input type="email" value={formData.contactEmail || ''} placeholder="ej. contacto@uni.edu" className="w-full bg-neutral-50 border border-neutral-100 rounded-2xl p-5 text-sm font-bold" onChange={e => setFormData({...formData, contactEmail: e.target.value})} />
+                        <input type="email" value={formData.contactEmail || ''} placeholder="ej. contacto@uni.edu" className="w-full bg-neutral-50 border border-neutral-100 rounded-2xl p-5 text-sm font-bold" onChange={e => setFormData({ ...formData, contactEmail: e.target.value })} />
                       </div>
                       <div className="space-y-2">
                         <label className="text-[10px] font-black uppercase text-neutral-400 px-2">Estado de Pago ($10)</label>
-                        <div onClick={() => setFormData({...formData, isPaid: !formData.isPaid})} className={`w-full p-5 rounded-2xl border cursor-pointer transition-all flex items-center justify-between ${formData.isPaid ? 'bg-green-500/5 border-green-500/20 text-green-600' : 'bg-neutral-50 border-neutral-100 text-neutral-400'}`}>
+                        <div onClick={() => setFormData({ ...formData, isPaid: !formData.isPaid })} className={`w-full p-5 rounded-2xl border cursor-pointer transition-all flex items-center justify-between ${formData.isPaid ? 'bg-green-500/5 border-green-500/20 text-green-600' : 'bg-neutral-50 border-neutral-100 text-neutral-400'}`}>
                           <span className="text-xs font-black uppercase">{formData.isPaid ? 'Pagado' : 'Pendiente'}</span>
                           <ShieldCheck size={18} />
                         </div>
@@ -591,11 +731,11 @@ const AdminPanel = () => {
                     <div className="grid grid-cols-2 gap-4">
                       <div className="space-y-2">
                         <label className="text-[10px] font-black uppercase text-neutral-400 px-2">Nombre del Robot</label>
-                        <input required value={formData.name || ''} placeholder="ej. Destroyer 3000" className="w-full bg-neutral-50 border border-neutral-100 rounded-2xl p-5" onChange={e => setFormData({...formData, name: e.target.value})} />
+                        <input required value={formData.name || ''} placeholder="ej. Destroyer 3000" className="w-full bg-neutral-50 border border-neutral-100 rounded-2xl p-5" onChange={e => setFormData({ ...formData, name: e.target.value })} />
                       </div>
                       <div className="space-y-2">
                         <label className="text-[10px] font-black uppercase text-neutral-400 px-2">Nivel de Competencia</label>
-                        <select required value={formData.level || ''} className="w-full bg-neutral-50 border border-neutral-100 rounded-2xl p-5 appearance-none text-sm" onChange={e => setFormData({...formData, level: e.target.value, category: ''})}>
+                        <select required value={formData.level || ''} className="w-full bg-neutral-50 border border-neutral-100 rounded-2xl p-5 appearance-none text-sm" onChange={e => setFormData({ ...formData, level: e.target.value, category: '' })}>
                           <option value="">Seleccionar...</option>
                           {COMPETITION_LEVELS.map(level => <option key={level} value={level}>{level}</option>)}
                         </select>
@@ -605,14 +745,14 @@ const AdminPanel = () => {
                     <div className="grid grid-cols-2 gap-4">
                       <div className="space-y-2">
                         <label className="text-[10px] font-black uppercase text-neutral-400 px-2">Categoría</label>
-                        <select required disabled={!formData.level} value={formData.category || ''} className="w-full bg-neutral-50 border border-neutral-100 rounded-2xl p-5 appearance-none text-sm" onChange={e => setFormData({...formData, category: e.target.value})}>
+                        <select required disabled={!formData.level} value={formData.category || ''} className="w-full bg-neutral-50 border border-neutral-100 rounded-2xl p-5 appearance-none text-sm" onChange={e => setFormData({ ...formData, category: e.target.value })}>
                           <option value="">Seleccionar...</option>
                           {formData.level && CATEGORIES_BY_LEVEL[formData.level].map(cat => <option key={cat} value={cat}>{cat}</option>)}
                         </select>
                       </div>
                       <div className="space-y-2">
                         <label className="text-[10px] font-black uppercase text-neutral-400 px-2">Institución</label>
-                        <select required value={formData.institutionId || ''} className="w-full bg-neutral-50 border border-neutral-100 rounded-2xl p-5 appearance-none text-sm" onChange={e => setFormData({...formData, institutionId: e.target.value})}>
+                        <select required value={formData.institutionId || ''} className="w-full bg-neutral-50 border border-neutral-100 rounded-2xl p-5 appearance-none text-sm" onChange={e => setFormData({ ...formData, institutionId: e.target.value })}>
                           <option value="">Seleccionar...</option>
                           {data.institutions.map(i => <option key={i.id} value={i.id}>{i.name}</option>)}
                         </select>
@@ -620,7 +760,7 @@ const AdminPanel = () => {
                     </div>
 
                     <div className="flex items-center gap-4 p-4 bg-neutral-50 rounded-2xl border border-neutral-100">
-                      <input type="checkbox" id="homologated" checked={formData.isHomologated || false} onChange={e => setFormData({...formData, isHomologated: e.target.checked})} className="w-5 h-5 accent-brand" />
+                      <input type="checkbox" id="homologated" checked={formData.isHomologated || false} onChange={e => setFormData({ ...formData, isHomologated: e.target.checked })} className="w-5 h-5 accent-brand" />
                       <label htmlFor="homologated" className="text-xs font-black uppercase text-neutral-500 cursor-pointer">Robot Homologado (Pasó revisión técnica)</label>
                     </div>
                   </div>
@@ -630,11 +770,11 @@ const AdminPanel = () => {
                   <div className="space-y-6">
                     <div className="space-y-2">
                       <label className="text-[10px] font-black uppercase text-neutral-400 px-2">Nombre de Usuario</label>
-                      <input required value={formData.username || ''} placeholder="Login de operador" className="w-full bg-neutral-50 border border-neutral-100 rounded-2xl p-5" onChange={e => setFormData({...formData, username: e.target.value})} />
+                      <input required value={formData.username || ''} placeholder="Login de operador" className="w-full bg-neutral-50 border border-neutral-100 rounded-2xl p-5" onChange={e => setFormData({ ...formData, username: e.target.value })} />
                     </div>
                     <div className="space-y-2">
                       <label className="text-[10px] font-black uppercase text-neutral-400 px-2">Clave Secreta {isEditMode && '(Dejar en blanco para mantener actual)'}</label>
-                      <input required={!isEditMode} type="password" placeholder="Credenciales de acceso" className="w-full bg-neutral-50 border border-neutral-100 rounded-2xl p-5" onChange={e => setFormData({...formData, password: e.target.value})} />
+                      <input required={!isEditMode} type="password" placeholder="Credenciales de acceso" className="w-full bg-neutral-50 border border-neutral-100 rounded-2xl p-5" onChange={e => setFormData({ ...formData, password: e.target.value })} />
                     </div>
                   </div>
                 )}
@@ -644,14 +784,14 @@ const AdminPanel = () => {
                     <div className="grid grid-cols-2 gap-4">
                       <div className="space-y-2">
                         <label className="text-[10px] font-black uppercase text-neutral-400 px-2">Robot A (Rojo)</label>
-                        <select required value={formData.robotAId || ''} className="w-full bg-neutral-50 border border-neutral-100 rounded-2xl p-5 appearance-none text-xs" onChange={e => setFormData({...formData, robotAId: e.target.value})}>
+                        <select required value={formData.robotAId || ''} className="w-full bg-neutral-50 border border-neutral-100 rounded-2xl p-5 appearance-none text-xs" onChange={e => setFormData({ ...formData, robotAId: e.target.value })}>
                           <option value="">Seleccionar...</option>
                           {data.robots.map(r => <option key={r.id} value={r.id}>{r.name}</option>)}
                         </select>
                       </div>
                       <div className="space-y-2">
                         <label className="text-[10px] font-black uppercase text-neutral-400 px-2">Robot B (Azul)</label>
-                        <select required value={formData.robotBId || ''} className="w-full bg-neutral-50 border border-neutral-100 rounded-2xl p-5 appearance-none text-xs" onChange={e => setFormData({...formData, robotBId: e.target.value})}>
+                        <select required value={formData.robotBId || ''} className="w-full bg-neutral-50 border border-neutral-100 rounded-2xl p-5 appearance-none text-xs" onChange={e => setFormData({ ...formData, robotBId: e.target.value })}>
                           <option value="">Seleccionar...</option>
                           {data.robots.map(r => <option key={r.id} value={r.id}>{r.name}</option>)}
                         </select>
@@ -660,11 +800,11 @@ const AdminPanel = () => {
                     <div className="grid grid-cols-2 gap-4">
                       <div className="space-y-2">
                         <label className="text-[10px] font-black uppercase text-neutral-400 px-2">Categoría / Grupo</label>
-                        <input required value={formData.category || ''} placeholder="ej. Grupo A / Juvenil" className="w-full bg-neutral-50 border border-neutral-100 rounded-2xl p-5 text-sm" onChange={e => setFormData({...formData, category: e.target.value})} />
+                        <input required value={formData.category || ''} placeholder="ej. Grupo A / Juvenil" className="w-full bg-neutral-50 border border-neutral-100 rounded-2xl p-5 text-sm" onChange={e => setFormData({ ...formData, category: e.target.value })} />
                       </div>
                       <div className="space-y-2">
                         <label className="text-[10px] font-black uppercase text-neutral-400 px-2">Ronda del Torneo</label>
-                        <select required value={formData.round || 'QUARTERS'} className="w-full bg-neutral-50 border border-neutral-100 rounded-2xl p-5 appearance-none text-sm" onChange={e => setFormData({...formData, round: e.target.value})}>
+                        <select required value={formData.round || 'QUARTERS'} className="w-full bg-neutral-50 border border-neutral-100 rounded-2xl p-5 appearance-none text-sm" onChange={e => setFormData({ ...formData, round: e.target.value })}>
                           <option value="QUARTERS">Cuartos de Final</option>
                           <option value="SEMIS">Semifinal</option>
                           <option value="FINAL">Gran Final</option>
@@ -673,7 +813,7 @@ const AdminPanel = () => {
                     </div>
                     <div className="space-y-2">
                       <label className="text-[10px] font-black uppercase text-neutral-400 px-2">Árbitro Asignado</label>
-                      <select required value={formData.refereeId || ''} className="w-full bg-neutral-50 border border-neutral-100 rounded-2xl p-5 appearance-none text-sm" onChange={e => setFormData({...formData, refereeId: e.target.value})}>
+                      <select required value={formData.refereeId || ''} className="w-full bg-neutral-50 border border-neutral-100 rounded-2xl p-5 appearance-none text-sm" onChange={e => setFormData({ ...formData, refereeId: e.target.value })}>
                         <option value="">Seleccionar...</option>
                         {data.referees.map(u => <option key={u.id} value={u.id}>@{u.username}</option>)}
                       </select>
@@ -685,20 +825,20 @@ const AdminPanel = () => {
                   <div className="space-y-6">
                     <div className="space-y-2">
                       <label className="text-[10px] font-black uppercase text-neutral-400 px-2">Nombre del Sponsor</label>
-                      <input required value={formData.name || ''} placeholder="Nombre oficial" className="w-full bg-neutral-50 border border-neutral-100 rounded-2xl p-5" onChange={e => setFormData({...formData, name: e.target.value})} />
+                      <input required value={formData.name || ''} placeholder="Nombre oficial" className="w-full bg-neutral-50 border border-neutral-100 rounded-2xl p-5" onChange={e => setFormData({ ...formData, name: e.target.value })} />
                     </div>
                     <div className="space-y-2">
                       <label className="text-[10px] font-black uppercase text-neutral-400 px-2">Logo URL</label>
-                      <input value={formData.logoUrl || ''} placeholder="https://..." className="w-full bg-neutral-50 border border-neutral-100 rounded-2xl p-5" onChange={e => setFormData({...formData, logoUrl: e.target.value})} />
+                      <input value={formData.logoUrl || ''} placeholder="https://..." className="w-full bg-neutral-50 border border-neutral-100 rounded-2xl p-5" onChange={e => setFormData({ ...formData, logoUrl: e.target.value })} />
                     </div>
                     <div className="grid grid-cols-2 gap-4">
                       <div className="space-y-2">
                         <label className="text-[10px] font-black uppercase text-neutral-400 px-2">Sitio Web</label>
-                        <input value={formData.website || ''} placeholder="www.sponsor.com" className="w-full bg-neutral-50 border border-neutral-100 rounded-2xl p-5" onChange={e => setFormData({...formData, website: e.target.value})} />
+                        <input value={formData.website || ''} placeholder="www.sponsor.com" className="w-full bg-neutral-50 border border-neutral-100 rounded-2xl p-5" onChange={e => setFormData({ ...formData, website: e.target.value })} />
                       </div>
                       <div className="space-y-2">
                         <label className="text-[10px] font-black uppercase text-neutral-400 px-2">Nivel (Tier)</label>
-                        <select required value={formData.tier || ''} className="w-full bg-neutral-50 border border-neutral-100 rounded-2xl p-5 appearance-none" onChange={e => setFormData({...formData, tier: e.target.value})}>
+                        <select required value={formData.tier || ''} className="w-full bg-neutral-50 border border-neutral-100 rounded-2xl p-5 appearance-none" onChange={e => setFormData({ ...formData, tier: e.target.value })}>
                           <option value="">Seleccionar...</option>
                           <option value="GOLD">GOLD</option>
                           <option value="SILVER">SILVER</option>

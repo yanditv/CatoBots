@@ -11,10 +11,11 @@ interface Step1Props {
     googleUser: any;
     handleGoogleLogin: () => void;
     handleNext: () => void;
+    handleBack?: () => void;
 }
 
-export default function Step1_EventDetails({ data, updateData, googleUser, handleGoogleLogin, handleNext }: Step1Props) {
-    const isValid = data.email && data.institution;
+export default function Step1_EventDetails({ data, updateData, googleUser, handleGoogleLogin, handleNext, handleBack }: Step1Props) {
+    const isValid = data.email && data.institution && data.institution.trim().length > 3;
 
     return (
         <div className="space-y-6">
@@ -78,7 +79,16 @@ export default function Step1_EventDetails({ data, updateData, googleUser, handl
                 </div>
             </div>
 
-            <div className="flex justify-end pt-6">
+            <div className="flex justify-between pt-6 border-t border-neutral-800 mt-8">
+                {handleBack ? (
+                    <button
+                        onClick={handleBack}
+                        className="px-6 py-2 rounded-lg font-medium text-neutral-400 hover:text-white transition-colors"
+                    >
+                        Atrás
+                    </button>
+                ) : <div />}
+
                 <motion.button
                     whileHover={{ scale: 1.02 }}
                     whileTap={{ scale: 0.98 }}
@@ -91,7 +101,7 @@ export default function Step1_EventDetails({ data, updateData, googleUser, handl
                             : "bg-neutral-800 text-neutral-500 cursor-not-allowed"}
                     `}
                 >
-                    COMENZAR REGISTRO
+                    SIGUIENTE
                 </motion.button>
             </div>
         </div>

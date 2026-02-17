@@ -27,6 +27,7 @@ export default function WizardForm() {
         seniorCategory: "",
         masterCategory: "",
         robotName: "",
+        robotAbbreviation: "",
         teamName: "",
         members: "",
         advisorName: "",
@@ -87,30 +88,7 @@ export default function WizardForm() {
     useEffect(() => {
         if (googleUser?.email) {
             updateData({ email: googleUser.email });
-            const loadDraft = async () => {
-                try {
-                    const res = await fetch(`/api/registrations/draft?email=${googleUser.email}`);
-                    const data = await res.json();
-                    if (data.registration) {
-                        const { step: savedStep, data: savedData, payment_proof_filename } = data.registration;
-                        if (savedData) {
-                            setFormData(prev => ({
-                                ...prev,
-                                ...savedData,
-                                paymentProof: payment_proof_filename || prev.paymentProof
-                            }));
-                        }
-                        // Optionally restore step, but maybe user wants to start over? 
-                        // Let's restore if it's not step 1, or just restore.
-                        if (savedStep) setCurrentStep(savedStep);
-                    }
-                } catch (error) {
-                    console.error("Failed to load draft", error);
-                } finally {
-                    setIsLoading(false);
-                }
-            };
-            loadDraft();
+            setIsLoading(false);
         } else {
             setIsLoading(false);
         }
@@ -189,8 +167,8 @@ export default function WizardForm() {
     }
 
     const steps = [
-        { id: 1, title: "Inicio", description: "Datos del evento" },
-        { id: 2, title: "Categoría", description: "Nivel de competencia" },
+        { id: 1, title: "Categoría", description: "Nivel de competencia" },
+        { id: 2, title: "Datos", description: "Institución y Contacto" },
         { id: 3, title: "Competencia", description: "Selección específica" },
         { id: 4, title: "Detalles", description: "Equipo y asesor" },
         { id: 5, title: "Pago", description: "Comprobante" },
@@ -206,19 +184,21 @@ export default function WizardForm() {
             subtitle="Formulario de Inscripción Oficial"
         >
             {currentStep === 1 && (
+                <Step2_Category
+                    data={formData}
+                    updateData={updateData}
+                    handleNext={handleNext}
+                    handleBack={handleBack}
+                    showBackButton={false}
+                />
+            )}
+
+            {currentStep === 2 && (
                 <Step1_EventDetails
                     data={formData}
                     updateData={updateData}
                     googleUser={googleUser}
                     handleGoogleLogin={() => handleGoogleLogin()}
-                    handleNext={handleNext}
-                />
-            )}
-
-            {currentStep === 2 && (
-                <Step2_Category
-                    data={formData}
-                    updateData={updateData}
                     handleNext={handleNext}
                     handleBack={handleBack}
                 />
