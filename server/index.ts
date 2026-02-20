@@ -15,6 +15,7 @@ import { Registration } from './models/Registration';
 import multer from 'multer';
 import path from 'path';
 import fs from 'fs';
+import { sendWelcomeEmail, sendStatusEmail } from './utils/emailService';
 
 dotenv.config();
 
@@ -317,8 +318,8 @@ app.post('/api/registrations/submit', async (req, res) => {
   registration.status = 'SUBMITTED';
   await registration.save();
 
-  // Here you could trigger email notifications or create Robot/Institution records
-  // For now, we just mark as submitted.
+  // Trigger welcome email
+  await sendWelcomeEmail(email, registration.data);
 
   res.json({ success: true });
 });
@@ -341,7 +342,14 @@ app.put('/api/registrations/:id', authenticateJWT, isAdmin, async (req, res) => 
   // If REJECTED or PENDING, isPaid remains false (or becomes false)
 
   await Registration.update({ isPaid, paymentStatus }, { where: { id: req.params.id } });
-  res.json(await Registration.findByPk(req.params.id));
+
+  const updatedRegistration = await Registration.findByPk(req.params.id);
+
+  if (updatedRegistration && (paymentStatus === 'APPROVED' || paymentStatus === 'REJECTED')) {
+    await sendStatusEmail(updatedRegistration.google_email, paymentStatus);
+  }
+
+  res.json(updatedRegistration);
 });
 
 // --- Socket.io Real-time Logic ---

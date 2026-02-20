@@ -139,161 +139,192 @@ export default function Step4_Details({ data, categoryType, updateData, handleNe
                 <p className="text-neutral-400">Cuéntanos sobre los participantes</p>
             </div>
 
-            <div className="grid grid-cols-1 gap-6">
-                {/* Robot Name or Team Name */}
-                <div className="space-y-4">
-                    <div className="space-y-2">
-                        <label className="text-sm font-medium text-neutral-300 flex items-center gap-2">
-                            <Bot size={16} className="text-purple-400" />
-                            {isRobotica ? "Nombre del Robot" : "Nombre del Equipo"}
-                        </label>
-                        <input
-                            type="text"
-                            value={isRobotica ? data.robotName : data.teamName}
-                            onChange={(e) => updateData(isRobotica ? { robotName: e.target.value } : { teamName: e.target.value })}
-                            className="w-full bg-neutral-900 border border-neutral-700 rounded-lg px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-purple-500/50 transition-all"
-                            placeholder={isRobotica ? "Ej. Terminator" : "Ej. Los Innovadores"}
-                        />
-                    </div>
+            <div className="grid grid-cols-1 gap-8">
+                {/* Robot Section */}
+                {isRobotica && (
+                    <div className="bg-neutral-900/50 border border-neutral-800 rounded-2xl p-6 space-y-4 relative overflow-hidden">
+                        <div className="absolute top-0 right-0 w-32 h-32 bg-purple-500/5 blur-[80px] rounded-full"></div>
+                        <h3 className="text-lg font-bold text-white flex items-center gap-2 mb-4">
+                            <Bot className="text-purple-400" size={20} />
+                            Registro del Robot
+                        </h3>
 
-                    {isRobotica && (
-                        <div className="space-y-2">
-                            <div className="flex justify-between items-center">
-                                <label className="text-sm font-medium text-neutral-300 flex items-center gap-2">
-                                    <span className="bg-purple-500/10 text-purple-400 px-2 py-0.5 rounded text-xs font-bold border border-purple-500/20">ABR</span>
-                                    Abreviatura (Scoreboard)
+                        <div className="space-y-4">
+                            <div className="space-y-2">
+                                <label className="text-sm font-medium text-neutral-300">
+                                    Nombre del Robot
                                 </label>
-                                <label className="flex items-center gap-2 cursor-pointer select-none">
-                                    <input
-                                        type="checkbox"
-                                        checked={isEditingAbbreviation}
-                                        onChange={(e) => setIsEditingAbbreviation(e.target.checked)}
-                                        className="w-4 h-4 rounded border-neutral-600 bg-neutral-800 text-purple-500 focus:ring-purple-500/50 accent-purple-500"
-                                    />
-                                    <span className="text-xs text-neutral-400 hover:text-white transition-colors">Editar manualmente</span>
-                                </label>
-                            </div>
-
-                            <input
-                                type="text"
-                                maxLength={5}
-                                value={data.robotAbbreviation || ''}
-                                disabled={!isEditingAbbreviation}
-                                onChange={(e) => updateData({ robotAbbreviation: e.target.value.toUpperCase() })}
-                                className={`w-full bg-neutral-900 border rounded-lg px-4 py-3 text-white focus:outline-none focus:ring-2 transition-all font-mono tracking-wider uppercase
-                                    ${!isEditingAbbreviation ? 'opacity-50 cursor-not-allowed border-neutral-800' : 'border-neutral-700 focus:ring-purple-500/50'}
-                                `}
-                                placeholder="Ej. TERM"
-                            />
-                            {!isEditingAbbreviation && data.robotAbbreviation && (
-                                <p className="text-xs text-neutral-500 flex items-center gap-1">
-                                    <span className="w-1.5 h-1.5 rounded-full bg-green-500"></span>
-                                    Sugerencia automática basada en el nombre
-                                </p>
-                            )}
-                        </div>
-                    )}
-                </div>
-
-                {/* Members Section */}
-                <div className="space-y-4">
-                    <div className="flex items-center justify-between">
-                        <label className="text-sm font-medium text-neutral-300 flex items-center gap-2">
-                            <Users size={16} className="text-purple-400" />
-                            Integrantes
-                        </label>
-
-                        <label className="flex items-center gap-2 cursor-pointer group">
-                            <div className="relative">
-                                <input
-                                    type="checkbox"
-                                    className="peer sr-only"
-                                    checked={hasSecondMember}
-                                    onChange={(e) => setHasSecondMember(e.target.checked)}
-                                />
-                                <div className={`w-10 h-6 rounded-full transition-colors ${hasSecondMember ? "bg-purple-600" : "bg-neutral-700"
-                                    }`}></div>
-                                <div className={`absolute top-1 left-1 bg-white w-4 h-4 rounded-full transition-transform ${hasSecondMember ? "translate-x-4" : "translate-x-0"
-                                    }`}></div>
-                            </div>
-                            <span className="text-xs text-neutral-400 group-hover:text-white transition-colors">
-                                2 Integrantes
-                            </span>
-                        </label>
-                    </div>
-
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        {/* Member 1 */}
-                        <div className="space-y-2">
-                            <div className="input-group">
                                 <input
                                     type="text"
-                                    value={member1}
-                                    onChange={(e) => setMember1(e.target.value)}
+                                    value={data.robotName}
+                                    onChange={(e) => updateData({ robotName: e.target.value })}
                                     className="w-full bg-neutral-900 border border-neutral-700 rounded-lg px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-purple-500/50 transition-all"
-                                    placeholder="Nombre del Capitán"
+                                    placeholder="Ej. Terminator"
                                 />
-                                <p className="text-xs text-neutral-500 mt-1 ml-1">Capitán / Integrante 1</p>
+                            </div>
+
+                            <div className="space-y-2">
+                                <div className="flex justify-between items-center">
+                                    <label className="text-sm font-medium text-neutral-300 flex items-center gap-2">
+                                        <span className="bg-purple-500/10 text-purple-400 px-2 py-0.5 rounded text-xs font-bold border border-purple-500/20">ABR</span>
+                                        Abreviatura (Scoreboard)
+                                    </label>
+                                    <label className="flex items-center gap-2 cursor-pointer select-none">
+                                        <input
+                                            type="checkbox"
+                                            checked={isEditingAbbreviation}
+                                            onChange={(e) => setIsEditingAbbreviation(e.target.checked)}
+                                            className="w-4 h-4 rounded border-neutral-600 bg-neutral-800 text-purple-500 focus:ring-purple-500/50 accent-purple-500"
+                                        />
+                                        <span className="text-xs text-neutral-400 hover:text-white transition-colors">Editar manualmente</span>
+                                    </label>
+                                </div>
+
+                                <input
+                                    type="text"
+                                    maxLength={5}
+                                    value={data.robotAbbreviation || ''}
+                                    disabled={!isEditingAbbreviation}
+                                    onChange={(e) => updateData({ robotAbbreviation: e.target.value.toUpperCase() })}
+                                    className={`w-full bg-neutral-900 border rounded-lg px-4 py-3 text-white focus:outline-none focus:ring-2 transition-all font-mono tracking-wider uppercase
+                                        ${!isEditingAbbreviation ? 'opacity-50 cursor-not-allowed border-neutral-800' : 'border-neutral-700 focus:ring-purple-500/50'}
+                                    `}
+                                    placeholder="Ej. TERM"
+                                />
+                                {!isEditingAbbreviation && data.robotAbbreviation && (
+                                    <p className="text-xs text-neutral-500 flex items-center gap-1">
+                                        <span className="w-1.5 h-1.5 rounded-full bg-green-500"></span>
+                                        Sugerencia automática basada en el nombre
+                                    </p>
+                                )}
                             </div>
                         </div>
+                    </div>
+                )}
 
-                        {/* Member 2 - Conditional */}
-                        {hasSecondMember && (
-                            <motion.div
-                                initial={{ opacity: 0, x: -10 }}
-                                animate={{ opacity: 1, x: 0 }}
-                                className="space-y-2"
-                            >
+                {/* Team Section */}
+                <div className="bg-neutral-900/50 border border-neutral-800 rounded-2xl p-6 space-y-6 relative overflow-hidden">
+                    <div className="absolute top-0 right-0 w-32 h-32 bg-blue-500/5 blur-[80px] rounded-full"></div>
+                    <h3 className="text-lg font-bold text-white flex items-center gap-2 mb-2">
+                        <Users className="text-blue-400" size={20} />
+                        Registro del Equipo
+                    </h3>
+
+                    {/* Team Name (if NOT Robotica, they only see this name field) */}
+                    {!isRobotica && (
+                        <div className="space-y-2">
+                            <label className="text-sm font-medium text-neutral-300">
+                                Nombre del Equipo
+                            </label>
+                            <input
+                                type="text"
+                                value={data.teamName}
+                                onChange={(e) => updateData({ teamName: e.target.value })}
+                                className="w-full bg-neutral-900 border border-neutral-700 rounded-lg px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-all"
+                                placeholder="Ej. Los Innovadores"
+                            />
+                        </div>
+                    )}
+                    {/* Members Section */}
+                    <div className="space-y-4 pt-2">
+                        <div className="flex items-center justify-between">
+                            <label className="text-sm font-medium text-neutral-300 flex items-center gap-2">
+                                <Users size={16} className="text-purple-400" />
+                                Integrantes
+                            </label>
+
+                            <label className="flex items-center gap-2 cursor-pointer group">
+                                <div className="relative">
+                                    <input
+                                        type="checkbox"
+                                        className="peer sr-only"
+                                        checked={hasSecondMember}
+                                        onChange={(e) => setHasSecondMember(e.target.checked)}
+                                    />
+                                    <div className={`w-10 h-6 rounded-full transition-colors ${hasSecondMember ? "bg-purple-600" : "bg-neutral-700"
+                                        }`}></div>
+                                    <div className={`absolute top-1 left-1 bg-white w-4 h-4 rounded-full transition-transform ${hasSecondMember ? "translate-x-4" : "translate-x-0"
+                                        }`}></div>
+                                </div>
+                                <span className="text-xs text-neutral-400 group-hover:text-white transition-colors">
+                                    2 Integrantes
+                                </span>
+                            </label>
+                        </div>
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            {/* Member 1 */}
+                            <div className="space-y-2">
                                 <div className="input-group">
                                     <input
                                         type="text"
-                                        value={member2}
-                                        onChange={(e) => setMember2(e.target.value)}
+                                        value={member1}
+                                        onChange={(e) => setMember1(e.target.value)}
                                         className="w-full bg-neutral-900 border border-neutral-700 rounded-lg px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-purple-500/50 transition-all"
-                                        placeholder="Nombre del Segundo Integrante"
+                                        placeholder="Nombre del Capitán"
                                     />
-                                    <p className="text-xs text-neutral-500 mt-1 ml-1">Integrante 2</p>
+                                    <p className="text-xs text-neutral-500 mt-1 ml-1">Capitán / Integrante 1</p>
                                 </div>
-                            </motion.div>
-                        )}
-                    </div>
-                </div>
+                            </div>
 
-                {/* Advisor Section */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    {/* Advisor Name */}
-                    <div className="space-y-2">
-                        <label className="text-sm font-medium text-neutral-300 flex items-center gap-2">
-                            <User size={16} className="text-purple-400" />
-                            Nombre del Asesor
-                        </label>
-                        <input
-                            type="text"
-                            value={data.advisorName}
-                            onChange={(e) => updateData({ advisorName: e.target.value })}
-                            className="w-full bg-neutral-900 border border-neutral-700 rounded-lg px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-purple-500/50 transition-all"
-                            placeholder="Nombre del docente o asesor"
-                        />
+                            {/* Member 2 - Conditional */}
+                            {hasSecondMember && (
+                                <motion.div
+                                    initial={{ opacity: 0, x: -10 }}
+                                    animate={{ opacity: 1, x: 0 }}
+                                    className="space-y-2"
+                                >
+                                    <div className="input-group">
+                                        <input
+                                            type="text"
+                                            value={member2}
+                                            onChange={(e) => setMember2(e.target.value)}
+                                            className="w-full bg-neutral-900 border border-neutral-700 rounded-lg px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-purple-500/50 transition-all"
+                                            placeholder="Nombre del Segundo Integrante"
+                                        />
+                                        <p className="text-xs text-neutral-500 mt-1 ml-1">Integrante 2</p>
+                                    </div>
+                                </motion.div>
+                            )}
+                        </div>
                     </div>
 
-                    {/* Advisor Phone */}
-                    <div className="space-y-2">
-                        <label className="text-sm font-medium text-neutral-300 flex items-center gap-2">
-                            <Phone size={16} className="text-purple-400" />
-                            Teléfono del Asesor
-                        </label>
-                        <input
-                            type="tel"
-                            maxLength={10}
-                            value={data.advisorPhone}
-                            onChange={(e) => {
-                                const val = e.target.value.replace(/\D/g, '');
-                                updateData({ advisorPhone: val });
-                            }}
-                            className={`w-full bg-neutral-900 border rounded-lg px-4 py-3 text-white focus:outline-none focus:ring-2 transition-all ${errors.advisorPhone ? "border-red-500 focus:ring-red-500/50" : "border-neutral-700 focus:ring-purple-500/50"}`}
-                            placeholder="099..."
-                        />
-                        {errors.advisorPhone && <p className="text-xs text-red-500 ml-1">{errors.advisorPhone}</p>}
+                    {/* Advisor Section */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-2 border-t border-neutral-800/50">
+                        {/* Advisor Name */}
+                        <div className="space-y-2">
+                            <label className="text-sm font-medium text-neutral-300 flex items-center gap-2">
+                                <User size={16} className="text-purple-400" />
+                                Nombre del Asesor
+                            </label>
+                            <input
+                                type="text"
+                                value={data.advisorName}
+                                onChange={(e) => updateData({ advisorName: e.target.value })}
+                                className="w-full bg-neutral-900 border border-neutral-700 rounded-lg px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-purple-500/50 transition-all"
+                                placeholder="Nombre del docente o asesor"
+                            />
+                        </div>
+
+                        {/* Advisor Phone */}
+                        <div className="space-y-2">
+                            <label className="text-sm font-medium text-neutral-300 flex items-center gap-2">
+                                <Phone size={16} className="text-purple-400" />
+                                Teléfono del Asesor
+                            </label>
+                            <input
+                                type="tel"
+                                maxLength={10}
+                                value={data.advisorPhone}
+                                onChange={(e) => {
+                                    const val = e.target.value.replace(/\D/g, '');
+                                    updateData({ advisorPhone: val });
+                                }}
+                                className={`w-full bg-neutral-900 border rounded-lg px-4 py-3 text-white focus:outline-none focus:ring-2 transition-all ${errors.advisorPhone ? "border-red-500 focus:ring-red-500/50" : "border-neutral-700 focus:ring-purple-500/50"}`}
+                                placeholder="099..."
+                            />
+                            {errors.advisorPhone && <p className="text-xs text-red-500 ml-1">{errors.advisorPhone}</p>}
+                        </div>
                     </div>
                 </div>
             </div>
