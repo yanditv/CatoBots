@@ -1,5 +1,5 @@
 import { motion } from "framer-motion";
-import { ArrowRight, BookOpen, CheckCircle, CreditCard, Mail, Trophy, Users, Star, MapPin } from "lucide-react";
+import { ArrowRight, BookOpen, CheckCircle, CreditCard, Mail, Trophy, Users, MapPin } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useState, useEffect } from "react";
 
@@ -74,7 +74,7 @@ export default function LandingPage() {
                 initial={{ y: -100 }}
                 animate={{ y: 0 }}
                 transition={{ duration: 0.5, delay: 0.2 }}
-                className="fixed top-0 left-0 right-0 z-50 bg-neutral-950/80 backdrop-blur-md border-b border-white/5 py-4 px-6 flex justify-between items-center"
+                className={`fixed top-0 left-0 right-0 z-50 transition-colors duration-300 ${scrolled ? "bg-neutral-950/90 backdrop-blur-md border-b border-white/10 shadow-lg" : "bg-neutral-950/20 backdrop-blur-sm"} py-4 px-6 flex justify-between items-center`}
             >
                 <span className="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-purple-400 to-blue-400">
                     CatoBots IV
@@ -82,8 +82,8 @@ export default function LandingPage() {
                 <Link
                     to={accepted ? "/registro" : "#"}
                     className={`px-4 py-2 rounded-full text-sm font-bold transition-all shadow-lg ${accepted
-                            ? "bg-purple-600 hover:bg-purple-500 text-white shadow-purple-900/30"
-                            : "bg-neutral-700 text-neutral-400 cursor-not-allowed opacity-50"
+                        ? "bg-purple-600 hover:bg-purple-500 text-white shadow-purple-900/30"
+                        : "bg-neutral-700 text-neutral-400 cursor-not-allowed opacity-50"
                         }`}
                     onClick={(e) => !accepted && e.preventDefault()}
                 >
@@ -247,8 +247,8 @@ export default function LandingPage() {
                         to={accepted ? "/registro" : "#"}
                         onClick={(e) => !accepted && e.preventDefault()}
                         className={`inline-flex items-center gap-2 px-8 py-3 rounded-full font-bold shadow-xl transition-all ${accepted
-                                ? "bg-white text-neutral-900 hover:bg-neutral-200"
-                                : "bg-neutral-800 text-neutral-500 cursor-not-allowed grayscale opacity-50"
+                            ? "bg-white text-neutral-900 hover:bg-neutral-200"
+                            : "bg-neutral-800 text-neutral-500 cursor-not-allowed grayscale opacity-50"
                             }`}
                     >
                         REGISTRAR EQUIPO <ArrowRight size={18} />

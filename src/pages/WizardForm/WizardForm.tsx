@@ -18,7 +18,6 @@ export default function WizardForm() {
     const [currentStep, setCurrentStep] = useState(1);
     const [showRules, setShowRules] = useState(false);
 
-    // Form State
     const [formData, setFormData] = useState({
         email: "",
         institution: "",

@@ -210,21 +210,24 @@ export default function Step4_Details({ data, categoryType, updateData, handleNe
                         Registro del Equipo
                     </h3>
 
-                    {/* Team Name (if NOT Robotica, they only see this name field) */}
-                    {!isRobotica && (
-                        <div className="space-y-2">
-                            <label className="text-sm font-medium text-neutral-300">
-                                Nombre del Equipo
-                            </label>
-                            <input
-                                type="text"
-                                value={data.teamName}
-                                onChange={(e) => updateData({ teamName: e.target.value })}
-                                className="w-full bg-neutral-900 border border-neutral-700 rounded-lg px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-all"
-                                placeholder="Ej. Los Innovadores"
-                            />
-                        </div>
-                    )}
+                    {/* Team Name and Contact Email */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        {!isRobotica && (
+                            <div className="space-y-2">
+                                <label className="text-sm font-medium text-neutral-300">
+                                    Nombre del Equipo
+                                </label>
+                                <input
+                                    type="text"
+                                    value={data.teamName}
+                                    onChange={(e) => updateData({ teamName: e.target.value })}
+                                    className="w-full bg-neutral-900 border border-neutral-700 rounded-lg px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-all"
+                                    placeholder="Ej. Los Innovadores"
+                                />
+                            </div>
+                        )}
+                    </div>
+
                     {/* Members Section */}
                     <div className="space-y-4 pt-2">
                         <div className="flex items-center justify-between">

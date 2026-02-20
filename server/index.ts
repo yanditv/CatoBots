@@ -319,7 +319,8 @@ app.post('/api/registrations/submit', async (req, res) => {
   await registration.save();
 
   // Trigger welcome email
-  await sendWelcomeEmail(email, registration.data);
+  const targetEmail = registration.data?.email || email;
+  await sendWelcomeEmail(targetEmail, registration.data);
 
   res.json({ success: true });
 });
@@ -346,7 +347,8 @@ app.put('/api/registrations/:id', authenticateJWT, isAdmin, async (req, res) => 
   const updatedRegistration = await Registration.findByPk(req.params.id);
 
   if (updatedRegistration && (paymentStatus === 'APPROVED' || paymentStatus === 'REJECTED')) {
-    await sendStatusEmail(updatedRegistration.google_email, paymentStatus);
+    const targetEmail = updatedRegistration.data?.email || updatedRegistration.google_email;
+    await sendStatusEmail(targetEmail, paymentStatus);
   }
 
   res.json(updatedRegistration);

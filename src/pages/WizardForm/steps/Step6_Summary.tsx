@@ -1,4 +1,4 @@
-import { AlertTriangle, CheckCircle, Smartphone } from "lucide-react";
+import { CheckCircle } from "lucide-react";
 import { useState } from "react";
 
 interface Step6Props {
@@ -53,7 +53,7 @@ export default function Step6_Summary({ data, categoryType, updateData, handleBa
                         <p className="text-white font-medium">{data.institution}</p>
                     </div>
                     <div>
-                        <p className="text-neutral-500">Correo</p>
+                        <p className="text-neutral-500">Correo Principal</p>
                         <p className="text-white font-medium">{data.email}</p>
                     </div>
                     <div>

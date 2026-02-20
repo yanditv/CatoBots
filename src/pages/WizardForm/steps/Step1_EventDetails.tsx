@@ -15,7 +15,8 @@ interface Step1Props {
 }
 
 export default function Step1_EventDetails({ data, updateData, googleUser, handleGoogleLogin, handleNext, handleBack }: Step1Props) {
-    const isValid = data.email && data.institution && data.institution.trim().length > 3;
+    const isEmailValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(data.email);
+    const isValid = data.email && isEmailValid && data.institution && data.institution.trim().length > 3;
 
     return (
         <div className="space-y-6">
@@ -52,7 +53,6 @@ export default function Step1_EventDetails({ data, updateData, googleUser, handl
                             onChange={(e) => updateData({ email: e.target.value })}
                             placeholder="tu@email.com"
                             className="flex-1 bg-neutral-900 border border-neutral-700 rounded-lg px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-purple-500/50 transition-all"
-                            readOnly={!!googleUser}
                         />
                         <button
                             onClick={handleGoogleLogin}
