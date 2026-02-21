@@ -11,6 +11,14 @@ const sequelize = new Sequelize(
     host: process.env.DB_HOST || 'localhost',
     dialect: 'mysql',
     logging: false,
+    retry: {
+      max: 5,
+      match: [
+        /SequelizeConnectionError/,
+        /ConnectionError/,
+        /EAI_AGAIN/
+      ]
+    }
   }
 );
 
