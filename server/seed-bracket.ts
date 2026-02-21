@@ -14,6 +14,9 @@ const seed = async () => {
     await sequelize.authenticate();
     console.log('Database connected.');
 
+    await sequelize.sync({ force: false });
+    console.log('Database synchronized.');
+
     // Fix legacy schema issue
     try {
       await sequelize.query("ALTER TABLE Robots MODIFY COLUMN weightClass VARCHAR(255) NULL");
