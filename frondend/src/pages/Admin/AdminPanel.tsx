@@ -20,7 +20,6 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
-
 interface Institution {
   id: string;
   name: string;
@@ -118,6 +117,8 @@ const AdminPanel = () => {
   const [formData, setFormData] = useState<any>({});
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedRobots, setSelectedRobots] = useState<string[]>([]);
+  const URL_API = import.meta.env.VITE_API_URL;
+  const URL_HOST = import.meta.env.VITE_API_HOST;
   const [data, setData] = useState<{
     institutions: Institution[],
     robots: Robot[],
@@ -136,15 +137,14 @@ const AdminPanel = () => {
 
   const fetchData = async () => {
     try {
-      const hostname = window.location.hostname;
       const authHeader = { 'Authorization': `Bearer ${token}` };
       const [inst, robots, users, matches, sponsors, regs] = await Promise.all([
-        fetch(`http://${hostname}:3001/api/institutions`, { headers: authHeader }).then(res => res.json()),
-        fetch(`http://${hostname}:3001/api/robots`, { headers: authHeader }).then(res => res.json()),
-        fetch(`http://${hostname}:3001/api/users`, { headers: authHeader }).then(res => res.json()),
-        fetch(`http://${hostname}:3001/api/matches`, { headers: authHeader }).then(res => res.json()),
-        fetch(`http://${hostname}:3001/api/sponsors`, { headers: authHeader }).then(res => res.json()),
-        fetch(`http://${hostname}:3001/api/registrations`, { headers: authHeader }).then(res => res.json())
+        fetch(`${URL_API}/institutions`, { headers: authHeader }).then(res => res.json()),
+        fetch(`${URL_API}/robots`, { headers: authHeader }).then(res => res.json()),
+        fetch(`${URL_API}/users`, { headers: authHeader }).then(res => res.json()),
+        fetch(`${URL_API}/matches`, { headers: authHeader }).then(res => res.json()),
+        fetch(`${URL_API}/sponsors`, { headers: authHeader }).then(res => res.json()),
+        fetch(`${URL_API}/registrations`, { headers: authHeader }).then(res => res.json())
       ]);
       setData({
         institutions: inst,
@@ -165,13 +165,12 @@ const AdminPanel = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const hostname = window.location.hostname;
-    let endpoint = `/api/${activeTab}`;
+    let endpoint = `/${activeTab}`;
     const method = isEditMode ? 'PUT' : 'POST';
     if (isEditMode) endpoint += `/${editingId}`;
 
     try {
-      const response = await fetch(`http://${hostname}:3001${endpoint}`, {
+      const response = await fetch(`${URL_API}${endpoint}`, {
         method,
         headers: {
           'Content-Type': 'application/json',
@@ -202,11 +201,10 @@ const AdminPanel = () => {
 
   const handleDelete = async (id: string) => {
     if (!confirm('¿Estás seguro de eliminar este registro?')) return;
-    const hostname = window.location.hostname;
-    let endpoint = `/api/${activeTab}/${id}`;
+    let endpoint = `/${activeTab}/${id}`;
 
     try {
-      const response = await fetch(`http://${hostname}:3001${endpoint}`, {
+      const response = await fetch(`${URL_API}${endpoint}`, {
         method: 'DELETE',
         headers: { 'Authorization': `Bearer ${token}` }
       });
@@ -218,9 +216,8 @@ const AdminPanel = () => {
   };
 
   const handleToggleDashboard = async (match: Match) => {
-    const hostname = window.location.hostname;
     try {
-      const resp = await fetch(`http://${hostname}:3001/api/matches/${match.id}`, {
+      const resp = await fetch(`${URL_API}/matches/${match.id}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -235,9 +232,8 @@ const AdminPanel = () => {
   };
 
   const handleUpdatePaymentStatus = async (reg: Registration, status: 'APPROVED' | 'REJECTED' | 'PENDING') => {
-    const hostname = window.location.hostname;
     try {
-      const resp = await fetch(`http://${hostname}:3001/api/registrations/${reg.id}`, {
+      const resp = await fetch(`${URL_API}/registrations/${reg.id}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -256,9 +252,8 @@ const AdminPanel = () => {
       alert('Completa Nivel, Categoría, Árbitro y selecciona al menos 2 robots');
       return;
     }
-    const hostname = window.location.hostname;
     try {
-      const resp = await fetch(`http://${hostname}:3001/api/brackets/generate`, {
+      const resp = await fetch(`${URL_API}/brackets/generate`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -547,7 +542,7 @@ const AdminPanel = () => {
                     <span className="text-xs font-black uppercase text-neutral-400">Comprobante</span>
                     {reg.payment_proof_filename ? (
                       <a
-                        href={`http://${window.location.hostname}:3001/uploads/${reg.payment_proof_filename}`}
+                        href={`${URL_HOST}/uploads/${reg.payment_proof_filename}`}
                         target="_blank"
                         rel="noopener noreferrer"
                         className="text-brand font-bold text-sm hover:underline"

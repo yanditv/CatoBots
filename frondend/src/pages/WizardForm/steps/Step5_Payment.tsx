@@ -26,7 +26,7 @@ export default function Step5_Payment({ data, updateData, handleNext, handleBack
             formData.append('file', file);
 
             try {
-                const res = await fetch('/api/registrations/upload', {
+                const res = await fetch('/registrations/upload', {
                     method: 'POST',
                     body: formData
                 });

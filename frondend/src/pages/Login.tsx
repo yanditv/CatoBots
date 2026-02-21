@@ -9,7 +9,9 @@ const Login = () => {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-  
+  const URL_API = import.meta.env.VITE_API_URL;
+const URL_HOST = import.meta.env.VITE_API_HOST;
+
   const { login } = useAuth();
   const navigate = useNavigate();
 
@@ -19,7 +21,7 @@ const Login = () => {
     setError('');
 
     try {
-      const response = await fetch(`http://${window.location.hostname}:3001/api/auth/login`, {
+      const response = await fetch(`${URL_API}/auth/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ username, password }),
@@ -39,7 +41,7 @@ const Login = () => {
 
   return (
     <div className="min-h-screen bg-neutral-50 flex items-center justify-center p-6">
-      <motion.div 
+      <motion.div
         initial={{ scale: 0.9, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
         className="w-full max-w-md bg-white border border-neutral-100 rounded-[3rem] p-12 shadow-2xl shadow-neutral-200/60 relative overflow-hidden"
@@ -84,7 +86,7 @@ const Login = () => {
           </div>
 
           {error && (
-            <motion.p 
+            <motion.p
               initial={{ opacity: 0, y: -5 }}
               animate={{ opacity: 1, y: 0 }}
               className="text-red-600 text-[11px] font-black text-center bg-red-50 py-3 rounded-2xl border border-red-100"
@@ -104,9 +106,9 @@ const Login = () => {
         </form>
 
         <div className="mt-12 pt-8 border-t border-neutral-50 flex justify-center gap-4">
-           <div className="w-2 h-2 rounded-full bg-neutral-400" />
-           <div className="w-2 h-2 rounded-full bg-neutral-400" />
-           <div className="w-2 h-2 rounded-full bg-neutral-400" />
+          <div className="w-2 h-2 rounded-full bg-neutral-400" />
+          <div className="w-2 h-2 rounded-full bg-neutral-400" />
+          <div className="w-2 h-2 rounded-full bg-neutral-400" />
         </div>
       </motion.div>
     </div>

@@ -2,6 +2,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { Trophy, Pin, Activity } from 'lucide-react'
 import { useState, useEffect } from 'react'
 import type { MatchState } from '../App'
+import process from 'process';
 
 interface MatchCardProps {
   match: MatchState;
@@ -189,7 +190,7 @@ const Dashboard = ({ matches }: { matches: MatchState[] }) => {
   const [sponsors, setSponsors] = useState<any[]>([]);
 
   useEffect(() => {
-    fetch(`http://${window.location.hostname}:3001/api/sponsors`)
+    fetch(`${process.env.API_URL}/sponsors`)
       .then(res => res.json())
       .then(setSponsors)
       .catch(console.error);

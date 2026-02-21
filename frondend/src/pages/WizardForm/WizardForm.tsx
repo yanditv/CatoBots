@@ -97,7 +97,7 @@ export default function WizardForm() {
         if (!googleUser?.email) return;
 
         try {
-            await fetch('/api/registrations/sync', {
+            await fetch('/registrations/sync', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
@@ -129,7 +129,7 @@ export default function WizardForm() {
 
     const handleSubmit = async () => {
         try {
-            await fetch('/api/registrations/submit', {
+            await fetch('/registrations/submit', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ email: googleUser?.email })
