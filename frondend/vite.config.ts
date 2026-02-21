@@ -13,13 +13,19 @@ export default defineConfig({
     strictPort: true,
     allowedHosts: ['catobots.teobu.com', 'localhost', '.teobu.com'],
     proxy: {
-      '/api': 'http://server:3001',
+      '/api': {
+        target: 'http://server:3001',
+        changeOrigin: true,
+      },
       '/socket.io': {
         target: 'http://server:3001',
         ws: true,
+        changeOrigin: true,
       },
-      '/uploads': 'http://server:3001',
-      '/registrations': 'http://server:3001'
+      '/uploads': {
+        target: 'http://server:3001',
+        changeOrigin: true,
+      }
     }
   },
 })
