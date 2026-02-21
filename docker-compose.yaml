@@ -57,6 +57,8 @@ services:
       context: .
       dockerfile: frondend/Dockerfile
     restart: always
+    environment:
+      VITE_API_TARGET: http://catobots_server:3001
     ports:
       - "5173:5173"
     depends_on:
