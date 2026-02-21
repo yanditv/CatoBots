@@ -1,0 +1,13 @@
+{
+  "name": "catobots",
+  "version": "1.0.0",
+  "private": true,
+  "workspaces": [
+    "server",
+    "frondend"
+  ],
+  "scripts": {
+    "dev": "echo 'Use docker-compose up'",
+    "build": "npm run build --workspaces --if-present"
+  }
+}

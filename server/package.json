@@ -4,8 +4,9 @@
   "main": "index.ts",
   "scripts": {
     "dev": "nodemon index.ts",
-    "start": "ts-node index.ts",
-    "build": "tsc"
+    "start": "node dist/index.js",
+    "build": "tsc",
+    "seed": "ts-node seed-bracket.ts"
   },
   "dependencies": {
     "bcryptjs": "^3.0.3",
@@ -17,7 +18,9 @@
     "mysql2": "^3.16.3",
     "nodemailer": "^8.0.1",
     "sequelize": "^6.37.7",
-    "socket.io": "^4.8.1"
+    "socket.io": "^4.8.1",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.7.3"
   },
   "devDependencies": {
     "@types/bcryptjs": "^2.4.6",
@@ -28,8 +31,6 @@
     "@types/node": "^22.19.9",
     "@types/nodemailer": "^7.0.10",
     "@types/sequelize": "^4.28.20",
-    "nodemon": "^3.1.9",
-    "ts-node": "^10.9.2",
-    "typescript": "^5.7.3"
+    "nodemon": "^3.1.9"
   }
 }

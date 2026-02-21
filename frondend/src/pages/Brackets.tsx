@@ -32,8 +32,7 @@ const Brackets = () => {
   const [selectedCategory, setSelectedCategory] = useState<string>('');
 
   useEffect(() => {
-    const hostname = import.meta.env.VITE_API_HOST;
-    socket = io(`${hostname}`);
+    socket = io();
     socket.on('all_matches', (data: Match[]) => setMatches(data));
     return () => { socket.disconnect(); };
   }, []);

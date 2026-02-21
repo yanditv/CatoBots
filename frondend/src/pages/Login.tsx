@@ -9,8 +9,6 @@ const Login = () => {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-  const URL_API = import.meta.env.VITE_API_URL;
-const URL_HOST = import.meta.env.VITE_API_HOST;
 
   const { login } = useAuth();
   const navigate = useNavigate();
@@ -21,7 +19,7 @@ const URL_HOST = import.meta.env.VITE_API_HOST;
     setError('');
 
     try {
-      const response = await fetch(`${URL_API}/auth/login`, {
+      const response = await fetch('/api/auth/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ username, password }),
