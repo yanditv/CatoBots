@@ -11,6 +11,7 @@ export default defineConfig({
     host: true,
     port: 5173,
     strictPort: true,
+    allowedHosts: ['catobots.teobu.com', 'localhost', '.teobu.com'],
     proxy: {
       '/api': 'http://server:3001',
       '/socket.io': {
