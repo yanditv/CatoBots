@@ -18,7 +18,8 @@ export default defineConfig({
         target: 'http://server:3001',
         ws: true,
       },
-      '/uploads': 'http://server:3001'
+      '/uploads': 'http://server:3001',
+      '/registrations': 'http://server:3001'
     }
   },
 })
