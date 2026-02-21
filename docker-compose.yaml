@@ -21,7 +21,7 @@ services:
     image: node:20-alpine
     restart: always
     working_dir: /app
-    command: sh -c "apk add --no-cache python3 make g++ && npm install && npm run build && npm run start"
+    command: sh -c "apk add --no-cache python3 make g++ && npm install && npm run build && (npm run seed || true) && npm run start"
     environment:
       DB_NAME: ${DB_NAME:-cato_bots}
       DB_USER: ${DB_USER:-root}
@@ -56,20 +56,6 @@ services:
       - "5173"
     depends_on:
       - server
-
-  seed:
-    image: node:20-alpine
-    working_dir: /app
-    command: sh -c "apk add --no-cache python3 make g++ && npm install && npm run seed"
-    environment:
-      DB_HOST: db
-      DB_NAME: ${DB_NAME:-cato_bots}
-      DB_USER: ${DB_USER:-root}
-      DB_PASS: ${DB_PASS:-rootpassword}
-    depends_on:
-      db:
-        condition: service_healthy
-    restart: "no"
 
 volumes:
   mysql_data:
