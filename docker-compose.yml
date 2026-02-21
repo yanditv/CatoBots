@@ -1,0 +1,82 @@
+version: '3.8'
+
+services:
+  db:
+    image: mysql:8.0
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: ${DB_PASS:-rootpassword}
+      MYSQL_DATABASE: ${DB_NAME:-cato_bots}
+    volumes:
+      - mysql_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p${DB_PASS:-rootpassword}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - app-network
+
+  server:
+    build:
+      context: ./server
+      dockerfile: Dockerfile
+    environment:
+      DB_NAME: ${DB_NAME:-cato_bots}
+      DB_USER: ${DB_USER:-root}
+      DB_PASS: ${DB_PASS:-rootpassword}
+      DB_HOST: ${DB_HOST:-db}
+      SMTP_HOST: ${SMTP_HOST:-smtp.gmail.com}
+      SMTP_PORT: ${SMTP_PORT:-465}
+      SMTP_SECURE: ${SMTP_SECURE:-true}
+      SMTP_USER: ${SMTP_USER:-}
+      SMTP_PASS: ${SMTP_PASS:-}
+      PORT: 3001
+    depends_on:
+      db:
+        condition: service_healthy
+    volumes:
+      - server_uploads:/app/uploads
+    networks:
+      - app-network
+
+  frontend:
+    build:
+      context: ./frondend
+      dockerfile: Dockerfile
+    ports:
+      - "80:80"
+    environment:
+      VITE_API_URL: ${API_URL:-http://localhost:3001/api}
+      VITE_API_HOST: ${API_HOST:-http://localhost:3001}
+    depends_on:
+      - server
+    networks:
+      - app-network
+
+  seed:
+    build:
+      context: ./server
+      dockerfile: Dockerfile
+    command: sh -c "echo 'Waiting for DB...' && sleep 15 && npm run seed"
+    environment:
+      DB_HOST: db
+      DB_NAME: ${DB_NAME:-cato_bots}
+      DB_USER: ${DB_USER:-root}
+      DB_PASS: ${DB_PASS:-rootpassword}
+    depends_on:
+      db:
+        condition: service_healthy
+      server:
+        condition: service_started
+    restart: "no"
+    networks:
+      - app-network
+
+networks:
+  app-network:
+    driver: bridge
+
+volumes:
+  mysql_data:
+  server_uploads:
