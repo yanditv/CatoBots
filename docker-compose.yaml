@@ -49,8 +49,6 @@ services:
       - "3001"
     networks:
       - app-network
-    extra_hosts:
-      - "db:host-gateway"
 
   frontend:
     container_name: catobots_frontend
