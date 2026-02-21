@@ -45,14 +45,11 @@ const ProtectedRoute = ({ children, role }: { children: React.ReactNode, role?: 
   return children;
 };
 
-const URL_HOST = import.meta.env.VITE_API_HOST;
-
 function AppContent() {
   const [matches, setMatches] = useState<MatchState[]>([]);
 
   useEffect(() => {
-    // Connect to backend with dynamic host
-    socket = io(`${URL_HOST}`);
+    socket = io();
 
     socket.on('all_matches', (allMatches: MatchState[]) => {
       setMatches(allMatches);

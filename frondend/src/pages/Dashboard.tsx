@@ -184,9 +184,9 @@ const MatchCard = ({ match, isPinned, onPin }: MatchCardProps) => {
 const Dashboard = ({ matches }: { matches: MatchState[] }) => {
   const [pinnedMatchId, setPinnedMatchId] = useState<string | null>(null);
   const [sponsors, setSponsors] = useState<any[]>([]);
-  const API_URL = import.meta.env.VITE_API_URL;
+  
   useEffect(() => {
-    fetch(`${API_URL}/sponsors`)
+    fetch('/api/sponsors')
       .then(res => res.json())
       .then(setSponsors)
       .catch(console.error);

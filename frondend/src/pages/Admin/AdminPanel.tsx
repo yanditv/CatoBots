@@ -117,8 +117,6 @@ const AdminPanel = () => {
   const [formData, setFormData] = useState<any>({});
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedRobots, setSelectedRobots] = useState<string[]>([]);
-  const URL_API = import.meta.env.VITE_API_URL;
-  const URL_HOST = import.meta.env.VITE_API_HOST;
   const [data, setData] = useState<{
     institutions: Institution[],
     robots: Robot[],
@@ -139,12 +137,12 @@ const AdminPanel = () => {
     try {
       const authHeader = { 'Authorization': `Bearer ${token}` };
       const [inst, robots, users, matches, sponsors, regs] = await Promise.all([
-        fetch(`${URL_API}/institutions`, { headers: authHeader }).then(res => res.json()),
-        fetch(`${URL_API}/robots`, { headers: authHeader }).then(res => res.json()),
-        fetch(`${URL_API}/users`, { headers: authHeader }).then(res => res.json()),
-        fetch(`${URL_API}/matches`, { headers: authHeader }).then(res => res.json()),
-        fetch(`${URL_API}/sponsors`, { headers: authHeader }).then(res => res.json()),
-        fetch(`${URL_API}/registrations`, { headers: authHeader }).then(res => res.json())
+        fetch('/api/institutions', { headers: authHeader }).then(res => res.json()),
+        fetch('/api/robots', { headers: authHeader }).then(res => res.json()),
+        fetch('/api/users', { headers: authHeader }).then(res => res.json()),
+        fetch('/api/matches', { headers: authHeader }).then(res => res.json()),
+        fetch('/api/sponsors', { headers: authHeader }).then(res => res.json()),
+        fetch('/api/registrations', { headers: authHeader }).then(res => res.json())
       ]);
       setData({
         institutions: inst,
@@ -170,7 +168,7 @@ const AdminPanel = () => {
     if (isEditMode) endpoint += `/${editingId}`;
 
     try {
-      const response = await fetch(`${URL_API}${endpoint}`, {
+      const response = await fetch(`/api${endpoint}`, {
         method,
         headers: {
           'Content-Type': 'application/json',
@@ -204,7 +202,7 @@ const AdminPanel = () => {
     let endpoint = `/${activeTab}/${id}`;
 
     try {
-      const response = await fetch(`${URL_API}${endpoint}`, {
+      const response = await fetch(`/api${endpoint}`, {
         method: 'DELETE',
         headers: { 'Authorization': `Bearer ${token}` }
       });
@@ -217,7 +215,7 @@ const AdminPanel = () => {
 
   const handleToggleDashboard = async (match: Match) => {
     try {
-      const resp = await fetch(`${URL_API}/matches/${match.id}`, {
+      const resp = await fetch(`/api/matches/${match.id}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -233,7 +231,7 @@ const AdminPanel = () => {
 
   const handleUpdatePaymentStatus = async (reg: Registration, status: 'APPROVED' | 'REJECTED' | 'PENDING') => {
     try {
-      const resp = await fetch(`${URL_API}/registrations/${reg.id}`, {
+      const resp = await fetch(`/api/registrations/${reg.id}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -253,7 +251,7 @@ const AdminPanel = () => {
       return;
     }
     try {
-      const resp = await fetch(`${URL_API}/brackets/generate`, {
+      const resp = await fetch('/api/brackets/generate', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -542,7 +540,7 @@ const AdminPanel = () => {
                     <span className="text-xs font-black uppercase text-neutral-400">Comprobante</span>
                     {reg.payment_proof_filename ? (
                       <a
-                        href={`${URL_HOST}/uploads/${reg.payment_proof_filename}`}
+                        href={`/uploads/${reg.payment_proof_filename}`}
                         target="_blank"
                         rel="noopener noreferrer"
                         className="text-brand font-bold text-sm hover:underline"

@@ -2,7 +2,6 @@ import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import tailwindcss from '@tailwindcss/vite'
 
-// https://vite.dev/config/
 export default defineConfig({
   plugins: [
     react(),
@@ -10,15 +9,15 @@ export default defineConfig({
   ],
   server: {
     host: true,
-    port: 3000,
+    port: 5173,
     strictPort: true,
     proxy: {
-      '/api': 'http://localhost:3001',
+      '/api': 'http://server:3001',
       '/socket.io': {
-        target: 'http://localhost:3001',
+        target: 'http://server:3001',
         ws: true,
       },
-      '/uploads': 'http://localhost:3001'
+      '/uploads': 'http://server:3001'
     }
   },
 })
