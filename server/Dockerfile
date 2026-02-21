@@ -12,6 +12,8 @@ COPY server/ ./
 
 RUN npm run build
 
+RUN rm -f .env .env.*
+
 EXPOSE 3001
 
 CMD ["sh", "-c", "echo \"DB_HOST: $DB_HOST\" && sleep 30 && (npm run seed || true) && npm run start"]
