@@ -11,12 +11,36 @@ import { Institution } from './models/Institution';
 import { Robot } from './models/Robot';
 import { Match } from './models/Match';
 import { Sponsor } from './models/Sponsor';
+import { Registration } from './models/Registration';
+import multer from 'multer';
+import path from 'path';
+import fs from 'fs';
+import { sendWelcomeEmail, sendStatusEmail } from './utils/emailService';
 
 dotenv.config();
 
 const app = express();
 app.use(cors());
 app.use(express.json());
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+
+// Ensure uploads directory exists
+const uploadDir = path.join(__dirname, 'uploads');
+if (!fs.existsSync(uploadDir)) {
+  fs.mkdirSync(uploadDir);
+}
+
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    cb(null, uploadDir);
+  },
+  filename: (req, file, cb) => {
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+    cb(null, uniqueSuffix + path.extname(file.originalname));
+  }
+});
+
+const upload = multer({ storage: storage });
 
 const httpServer = createServer(app);
 const io = new Server(httpServer, {
@@ -82,19 +106,19 @@ app.delete('/api/institutions/:id', authenticateJWT, isAdmin, async (req, res) =
 app.get('/api/robots', async (req, res) => res.json(await Robot.findAll({ include: [Institution] })));
 app.post('/api/robots', authenticateJWT, isAdmin, async (req, res) => {
   const { institutionId, category, level } = req.body;
-  
+
   // Restriction: Max 3 robots per category per institution
-  const count = await Robot.count({ 
-    where: { 
-      institutionId, 
+  const count = await Robot.count({
+    where: {
+      institutionId,
       category,
       level
-    } 
+    }
   });
 
   if (count >= 3) {
-    return res.status(400).send({ 
-      message: `La institución ya tiene el máximo de 3 robots en la categoría ${category} (${level})` 
+    return res.status(400).send({
+      message: `La institución ya tiene el máximo de 3 robots en la categoría ${category} (${level})`
     });
   }
 
@@ -171,12 +195,12 @@ app.post('/api/brackets/generate', authenticateJWT, isAdmin, async (req, res) =>
 
   // Shuffle robots for fair seeding
   const shuffled = [...robotIds].sort(() => Math.random() - 0.5);
-  
+
   // Calculate depth
   const numRobots = shuffled.length;
   const powerOf2 = Math.ceil(Math.log2(numRobots));
   const totalSlots = Math.pow(2, powerOf2);
-  
+
   // Fill with nulls if not power of 2
   const filledRobots = [...shuffled];
   while (filledRobots.length < totalSlots) filledRobots.push(null as any);
@@ -190,11 +214,11 @@ app.post('/api/brackets/generate', authenticateJWT, isAdmin, async (req, res) =>
 
     // We build from the bottom up? No, top down is easier to link nextMatchId
     // Let's create the final first, then semis, then quarters...
-    
+
     const roundNames = ['FINAL', 'SEMIS', 'QUARTERS', 'OCTAVOS', '16VOS', '32VOS'];
-    
+
     let nextRoundMatches: any[] = [];
-    
+
     // Total matches to create: totalSlots - 1
     // Loop from level 0 (Final) to level powerOf2 - 1
     for (let level = 0; level < powerOf2; level++) {
@@ -216,7 +240,7 @@ app.post('/api/brackets/generate', authenticateJWT, isAdmin, async (req, res) =>
         });
         matchesInThisRound.push(match);
       }
-      
+
       rounds.push(matchesInThisRound);
       nextRoundMatches = matchesInThisRound;
     }
@@ -236,6 +260,98 @@ app.post('/api/brackets/generate', authenticateJWT, isAdmin, async (req, res) =>
     console.error('Bracket gen error:', err);
     res.status(500).send({ message: 'Error generating bracket' });
   }
+});
+
+// --- Registration Routes (Public/Drafts) ---
+
+app.post('/api/registrations/sync', async (req, res) => {
+  const { email, step, data, paymentProof } = req.body;
+
+  if (!email) return res.status(400).send({ message: 'Email required' });
+
+  try {
+    let registration = await Registration.findOne({ where: { google_email: email, status: 'DRAFT' } });
+
+    if (registration) {
+      registration.step = step;
+      registration.data = data;
+      if (paymentProof) registration.payment_proof_filename = paymentProof;
+      await registration.save();
+    } else {
+      registration = await Registration.create({
+        google_email: email,
+        step,
+        data,
+        payment_proof_filename: paymentProof || null
+      });
+    }
+
+    res.json({ success: true, registration });
+  } catch (err) {
+    console.error('Sync error:', err);
+    res.status(500).send({ message: 'Error syncing draft' });
+  }
+});
+
+app.get('/api/registrations/draft', async (req, res) => {
+  const { email } = req.query;
+  if (!email) return res.status(400).send({ message: 'Email required' });
+
+  const registration = await Registration.findOne({ where: { google_email: email as string, status: 'DRAFT' } });
+  res.json({ registration });
+});
+
+app.post('/api/registrations/upload', upload.single('file'), (req, res) => {
+  if (!req.file) return res.status(400).send({ message: 'No file uploaded' });
+
+  // Return the filename (served via /uploads)
+  res.json({ filename: req.file.filename });
+});
+
+app.post('/api/registrations/submit', async (req, res) => {
+  const { email } = req.body;
+  if (!email) return res.status(400).send({ message: 'Email required' });
+
+  const registration = await Registration.findOne({ where: { google_email: email, status: 'DRAFT' } });
+  if (!registration) return res.status(404).send({ message: 'No draft found' });
+
+  registration.status = 'SUBMITTED';
+  await registration.save();
+
+  // Trigger welcome email
+  const targetEmail = registration.data?.email || email;
+  await sendWelcomeEmail(targetEmail, registration.data);
+
+  res.json({ success: true });
+});
+
+// Admin Registration Routes
+app.get('/api/registrations', authenticateJWT, isAdmin, async (req, res) => {
+  // Return all SUBMITTED registrations
+  const registrations = await Registration.findAll({
+    where: { status: 'SUBMITTED' },
+    order: [['createdAt', 'DESC']]
+  });
+  res.json(registrations);
+});
+
+app.put('/api/registrations/:id', authenticateJWT, isAdmin, async (req, res) => {
+  const { paymentStatus } = req.body;
+
+  let isPaid = false;
+  if (paymentStatus === 'APPROVED') isPaid = true;
+  // If REJECTED or PENDING, isPaid remains false (or becomes false)
+
+  await Registration.update({ isPaid, paymentStatus }, { where: { id: req.params.id } });
+
+  const updatedRegistration = await Registration.findByPk(req.params.id);
+
+  if (updatedRegistration && (paymentStatus === 'APPROVED' || paymentStatus === 'REJECTED')) {
+    const targetEmail = updatedRegistration.data?.email || updatedRegistration.google_email;
+    await sendStatusEmail(targetEmail, paymentStatus);
+  }
+
+  res.json(updatedRegistration);
 });
 
 // --- Socket.io Real-time Logic ---
@@ -305,7 +421,7 @@ io.on('connection', (socket) => {
         let winnerId = null;
         if (match.scoreA > match.scoreB) winnerId = match.robotAId;
         else if (match.scoreB > match.scoreA) winnerId = match.robotBId;
-        
+
         match.winnerId = winnerId as any;
 
         // Auto-advance logic
@@ -371,6 +487,12 @@ sequelize.sync().then(async () => {
     const iFields = instCols.map((c: any) => c.Field);
     if (!iFields.includes('contactEmail')) await sequelize.query("ALTER TABLE Institutions ADD COLUMN contactEmail VARCHAR(255)");
     if (!iFields.includes('isPaid')) await sequelize.query("ALTER TABLE Institutions ADD COLUMN isPaid BOOLEAN DEFAULT false");
+
+    // Migration for Registrations
+    const [regCols]: any = await sequelize.query("SHOW COLUMNS FROM Registrations");
+    const regFields = regCols.map((c: any) => c.Field);
+    if (!regFields.includes('isPaid')) await sequelize.query("ALTER TABLE Registrations ADD COLUMN isPaid BOOLEAN DEFAULT false");
+    if (!regFields.includes('paymentStatus')) await sequelize.query("ALTER TABLE Registrations ADD COLUMN paymentStatus ENUM('PENDING', 'APPROVED', 'REJECTED') DEFAULT 'PENDING'");
 
   } catch (err) {
     console.log('Migration info: Columns check finished.');
