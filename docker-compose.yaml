@@ -3,8 +3,6 @@ version: '3.8'
 services:
   db:
     image: mysql:8.0
-    container_name: catobots_db
-    hostname: db
     restart: always
     environment:
       MYSQL_ROOT_PASSWORD: ${DB_PASS:-rootpassword}
@@ -16,14 +14,8 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
-    expose:
-      - "3306"
-    networks:
-      - app-network
 
   server:
-    container_name: catobots_server
-    hostname: server
     build:
       context: .
       dockerfile: server/Dockerfile
@@ -32,7 +24,7 @@ services:
       DB_NAME: ${DB_NAME:-cato_bots}
       DB_USER: ${DB_USER:-root}
       DB_PASS: ${DB_PASS:-rootpassword}
-      DB_HOST: ${DB_HOST:-db}
+      DB_HOST: db
       SMTP_HOST: ${SMTP_HOST:-smtp.gmail.com}
       SMTP_PORT: ${SMTP_PORT:-465}
       SMTP_SECURE: ${SMTP_SECURE:-true}
@@ -45,30 +37,20 @@ services:
         condition: service_healthy
     volumes:
       - server_uploads:/app/uploads
-    expose:
-      - "3001"
-    networks:
-      - app-network
 
   frontend:
-    container_name: catobots_frontend
-    hostname: frontend
     build:
       context: .
       dockerfile: frondend/Dockerfile
+      args:
+        VITE_API_TARGET: http://server:3001
     restart: always
     environment:
-      VITE_API_TARGET: http://catobots_server:3001
+      VITE_API_TARGET: http://server:3001
     ports:
       - "5173:5173"
     depends_on:
       - server
-    networks:
-      - app-network
-
-networks:
-  app-network:
-    driver: bridge
 
 volumes:
   mysql_data:

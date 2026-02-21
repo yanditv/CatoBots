@@ -1,5 +1,8 @@
 FROM node:20-alpine
 
+ARG VITE_API_TARGET=http://localhost:3001
+ENV VITE_API_TARGET=$VITE_API_TARGET
+
 WORKDIR /app
 
 RUN apk add --no-cache python3 make g++
