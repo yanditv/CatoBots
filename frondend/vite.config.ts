@@ -2,8 +2,6 @@ import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import tailwindcss from '@tailwindcss/vite'
 
-const apiTarget = process.env.VITE_API_TARGET || 'http://localhost:3001'
-
 export default defineConfig({
   plugins: [
     react(),
@@ -16,16 +14,16 @@ export default defineConfig({
     allowedHosts: ['catobots.teobu.com', 'localhost', '.teobu.com'],
     proxy: {
       '/api': {
-        target: apiTarget,
+        target: process.env.VITE_API_TARGET || 'http://server:3001',
         changeOrigin: true,
       },
       '/socket.io': {
-        target: apiTarget,
+        target: process.env.VITE_API_TARGET || 'http://server:3001',
         ws: true,
         changeOrigin: true,
       },
       '/uploads': {
-        target: apiTarget,
+        target: process.env.VITE_API_TARGET || 'http://server:3001',
         changeOrigin: true,
       }
     }
