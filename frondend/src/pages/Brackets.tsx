@@ -32,7 +32,10 @@ const Brackets = () => {
   const [selectedCategory, setSelectedCategory] = useState<string>('');
 
   useEffect(() => {
-    socket = io();
+    const apiUrl = import.meta.env.VITE_API_TARGET || ''
+    socket = io(apiUrl, {
+      transports: ['polling', 'websocket'],
+    })
     socket.on('all_matches', (data: Match[]) => setMatches(data));
     return () => { socket.disconnect(); };
   }, []);

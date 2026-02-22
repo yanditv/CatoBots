@@ -49,7 +49,10 @@ function AppContent() {
   const [matches, setMatches] = useState<MatchState[]>([]);
 
   useEffect(() => {
-    socket = io();
+    const apiUrl = import.meta.env.VITE_API_TARGET || ''
+    socket = io(apiUrl, {
+      transports: ['polling', 'websocket'],
+    })
 
     socket.on('all_matches', (allMatches: MatchState[]) => {
       setMatches(allMatches);
