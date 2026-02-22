@@ -13,17 +13,8 @@ export default defineConfig({
     strictPort: true,
     allowedHosts: ['catobots.teobu.com', 'localhost', '.teobu.com'],
     proxy: {
-      '/api': {
-        target: process.env.VITE_API_TARGET || 'http://server:3001',
-        changeOrigin: true,
-      },
-      '/socket.io': {
-        target: process.env.VITE_API_TARGET || 'http://server:3001',
-        ws: true,
-        changeOrigin: true,
-      },
       '/uploads': {
-        target: process.env.VITE_API_TARGET || 'http://server:3001',
+        target: 'http://localhost:3001',
         changeOrigin: true,
       }
     }

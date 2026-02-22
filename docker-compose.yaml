@@ -7,6 +7,8 @@ services:
     environment:
       MYSQL_ROOT_PASSWORD: ${DB_PASS:-rootpassword}
       MYSQL_DATABASE: ${DB_NAME:-cato_bots}
+    ports:
+      - "3306:3306"
     volumes:
       - mysql_data:/var/lib/mysql
     healthcheck:
@@ -37,16 +39,18 @@ services:
         condition: service_healthy
     volumes:
       - server_uploads:/app/uploads
+    ports:
+      - "3001:3001"
 
   frontend:
     build:
       context: .
       dockerfile: frondend/Dockerfile
       args:
-        VITE_API_TARGET: http://server:3001
+        VITE_API_URL: ${API_URL:-http://localhost:3001}
     restart: always
     environment:
-      VITE_API_TARGET: http://server:3001
+      VITE_API_URL: ${API_URL:-http://localhost:3001}
     ports:
       - "5173:5173"
     depends_on:

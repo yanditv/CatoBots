@@ -23,8 +23,30 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
+// Enhanced logging middleware
 app.use((req, res, next) => {
-  console.log(`${new Date().toISOString()} ${req.method} ${req.url}`);
+  const start = Date.now();
+  
+  // Log request
+  console.log(`\n========== ${new Date().toISOString()} ==========`);
+  console.log(`REQUEST: ${req.method} ${req.url}`);
+  console.log(`HEADERS:`, JSON.stringify(req.headers, null, 2));
+  
+  if (req.body && Object.keys(req.body).length > 0) {
+    console.log(`BODY:`, JSON.stringify(req.body, null, 2));
+  }
+  
+  // Log response
+  const originalSend = res.send;
+  res.send = function (data: any) {
+    console.log(`RESPONSE STATUS: ${res.statusCode}`);
+    if (typeof data === 'string' && data.length < 500) {
+      console.log(`RESPONSE DATA:`, data);
+    }
+    console.log(`DURATION: ${Date.now() - start}ms`);
+    return originalSend.call(this, data);
+  };
+  
   next();
 });
 
@@ -52,8 +74,11 @@ const httpServer = createServer(app);
 const io = new Server(httpServer, {
   cors: {
     origin: "*",
-    methods: ["GET", "POST"]
-  }
+    methods: ["GET", "POST"],
+    credentials: true
+  },
+  allowEIO3: true,
+  transports: ['polling', 'websocket']
 });
 
 const JWT_SECRET = process.env.JWT_SECRET || 'robot-super-secret-key';
@@ -62,13 +87,20 @@ const JWT_SECRET = process.env.JWT_SECRET || 'robot-super-secret-key';
 
 const authenticateJWT = (req: any, res: any, next: any) => {
   const token = req.headers.authorization?.split(' ')[1];
+  console.log(`[AUTH] Token received:`, token ? `${token.substring(0, 20)}...` : 'NO TOKEN');
+  
   if (token) {
     jwt.verify(token, JWT_SECRET, (err: any, user: any) => {
-      if (err) return res.sendStatus(403);
+      if (err) {
+        console.log(`[AUTH] Token verification failed:`, err.message);
+        return res.sendStatus(403);
+      }
+      console.log(`[AUTH] User authenticated:`, user);
       req.user = user;
       next();
     });
   } else {
+    console.log(`[AUTH] No token provided`);
     res.sendStatus(401);
   }
 };
@@ -95,7 +127,20 @@ app.post('/api/auth/login', async (req, res) => {
 
 app.get('/api/institutions', async (req, res) => res.json(await Institution.findAll()));
 app.post('/api/institutions', authenticateJWT, isAdmin, async (req, res) => {
-  res.json(await Institution.create(req.body));
+  console.log('POST /api/institutions body:', req.body);
+  const { name, contactEmail, isPaid, members } = req.body;
+  if (!name) {
+    console.log('Error: name is missing');
+    return res.status(400).json({ message: 'El nombre de la institución es requerido' });
+  }
+  try {
+    const institution = await Institution.create({ name, contactEmail, isPaid, members });
+    console.log('Created institution:', institution.id);
+    res.json(institution);
+  } catch (err: any) {
+    console.error('Error creating institution:', err.message);
+    res.status(500).json({ message: err.message });
+  }
 });
 
 app.put('/api/institutions/:id', authenticateJWT, isAdmin, async (req, res) => {
@@ -273,6 +318,8 @@ app.post('/api/brackets/generate', authenticateJWT, isAdmin, async (req, res) =>
 app.post('/api/registrations/sync', async (req, res) => {
   const { email, step, data, paymentProof } = req.body;
 
+  console.log('Sync request:', { email, step, hasData: !!data, hasPaymentProof: !!paymentProof });
+
   if (!email) return res.status(400).send({ message: 'Email required' });
 
   try {
@@ -283,6 +330,7 @@ app.post('/api/registrations/sync', async (req, res) => {
       registration.data = data;
       if (paymentProof) registration.payment_proof_filename = paymentProof;
       await registration.save();
+      console.log('Updated draft:', registration.id);
     } else {
       registration = await Registration.create({
         google_email: email,
@@ -290,6 +338,7 @@ app.post('/api/registrations/sync', async (req, res) => {
         data,
         payment_proof_filename: paymentProof || null
       });
+      console.log('Created draft:', registration.id);
     }
 
     res.json({ success: true, registration });
@@ -315,18 +364,28 @@ app.post('/api/registrations/upload', upload.single('file'), (req, res) => {
 });
 
 app.post('/api/registrations/submit', async (req, res) => {
+  console.log('Submit request body:', req.body);
   const { email } = req.body;
-  if (!email) return res.status(400).send({ message: 'Email required' });
+  if (!email) {
+    console.log('Error: No email in request');
+    return res.status(400).send({ message: 'Email required' });
+  }
 
   const registration = await Registration.findOne({ where: { google_email: email, status: 'DRAFT' } });
-  if (!registration) return res.status(404).send({ message: 'No draft found' });
+  if (!registration) {
+    console.log('Error: No draft found for email:', email);
+    return res.status(404).send({ message: 'No draft found' });
+  }
 
   registration.status = 'SUBMITTED';
   await registration.save();
+  console.log('Registration submitted successfully:', registration.id);
 
   // Trigger welcome email
   const targetEmail = registration.data?.email || email;
-  await sendWelcomeEmail(targetEmail, registration.data);
+  await sendWelcomeEmail(targetEmail, registration.data).catch(err => {
+    console.error('Failed to send welcome email:', err.message);
+  });
 
   res.json({ success: true });
 });

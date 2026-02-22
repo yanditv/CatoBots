@@ -25,6 +25,10 @@ dotenv_1.default.config();
 const app = (0, express_1.default)();
 app.use((0, cors_1.default)());
 app.use(express_1.default.json());
+app.use((req, res, next) => {
+    console.log(`${new Date().toISOString()} ${req.method} ${req.url}`);
+    next();
+});
 app.use('/uploads', express_1.default.static(path_1.default.join(__dirname, 'uploads')));
 // Ensure uploads directory exists
 const uploadDir = path_1.default.join(__dirname, 'uploads');
@@ -289,7 +293,7 @@ app.post('/api/registrations/submit', async (req, res) => {
     registration.status = 'SUBMITTED';
     await registration.save();
     // Trigger welcome email
-    const targetEmail = registration.data?.contactEmail || email;
+    const targetEmail = registration.data?.email || email;
     await (0, emailService_1.sendWelcomeEmail)(targetEmail, registration.data);
     res.json({ success: true });
 });
@@ -311,7 +315,7 @@ app.put('/api/registrations/:id', authenticateJWT, isAdmin, async (req, res) => 
     await Registration_1.Registration.update({ isPaid, paymentStatus }, { where: { id: req.params.id } });
     const updatedRegistration = await Registration_1.Registration.findByPk(req.params.id);
     if (updatedRegistration && (paymentStatus === 'APPROVED' || paymentStatus === 'REJECTED')) {
-        const targetEmail = updatedRegistration.data?.contactEmail || updatedRegistration.google_email;
+        const targetEmail = updatedRegistration.data?.email || updatedRegistration.google_email;
         await (0, emailService_1.sendStatusEmail)(targetEmail, paymentStatus);
     }
     res.json(updatedRegistration);

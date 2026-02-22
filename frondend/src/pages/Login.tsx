@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { User, Lock } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import { api } from '../config/api';
 
 const Login = () => {
   const [username, setUsername] = useState('');
@@ -19,11 +20,7 @@ const Login = () => {
     setError('');
 
     try {
-      const response = await fetch('/api/auth/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username, password }),
-      });
+      const response = await api.post('/api/auth/login', { username, password });
 
       if (!response.ok) throw new Error('Credenciales inválidas');
 

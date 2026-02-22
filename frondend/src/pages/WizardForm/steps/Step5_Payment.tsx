@@ -1,5 +1,6 @@
 import { Upload, X } from "lucide-react";
 import { useState } from "react";
+import { api } from "../../../config/api";
 
 interface Step5Props {
     data: {
@@ -26,10 +27,7 @@ export default function Step5_Payment({ data, updateData, handleNext, handleBack
             formData.append('file', file);
 
             try {
-                const res = await fetch('/api/registrations/upload', {
-                    method: 'POST',
-                    body: formData
-                });
+                const res = await api.upload('/api/registrations/upload', formData);
                 const responseData = await res.json();
                 if (responseData.filename) {
                     updateData({ paymentProof: responseData.filename });
