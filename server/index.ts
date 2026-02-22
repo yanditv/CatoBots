@@ -381,19 +381,19 @@ app.post('/api/registrations/submit', async (req, res) => {
   await registration.save();
   console.log('Registration submitted successfully:', registration.id);
 
-  // Send welcome email in background (don't wait for it)
-  const targetEmail = registration.data?.email || email;
-  console.log('=== Preparing to send welcome email ===');
-  console.log('Target email:', targetEmail);
-  console.log('Registration data:', JSON.stringify(registration.data, null, 2));
-  
-  sendWelcomeEmail(targetEmail, registration.data).catch(err => {
-    console.error('Failed to send welcome email:', err.message);
-  });
-
-  // Send response immediately
+  // Send response immediately FIRST
   console.log('Sending success response...');
   res.json({ success: true, id: registration.id });
+  
+  // Send welcome email AFTER response is sent (truly non-blocking)
+  const targetEmail = registration.data?.email || email;
+  setImmediate(() => {
+    console.log('=== Starting background email send ===');
+    console.log('Target email:', targetEmail);
+    sendWelcomeEmail(targetEmail, registration.data).catch(err => {
+      console.error('Failed to send welcome email:', err.message);
+    });
+  });
 });
 
 // Admin Registration Routes
