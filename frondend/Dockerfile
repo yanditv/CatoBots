@@ -1,6 +1,7 @@
 FROM node:20-alpine
 
-ARG VITE_API_URL=http://localhost:3001
+ARG VITE_API_TARGET=http://server:3001
+ENV VITE_API_TARGET=$VITE_API_TARGET
 
 WORKDIR /app
 
@@ -11,8 +12,6 @@ COPY frondend/package*.json ./
 RUN npm install
 
 COPY frondend/ ./
-
-ENV VITE_API_URL=$VITE_API_URL
 
 EXPOSE 5173
 

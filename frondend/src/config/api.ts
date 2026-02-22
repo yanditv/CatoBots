@@ -1,4 +1,5 @@
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001'
+// API usa rutas relativas - el proxy de Vite maneja la redirección
+const API_URL = ''
 
 export const api = {
   get: (path: string, options?: RequestInit) => 
@@ -13,7 +14,6 @@ export const api = {
     if (body && Object.keys(body).length > 0) {
       fetchOptions.body = JSON.stringify(body)
     }
-    console.log('api.post sending:', path, 'body:', body, 'options:', fetchOptions)
     return fetch(`${API_URL}${path}`, fetchOptions)
   },
   
@@ -40,5 +40,6 @@ export const api = {
     }),
 }
 
-export const SOCKET_URL = API_URL
-export const UPLOADS_URL = `${API_URL}/uploads`
+// Socket.io también usa rutas relativas
+export const SOCKET_URL = ''
+export const UPLOADS_URL = '/uploads'
