@@ -383,11 +383,16 @@ app.post('/api/registrations/submit', async (req, res) => {
 
   // Send welcome email in background (don't wait for it)
   const targetEmail = registration.data?.email || email;
+  console.log('=== Preparing to send welcome email ===');
+  console.log('Target email:', targetEmail);
+  console.log('Registration data:', JSON.stringify(registration.data, null, 2));
+  
   sendWelcomeEmail(targetEmail, registration.data).catch(err => {
     console.error('Failed to send welcome email:', err.message);
   });
 
   // Send response immediately
+  console.log('Sending success response...');
   res.json({ success: true, id: registration.id });
 });
 

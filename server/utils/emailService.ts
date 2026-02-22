@@ -3,15 +3,26 @@ import dotenv from 'dotenv';
 
 dotenv.config();
 
+// Log SMTP configuration on startup
+console.log('=== SMTP Configuration ===');
+console.log('SMTP_HOST:', process.env.SMTP_HOST || 'smtp.gmail.com');
+console.log('SMTP_PORT:', process.env.SMTP_PORT || 587);
+console.log('SMTP_SECURE:', process.env.SMTP_SECURE);
+console.log('SMTP_USER:', process.env.SMTP_USER ? `${process.env.SMTP_USER.substring(0, 3)}***` : 'NOT SET');
+console.log('SMTP_PASS:', process.env.SMTP_PASS ? '***SET***' : 'NOT SET');
+console.log('==========================');
+
 // Create reusable transporter object using the default SMTP transport
 const transporter = nodemailer.createTransport({
     host: process.env.SMTP_HOST || 'smtp.gmail.com',
     port: Number(process.env.SMTP_PORT) || 587,
     secure: process.env.SMTP_SECURE === 'true', // true for 465, false for other ports
-    auth: {
+    auth: process.env.SMTP_USER ? {
         user: process.env.SMTP_USER,
         pass: process.env.SMTP_PASS,
-    },
+    } : undefined,
+    connectionTimeout: 10000, // 10 seconds
+    socketTimeout: 10000,
 });
 
 const CATO_BOTS_LOGO_URL = 'https://catobots.com/logo.png'; // Make sure to replace this with an actual public URL or base64
@@ -49,6 +60,11 @@ const getContainerStyle = () => `
 `;
 
 export const sendWelcomeEmail = async (to: string, formData: any) => {
+    console.log('\n=== sendWelcomeEmail called ===');
+    console.log('To:', to);
+    console.log('FormData:', JSON.stringify(formData, null, 2));
+    console.log('SMTP_USER set:', !!process.env.SMTP_USER);
+    
     // Extract category from formData. Forms save specific subcategories based on the main category.
     const uniqueCategories: string[] = [];
     if (formData?.juniorCategory) uniqueCategories.push(formData.juniorCategory);
@@ -58,6 +74,8 @@ export const sendWelcomeEmail = async (to: string, formData: any) => {
     if (formData?.category && typeof formData.category === 'string' && !['Junior', 'Senior', 'Master'].includes(formData.category)) {
         uniqueCategories.push(formData.category);
     }
+    
+    console.log('Categories detected:', uniqueCategories);
 
     const rulesLinksHtml = uniqueCategories.map(cat => {
         const url = rulesUrls[cat];
@@ -106,19 +124,28 @@ export const sendWelcomeEmail = async (to: string, formData: any) => {
 
     try {
         if (!process.env.SMTP_USER) {
-            console.log('No SMTP config found, skipping welcome email to:', to);
+            console.log('⚠️ No SMTP config found, skipping welcome email to:', to);
             return;
         }
 
-        await transporter.sendMail({
+        console.log('📧 Attempting to send welcome email to:', to);
+        console.log('📧 From:', process.env.SMTP_USER);
+        
+        const info = await transporter.sendMail({
             from: `"CatoBots" <${process.env.SMTP_USER}>`,
             to,
             subject: "¡Inscripción Recibida! - CatoBots IV",
             html: htmlContent,
         });
-        console.log(`Welcome email sent to ${to}`);
-    } catch (error) {
-        console.error('Error sending welcome email:', error);
+        
+        console.log('✅ Welcome email sent successfully!');
+        console.log('   Message ID:', info.messageId);
+        console.log('   Response:', info.response);
+    } catch (error: any) {
+        console.error('❌ Error sending welcome email:');
+        console.error('   Error code:', error.code);
+        console.error('   Error message:', error.message);
+        console.error('   Full error:', error);
     }
 };
 
