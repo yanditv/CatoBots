@@ -381,13 +381,14 @@ app.post('/api/registrations/submit', async (req, res) => {
   await registration.save();
   console.log('Registration submitted successfully:', registration.id);
 
-  // Trigger welcome email
+  // Send welcome email in background (don't wait for it)
   const targetEmail = registration.data?.email || email;
-  await sendWelcomeEmail(targetEmail, registration.data).catch(err => {
+  sendWelcomeEmail(targetEmail, registration.data).catch(err => {
     console.error('Failed to send welcome email:', err.message);
   });
 
-  res.json({ success: true });
+  // Send response immediately
+  res.json({ success: true, id: registration.id });
 });
 
 // Admin Registration Routes
