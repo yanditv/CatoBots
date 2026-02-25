@@ -20,6 +20,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
+import { api, UPLOADS_URL } from '../../config/api';
 interface Institution {
   id: string;
   name: string;
@@ -137,12 +138,12 @@ const AdminPanel = () => {
     try {
       const authHeader = { 'Authorization': `Bearer ${token}` };
       const [inst, robots, users, matches, sponsors, regs] = await Promise.all([
-        fetch('/api/institutions', { headers: authHeader }).then(res => res.json()),
-        fetch('/api/robots', { headers: authHeader }).then(res => res.json()),
-        fetch('/api/users', { headers: authHeader }).then(res => res.json()),
-        fetch('/api/matches', { headers: authHeader }).then(res => res.json()),
-        fetch('/api/sponsors', { headers: authHeader }).then(res => res.json()),
-        fetch('/api/registrations', { headers: authHeader }).then(res => res.json())
+        api.get('/api/institutions', { headers: authHeader }).then(res => res.json()),
+        api.get('/api/robots', { headers: authHeader }).then(res => res.json()),
+        api.get('/api/users', { headers: authHeader }).then(res => res.json()),
+        api.get('/api/matches', { headers: authHeader }).then(res => res.json()),
+        api.get('/api/sponsors', { headers: authHeader }).then(res => res.json()),
+        api.get('/api/registrations', { headers: authHeader }).then(res => res.json())
       ]);
       setData({
         institutions: inst,
@@ -163,20 +164,19 @@ const AdminPanel = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    let endpoint = `/${activeTab}`;
+    let endpoint = `/api/${activeTab}`;
     const method = isEditMode ? 'PUT' : 'POST';
     if (isEditMode) endpoint += `/${editingId}`;
 
-    try {
-      const response = await fetch(`/api${endpoint}`, {
-        method,
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify(formData)
-      });
+    console.log('handleSubmit:', { endpoint, method, formData });
 
+    try {
+      const response = method === 'PUT' 
+        ? await api.put(endpoint, formData, { headers: { 'Authorization': `Bearer ${token}` } })
+        : await api.post(endpoint, formData, { headers: { 'Authorization': `Bearer ${token}` } });
+
+      console.log('response:', response.status);
+      
       if (response.ok) {
         setShowModal(false);
         setFormData({});
@@ -199,13 +199,10 @@ const AdminPanel = () => {
 
   const handleDelete = async (id: string) => {
     if (!confirm('¿Estás seguro de eliminar este registro?')) return;
-    let endpoint = `/${activeTab}/${id}`;
+    const endpoint = `/api/${activeTab}/${id}`;
 
     try {
-      const response = await fetch(`/api${endpoint}`, {
-        method: 'DELETE',
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
+      const response = await api.del(endpoint, { headers: { 'Authorization': `Bearer ${token}` } });
 
       if (response.ok) fetchData();
     } catch (err) {
@@ -215,14 +212,7 @@ const AdminPanel = () => {
 
   const handleToggleDashboard = async (match: Match) => {
     try {
-      const resp = await fetch(`/api/matches/${match.id}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify({ showInDashboard: !match.showInDashboard })
-      });
+      const resp = await api.put(`/api/matches/${match.id}`, { showInDashboard: !match.showInDashboard }, { headers: { 'Authorization': `Bearer ${token}` } });
       if (resp.ok) fetchData();
     } catch (err) {
       console.error('Error toggling dashboard:', err);
@@ -231,14 +221,7 @@ const AdminPanel = () => {
 
   const handleUpdatePaymentStatus = async (reg: Registration, status: 'APPROVED' | 'REJECTED' | 'PENDING') => {
     try {
-      const resp = await fetch(`/api/registrations/${reg.id}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify({ paymentStatus: status })
-      });
+      const resp = await api.put(`/api/registrations/${reg.id}`, { paymentStatus: status }, { headers: { 'Authorization': `Bearer ${token}` } });
       if (resp.ok) fetchData();
     } catch (err) {
       console.error('Error updating payment status:', err);
@@ -251,18 +234,13 @@ const AdminPanel = () => {
       return;
     }
     try {
-      const resp = await fetch('/api/brackets/generate', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify({
-          category: formData.category,
-          level: formData.level,
-          robotIds: selectedRobots,
-          refereeId: formData.refereeId
-        })
+      const resp = await api.post('/api/brackets/generate', {
+        category: formData.category,
+        level: formData.level,
+        robotIds: selectedRobots,
+        refereeId: formData.refereeId
+      }, {
+        headers: { 'Authorization': `Bearer ${token}` }
       });
       if (resp.ok) {
         alert('Llave generada con éxito');
@@ -540,7 +518,7 @@ const AdminPanel = () => {
                     <span className="text-xs font-black uppercase text-neutral-400">Comprobante</span>
                     {reg.payment_proof_filename ? (
                       <a
-                        href={`/uploads/${reg.payment_proof_filename}`}
+                        href={`${UPLOADS_URL}/${reg.payment_proof_filename}`}
                         target="_blank"
                         rel="noopener noreferrer"
                         className="text-brand font-bold text-sm hover:underline"

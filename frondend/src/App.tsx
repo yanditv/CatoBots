@@ -1,5 +1,5 @@
-import { Routes, Route, Navigate } from 'react-router-dom'
 import { useEffect, useState } from 'react'
+import { Routes, Route, Navigate } from 'react-router-dom'
 import { io, Socket } from 'socket.io-client'
 import WizardForm from './pages/WizardForm/WizardForm'
 import LandingPage from './pages/Landing/LandingPage'
@@ -10,6 +10,7 @@ import Login from './pages/Login'
 import AdminPanel from './pages/Admin/AdminPanel'
 import Brackets from './pages/Brackets'
 import { AuthProvider, useAuth } from './context/AuthContext'
+import { SOCKET_URL } from './config/api'
 
 export interface Robot {
   id: string;
@@ -49,7 +50,9 @@ function AppContent() {
   const [matches, setMatches] = useState<MatchState[]>([]);
 
   useEffect(() => {
-    socket = io();
+    socket = io(SOCKET_URL, {
+      transports: ['polling', 'websocket'],
+    })
 
     socket.on('all_matches', (allMatches: MatchState[]) => {
       setMatches(allMatches);

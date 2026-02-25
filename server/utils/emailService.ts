@@ -1,22 +1,20 @@
-import nodemailer from 'nodemailer';
+import { Resend } from 'resend';
 import dotenv from 'dotenv';
 
 dotenv.config();
 
-// Create reusable transporter object using the default SMTP transport
-const transporter = nodemailer.createTransport({
-    host: process.env.SMTP_HOST || 'smtp.gmail.com',
-    port: Number(process.env.SMTP_PORT) || 587,
-    secure: process.env.SMTP_SECURE === 'true', // true for 465, false for other ports
-    auth: {
-        user: process.env.SMTP_USER,
-        pass: process.env.SMTP_PASS,
-    },
-});
+// Initialize Resend
+const resend = new Resend(process.env.RESEND_API_KEY);
 
-const CATO_BOTS_LOGO_URL = 'https://catobots.com/logo.png'; // Make sure to replace this with an actual public URL or base64
-// Alternatively, embed as base64 or a sleek robot icon URL
-const ROBOT_ICON_URL = 'https://cdn-icons-png.flaticon.com/512/4712/4712035.png'; // Reliable minimalist modern robot head icon
+// Log email configuration on startup
+console.log('=== Email Configuration ===');
+console.log('Email Provider: Resend');
+console.log('RESEND_API_KEY:', process.env.RESEND_API_KEY ? '***SET***' : 'NOT SET');
+console.log('EMAIL_FROM:', process.env.EMAIL_FROM || 'onboarding@resend.dev');
+console.log('===========================');
+
+const CATO_BOTS_LOGO_URL = 'https://catobots.com/logo.png';
+const ROBOT_ICON_URL = 'https://cdn-icons-png.flaticon.com/512/4712/4712035.png';
 
 const rulesUrls: Record<string, string> = {
     'RoboFut': "https://ucacueedu-my.sharepoint.com/personal/nathalia_peralta_ucacue_edu_ec/_layouts/15/Doc.aspx?sourcedoc=%7BABC9DD7A-3FCE-409D-ABCA-E0D90576CBBA%7D&file=Reglas_Robofut.docx&action=default&mobileredirect=true&CT=1771016156656&OR=ItemsView",
@@ -49,6 +47,10 @@ const getContainerStyle = () => `
 `;
 
 export const sendWelcomeEmail = async (to: string, formData: any) => {
+    console.log('\n=== sendWelcomeEmail called ===');
+    console.log('To:', to);
+    console.log('FormData:', JSON.stringify(formData, null, 2));
+    
     // Extract category from formData. Forms save specific subcategories based on the main category.
     const uniqueCategories: string[] = [];
     if (formData?.juniorCategory) uniqueCategories.push(formData.juniorCategory);
@@ -58,6 +60,8 @@ export const sendWelcomeEmail = async (to: string, formData: any) => {
     if (formData?.category && typeof formData.category === 'string' && !['Junior', 'Senior', 'Master'].includes(formData.category)) {
         uniqueCategories.push(formData.category);
     }
+    
+    console.log('Categories detected:', uniqueCategories);
 
     const rulesLinksHtml = uniqueCategories.map(cat => {
         const url = rulesUrls[cat];
@@ -105,20 +109,32 @@ export const sendWelcomeEmail = async (to: string, formData: any) => {
     `;
 
     try {
-        if (!process.env.SMTP_USER) {
-            console.log('No SMTP config found, skipping welcome email to:', to);
+        if (!process.env.RESEND_API_KEY) {
+            console.log('⚠️ No RESEND_API_KEY found, skipping welcome email to:', to);
             return;
         }
 
-        await transporter.sendMail({
-            from: `"CatoBots" <${process.env.SMTP_USER}>`,
+        console.log('📧 Attempting to send welcome email to:', to);
+        console.log('📧 From:', process.env.EMAIL_FROM || 'onboarding@resend.dev');
+        
+        const { data, error } = await resend.emails.send({
+            from: process.env.EMAIL_FROM || 'onboarding@resend.dev',
             to,
             subject: "¡Inscripción Recibida! - CatoBots IV",
             html: htmlContent,
         });
-        console.log(`Welcome email sent to ${to}`);
-    } catch (error) {
-        console.error('Error sending welcome email:', error);
+        
+        if (error) {
+            console.error('❌ Resend error:', error);
+            return;
+        }
+        
+        console.log('✅ Welcome email sent successfully!');
+        console.log('   Message ID:', data?.id);
+    } catch (error: any) {
+        console.error('❌ Error sending welcome email:');
+        console.error('   Error message:', error.message);
+        console.error('   Full error:', error);
     }
 };
 
@@ -159,18 +175,24 @@ export const sendStatusEmail = async (to: string, status: 'APPROVED' | 'REJECTED
     `;
 
     try {
-        if (!process.env.SMTP_USER) {
-            console.log('No SMTP config found, skipping status email to:', to);
+        if (!process.env.RESEND_API_KEY) {
+            console.log('No RESEND_API_KEY found, skipping status email to:', to);
             return;
         }
 
-        await transporter.sendMail({
-            from: `"CatoBots" <${process.env.SMTP_USER}>`,
+        const { data, error } = await resend.emails.send({
+            from: process.env.EMAIL_FROM || 'onboarding@resend.dev',
             to,
             subject: `Actualización de Inscripción: ${title} - CatoBots IV`,
             html: htmlContent,
         });
-        console.log(`Status email (${status}) sent to ${to}`);
+        
+        if (error) {
+            console.error('Resend error:', error);
+            return;
+        }
+        
+        console.log(`✅ Status email (${status}) sent to ${to}, ID: ${data?.id}`);
     } catch (error) {
         console.error('Error sending status email:', error);
     }

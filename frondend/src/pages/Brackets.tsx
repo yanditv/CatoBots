@@ -2,6 +2,7 @@ import { motion } from 'framer-motion';
 import { Trophy, Crown, Zap } from 'lucide-react';
 import { useState, useEffect, useMemo } from 'react';
 import { io, Socket } from 'socket.io-client';
+import { SOCKET_URL } from '../config/api';
 
 interface Robot {
   id: string;
@@ -32,7 +33,9 @@ const Brackets = () => {
   const [selectedCategory, setSelectedCategory] = useState<string>('');
 
   useEffect(() => {
-    socket = io();
+    socket = io(SOCKET_URL, {
+      transports: ['polling', 'websocket'],
+    })
     socket.on('all_matches', (data: Match[]) => setMatches(data));
     return () => { socket.disconnect(); };
   }, []);

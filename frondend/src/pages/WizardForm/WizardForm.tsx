@@ -11,6 +11,7 @@ import Step5_Payment from "./steps/Step5_Payment";
 import Step6_Summary from "./steps/Step6_Summary";
 import Rules from "../Form/Regulations/rules";
 import { Loader2 } from "lucide-react";
+import { api } from "../../config/api";
 
 export default function WizardForm() {
     const { googleUser, loginGoogle } = useAuth();
@@ -94,18 +95,15 @@ export default function WizardForm() {
     }, [googleUser]);
 
     const saveDraft = async (stepToSave: number) => {
-        if (!googleUser?.email) return;
+        const email = formData.email || googleUser?.email;
+        if (!email) return;
 
         try {
-            await fetch('/registrations/sync', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    email: googleUser.email,
-                    step: stepToSave,
-                    data: formData,
-                    paymentProof: formData.paymentProof
-                })
+            await api.post('/api/registrations/sync', {
+                email: email,
+                step: stepToSave,
+                data: formData,
+                paymentProof: formData.paymentProof
             });
         } catch (error) {
             console.error("Failed to save draft", error);
@@ -128,18 +126,27 @@ export default function WizardForm() {
     };
 
     const handleSubmit = async () => {
+        const email = formData.email || googleUser?.email;
+        
+        if (!email) {
+            alert('Por favor, ingresa tu correo electrónico o inicia sesión con Google.');
+            return;
+        }
+        
+        console.log('handleSubmit called, email:', email);
+        
         try {
-            await fetch('/registrations/submit', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ email: googleUser?.email })
-            });
+            const response = await api.post('/api/registrations/submit', { email })
+            console.log('response status:', response.status);
+            if (!response.ok) {
+                const errorData = await response.json().catch(() => ({}))
+                throw new Error(errorData.message || `Error ${response.status}`)
+            }
             alert("¡Inscripción enviada exitosamente! Nos vemos en la competencia.");
-            // Reset or redirect?
             window.location.reload();
-        } catch (error) {
+        } catch (error: any) {
             console.error("Submit failed", error);
-            alert("Error al enviar el formulario.");
+            alert(`Error al enviar el formulario: ${error.message}`);
         }
     };
 

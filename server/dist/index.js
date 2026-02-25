@@ -25,6 +25,28 @@ dotenv_1.default.config();
 const app = (0, express_1.default)();
 app.use((0, cors_1.default)());
 app.use(express_1.default.json());
+// Enhanced logging middleware
+app.use((req, res, next) => {
+    const start = Date.now();
+    // Log request
+    console.log(`\n========== ${new Date().toISOString()} ==========`);
+    console.log(`REQUEST: ${req.method} ${req.url}`);
+    console.log(`HEADERS:`, JSON.stringify(req.headers, null, 2));
+    if (req.body && Object.keys(req.body).length > 0) {
+        console.log(`BODY:`, JSON.stringify(req.body, null, 2));
+    }
+    // Log response
+    const originalSend = res.send;
+    res.send = function (data) {
+        console.log(`RESPONSE STATUS: ${res.statusCode}`);
+        if (typeof data === 'string' && data.length < 500) {
+            console.log(`RESPONSE DATA:`, data);
+        }
+        console.log(`DURATION: ${Date.now() - start}ms`);
+        return originalSend.call(this, data);
+    };
+    next();
+});
 app.use('/uploads', express_1.default.static(path_1.default.join(__dirname, 'uploads')));
 // Ensure uploads directory exists
 const uploadDir = path_1.default.join(__dirname, 'uploads');
@@ -45,22 +67,30 @@ const httpServer = (0, http_1.createServer)(app);
 const io = new socket_io_1.Server(httpServer, {
     cors: {
         origin: "*",
-        methods: ["GET", "POST"]
-    }
+        methods: ["GET", "POST"],
+        credentials: true
+    },
+    allowEIO3: true,
+    transports: ['polling', 'websocket']
 });
 const JWT_SECRET = process.env.JWT_SECRET || 'robot-super-secret-key';
 // --- Middlewares ---
 const authenticateJWT = (req, res, next) => {
     const token = req.headers.authorization?.split(' ')[1];
+    console.log(`[AUTH] Token received:`, token ? `${token.substring(0, 20)}...` : 'NO TOKEN');
     if (token) {
         jsonwebtoken_1.default.verify(token, JWT_SECRET, (err, user) => {
-            if (err)
+            if (err) {
+                console.log(`[AUTH] Token verification failed:`, err.message);
                 return res.sendStatus(403);
+            }
+            console.log(`[AUTH] User authenticated:`, user);
             req.user = user;
             next();
         });
     }
     else {
+        console.log(`[AUTH] No token provided`);
         res.sendStatus(401);
     }
 };
@@ -85,7 +115,21 @@ app.post('/api/auth/login', async (req, res) => {
 // --- CRUD Routes ---
 app.get('/api/institutions', async (req, res) => res.json(await Institution_1.Institution.findAll()));
 app.post('/api/institutions', authenticateJWT, isAdmin, async (req, res) => {
-    res.json(await Institution_1.Institution.create(req.body));
+    console.log('POST /api/institutions body:', req.body);
+    const { name, contactEmail, isPaid, members } = req.body;
+    if (!name) {
+        console.log('Error: name is missing');
+        return res.status(400).json({ message: 'El nombre de la institución es requerido' });
+    }
+    try {
+        const institution = await Institution_1.Institution.create({ name, contactEmail, isPaid, members });
+        console.log('Created institution:', institution.id);
+        res.json(institution);
+    }
+    catch (err) {
+        console.error('Error creating institution:', err.message);
+        res.status(500).json({ message: err.message });
+    }
 });
 app.put('/api/institutions/:id', authenticateJWT, isAdmin, async (req, res) => {
     await Institution_1.Institution.update(req.body, { where: { id: req.params.id } });
@@ -240,6 +284,7 @@ app.post('/api/brackets/generate', authenticateJWT, isAdmin, async (req, res) =>
 // --- Registration Routes (Public/Drafts) ---
 app.post('/api/registrations/sync', async (req, res) => {
     const { email, step, data, paymentProof } = req.body;
+    console.log('Sync request:', { email, step, hasData: !!data, hasPaymentProof: !!paymentProof });
     if (!email)
         return res.status(400).send({ message: 'Email required' });
     try {
@@ -250,6 +295,7 @@ app.post('/api/registrations/sync', async (req, res) => {
             if (paymentProof)
                 registration.payment_proof_filename = paymentProof;
             await registration.save();
+            console.log('Updated draft:', registration.id);
         }
         else {
             registration = await Registration_1.Registration.create({
@@ -258,6 +304,7 @@ app.post('/api/registrations/sync', async (req, res) => {
                 data,
                 payment_proof_filename: paymentProof || null
             });
+            console.log('Created draft:', registration.id);
         }
         res.json({ success: true, registration });
     }
@@ -280,18 +327,32 @@ app.post('/api/registrations/upload', upload.single('file'), (req, res) => {
     res.json({ filename: req.file.filename });
 });
 app.post('/api/registrations/submit', async (req, res) => {
+    console.log('Submit request body:', req.body);
     const { email } = req.body;
-    if (!email)
+    if (!email) {
+        console.log('Error: No email in request');
         return res.status(400).send({ message: 'Email required' });
+    }
     const registration = await Registration_1.Registration.findOne({ where: { google_email: email, status: 'DRAFT' } });
-    if (!registration)
+    if (!registration) {
+        console.log('Error: No draft found for email:', email);
         return res.status(404).send({ message: 'No draft found' });
+    }
     registration.status = 'SUBMITTED';
     await registration.save();
-    // Trigger welcome email
-    const targetEmail = registration.data?.contactEmail || email;
-    await (0, emailService_1.sendWelcomeEmail)(targetEmail, registration.data);
-    res.json({ success: true });
+    console.log('Registration submitted successfully:', registration.id);
+    // Send response immediately FIRST
+    console.log('Sending success response...');
+    res.json({ success: true, id: registration.id });
+    // Send welcome email AFTER response is sent (truly non-blocking)
+    const targetEmail = registration.data?.email || email;
+    setImmediate(() => {
+        console.log('=== Starting background email send ===');
+        console.log('Target email:', targetEmail);
+        (0, emailService_1.sendWelcomeEmail)(targetEmail, registration.data).catch(err => {
+            console.error('Failed to send welcome email:', err.message);
+        });
+    });
 });
 // Admin Registration Routes
 app.get('/api/registrations', authenticateJWT, isAdmin, async (req, res) => {
@@ -311,7 +372,7 @@ app.put('/api/registrations/:id', authenticateJWT, isAdmin, async (req, res) => 
     await Registration_1.Registration.update({ isPaid, paymentStatus }, { where: { id: req.params.id } });
     const updatedRegistration = await Registration_1.Registration.findByPk(req.params.id);
     if (updatedRegistration && (paymentStatus === 'APPROVED' || paymentStatus === 'REJECTED')) {
-        const targetEmail = updatedRegistration.data?.contactEmail || updatedRegistration.google_email;
+        const targetEmail = updatedRegistration.data?.email || updatedRegistration.google_email;
         await (0, emailService_1.sendStatusEmail)(targetEmail, paymentStatus);
     }
     res.json(updatedRegistration);
