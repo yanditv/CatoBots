@@ -129,7 +129,7 @@ export default function WizardLayout({
                             <motion.h1
                                 initial={{ opacity: 0, x: -10, y:10, rotate: -4 }}
                                 animate={{ opacity: 1, x: 20, rotate: -4 }}
-                                className="text-5xl mt-6 md:text-7xl lg:text-8xl font-tech font-black uppercase text-cb-yellow-neon leading-none italic tracking-tighter drop-shadow-[5px_5px_0_#000] -ml-5 z-0"
+                                className="text-5xl mt-4 md:text-7xl lg:text-8xl font-tech font-black uppercase text-cb-yellow-neon leading-none italic tracking-tighter drop-shadow-[5px_5px_0_#000] -ml-5 z-0"
                                 style={{ WebkitTextStroke: "3px #000" }}
                             >
                                 {title}
