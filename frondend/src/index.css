@@ -1,13 +1,60 @@
 @import "tailwindcss";
 
 @theme {
-  --color-brand: #03E2D9;
-  --color-background: #01122e;
+  --color-cb-green-vibrant: #10B961;
+  --color-cb-green-base: #0FA958;
+  --color-cb-green-dark: #0C7F42;
+  --color-cb-yellow-neon: #FFF000;
+  --color-cb-yellow-warning: #FFD400;
+  --color-cb-black-pure: #000000;
+  --color-cb-gray-industrial: #111111;
+  --color-cb-white-tech: #FFFFFF;
+
+  --font-tech: 'Russo One', sans-serif;
+  --font-sans: 'Montserrat', system-ui, sans-serif;
+
+  /* Custom Box Shadows para el estilo eSports rígido */
+  --shadow-block-sm: 4px 4px 0px 0px rgba(0, 0, 0, 1);
+  --shadow-block-md: 6px 6px 0px 0px rgba(0, 0, 0, 1);
+  --shadow-block-lg: 8px 8px 0px 0px rgba(0, 0, 0, 1);
+  --shadow-block-yellow: 6px 6px 0px 0px #FFF000;
 }
 
 @layer base {
   body {
-    @apply bg-white text-black antialiased selection:bg-brand/20 selection:text-brand;
-    font-family: 'Inter', system-ui, sans-serif;
+    @apply bg-cb-green-vibrant text-cb-white-tech antialiased selection:bg-cb-black-pure selection:text-cb-yellow-neon;
+    font-family: var(--font-sans);
+  }
+}
+
+@layer utilities {
+  .btn-primary {
+    @apply bg-cb-yellow-neon text-cb-black-pure px-8 py-4 border-4 border-cb-black-pure font-tech uppercase tracking-widest font-extrabold transition-all duration-100 shadow-block-md hover:translate-x-[4px] hover:translate-y-[4px] hover:shadow-none focus:outline-none focus:ring-4 focus:ring-cb-black-pure active:scale-95;
+  }
+
+  .btn-secondary {
+    @apply bg-cb-black-pure text-cb-white-tech px-6 py-3 border-4 border-cb-black-pure font-tech uppercase tracking-widest font-bold transition-all duration-100 hover:text-cb-yellow-neon hover:-translate-y-1 hover:shadow-block-sm focus:outline-none focus:ring-4 focus:ring-cb-yellow-neon;
+  }
+
+  /* Textura de papel / Grano sutil usando pseudo-elemento */
+  .bg-noise::before {
+    content: "";
+    @apply absolute inset-0 opacity-[0.03] mix-blend-overlay pointer-events-none;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
+  }
+
+  /* Cintas de peligro diagonales */
+  .bg-warning-tape {
+    background-image: repeating-linear-gradient(
+      -45deg,
+      var(--color-cb-yellow-warning),
+      var(--color-cb-yellow-warning) 20px,
+      var(--color-cb-black-pure) 20px,
+      var(--color-cb-black-pure) 40px
+    );
+  }
+
+  .glow-yellow {
+    text-shadow: 0 0 5px rgba(255, 240, 0, 0.4), 0 0 10px rgba(255, 240, 0, 0.2);
   }
 }
