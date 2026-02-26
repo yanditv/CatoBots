@@ -246,9 +246,9 @@ const Dashboard = ({ matches }: { matches: MatchState[] }) => {
             initial={{ scale: 0.8, opacity: 0 }}
             animate={{ scale: 1, opacity: 1, rotate: [0, -5, 5, 0] }}
             transition={{ duration: 0.8, repeat: Infinity, repeatDelay: 5 }}
-            className="p-20 rounded-[5rem] bg-white border border-neutral-100 shadow-[0_50px_100px_-20px_rgba(0,0,0,0.05)] mb-12"
+            className="p-16 mb-12 flex items-center justify-center"
           >
-            <Trophy size={160} className="text-neutral-100" />
+            <img src="/logo-yellow.png" alt="CatoBots Logo" className="h-60 w-auto object-contain drop-shadow-2xl" />
           </motion.div>
           <h2 className="text-7xl font-black text-black mb-6 uppercase">Arena en Reposo</h2>
           <p className="text-neutral-400 font-bold uppercase text-lg bg-white px-8 py-3 rounded-full border border-neutral-100">Esperando el inicio de la competencia</p>
@@ -293,6 +293,9 @@ const Dashboard = ({ matches }: { matches: MatchState[] }) => {
           </motion.div>
         ) : (
           <div className="w-full flex items-center justify-around text-neutral-300 font-black uppercase text-xs px-24">
+            <div className="flex items-center rounded-xl p-2 px-4 shadow-sm">
+                <img src="/logo-yellow.png" alt="CatoBots Logo" className="h-8 w-auto object-contain" />
+            </div>
             <div className="flex items-center gap-12">
               <span>Robot League 2026</span>
               <div className="w-2 h-2 rounded-full bg-neutral-100" />

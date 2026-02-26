@@ -2,6 +2,7 @@ import { Bot, Map, Hammer, Activity, Gamepad2, Code, Trophy, ExternalLink, Leaf 
 
 interface RulesProps {
     category: string;
+    subCategory?: string;
     onClose: () => void;
 }
 
@@ -26,7 +27,7 @@ const RuleCard: React.FC<RuleLink> = ({ title, icon: Icon, url }) => (
     </a>
 );
 
-const Rules: React.FC<RulesProps> = ({ category, onClose }) => {
+const Rules: React.FC<RulesProps> = ({ category, subCategory, onClose }) => {
     let rulesContent;
 
     const urls = {
@@ -39,13 +40,23 @@ const Rules: React.FC<RulesProps> = ({ category, onClose }) => {
         scratch: "https://ucacueedu-my.sharepoint.com/:w:/r/personal/nathalia_peralta_ucacue_edu_ec/_layouts/15/Doc.aspx?sourcedoc=%7B964F0D59-F202-4681-BFAD-FA11CCEDEC2C%7D&file=Scratch%20%26%20Play%20-%20Code%20Masters%20Arena.docx&action=default&mobileredirect=true"
     };
 
-    const renderGrid = (items: RuleLink[]) => (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
-            {items.map((item, idx) => (
-                <RuleCard key={idx} {...item} />
-            ))}
-        </div>
-    );
+    const renderGrid = (items: RuleLink[]) => {
+        const normalize = (s: string) => s.toLowerCase().replace(' ⚽', '').replace(' master', '');
+        const filtered = subCategory 
+            ? items.filter(i => 
+                normalize(i.title).includes(normalize(subCategory)) || 
+                normalize(subCategory).includes(normalize(i.title))
+              )
+            : items;
+            
+        return (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+                {filtered.map((item, idx) => (
+                    <RuleCard key={idx} {...item} />
+                ))}
+            </div>
+        );
+    };
 
     switch (category) {
         case 'Junior':

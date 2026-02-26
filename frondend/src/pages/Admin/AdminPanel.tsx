@@ -278,12 +278,12 @@ const AdminPanel = () => {
     <div className="min-h-screen bg-neutral-50 text-black flex flex-col md:flex-row font-sans">
       <aside className="w-full md:w-80 bg-white border-r border-neutral-100 p-8 flex flex-col gap-10 shadow-sm">
         <div className="flex items-center gap-4 px-2">
-          <div className="w-12 h-12 flex items-center justify-center text-brand">
-            <img src="/favicon.svg" alt="Logo" />
+          <div className="w-60 h-30 flex items-center justify-center rounded-2xl p-2">
+            <img src="/logo-yellow.png" alt="Logo" className="w-60 h-30 object-contain" />
           </div>
           <div>
             <h2 className="text-2xl font-black tracking-tighter leading-none">
-              Cato<span className="text-brand">Bots IV</span>
+              Cato<span className="text-brand">Bots</span>
             </h2>
             <p className="text-sm font-black text-neutral-400 uppercase">Centro de Gestión</p>
           </div>

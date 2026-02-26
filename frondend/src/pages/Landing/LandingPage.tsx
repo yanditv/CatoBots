@@ -76,16 +76,22 @@ export default function LandingPage() {
                 transition={{ duration: 0.5, delay: 0.2 }}
                 className={`fixed top-0 left-0 right-0 z-50 transition-colors duration-300 ${scrolled ? "bg-neutral-950/90 backdrop-blur-md border-b border-white/10 shadow-lg" : "bg-neutral-950/20 backdrop-blur-sm"} py-4 px-6 flex justify-between items-center`}
             >
-                <span className="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-purple-400 to-blue-400">
+                <span className="text-2xl flex items-center gap-2 font-bold bg-clip-text text-transparent bg-white">
+                    <img src="/logo-white.png" alt="CatoBots Logo" className="h-15 w-auto object-contain" />
                     CatoBots IV
                 </span>
                 <Link
-                    to={accepted ? "/registro" : "#"}
+                    to={accepted ? "/registro" : "#registro-check"}
                     className={`px-4 py-2 rounded-full text-sm font-bold transition-all shadow-lg ${accepted
                         ? "bg-purple-600 hover:bg-purple-500 text-white shadow-purple-900/30"
-                        : "bg-neutral-700 text-neutral-400 cursor-not-allowed opacity-50"
+                        : "bg-neutral-800 hover:bg-neutral-700 text-white shadow-lg shadow-black/20"
                         }`}
-                    onClick={(e) => !accepted && e.preventDefault()}
+                    onClick={(e) => {
+                        if (!accepted) {
+                            e.preventDefault();
+                            document.getElementById('registro-check')?.scrollIntoView({ behavior: 'smooth' });
+                        }
+                    }}
                 >
                     Inscribirse
                 </Link>
@@ -104,8 +110,8 @@ export default function LandingPage() {
                         ⚠ Por favor, lee detenidamente los pasos antes de inscribirte
                     </div>
 
-                    <h1 className="text-5xl md:text-7xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-white via-purple-100 to-neutral-400 mb-6 leading-tight">
-                        CatoBots IV
+                    <h1 className="text-5xl md:text-7xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-white via-purple-100 to-neutral-400 mb-6 leading-tight flex flex-col items-center gap-4">
+                        <img src="/logo-yellow.png" alt="CatoBots Logo" className="h-40 md:h-64 w-auto drop-shadow-2xl" />
                     </h1>
 
                     <p className="text-xl md:text-2xl text-neutral-400 mb-8 leading-relaxed">
@@ -219,7 +225,7 @@ export default function LandingPage() {
 
                 {/* Final CTA & Checkbox */}
                 <div className="mt-24 text-center pb-8 max-w-md mx-auto">
-                    <div className="bg-neutral-900/50 border border-neutral-800 p-6 rounded-2xl mb-8">
+                    <div id="registro-check" className="bg-neutral-900/50 border border-neutral-800 p-6 rounded-2xl mb-8">
                         <label className="flex items-start gap-3 cursor-pointer group">
                             <div className="relative flex-shrink-0 mt-1">
                                 <input

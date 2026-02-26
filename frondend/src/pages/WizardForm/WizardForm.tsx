@@ -250,7 +250,11 @@ export default function WizardForm() {
             )}
 
             {showRules && (
-                <Rules category={formData.category} onClose={() => setShowRules(false)} />
+                <Rules 
+                    category={formData.category} 
+                    subCategory={formData.category === "Junior" ? formData.juniorCategory : formData.category === "Senior" ? formData.seniorCategory : formData.masterCategory}
+                    onClose={() => setShowRules(false)} 
+                />
             )}
         </WizardLayout>
     );

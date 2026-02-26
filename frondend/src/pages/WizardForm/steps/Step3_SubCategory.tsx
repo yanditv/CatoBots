@@ -99,7 +99,9 @@ export default function Step3_SubCategory({ data, updateData, handleNext, handle
                     className="flex items-center gap-2 px-6 py-2 rounded-full bg-neutral-800 border border-neutral-700 text-purple-400 hover:bg-neutral-700 hover:text-purple-300 transition-colors shadow-lg"
                 >
                     <FileText size={18} />
-                    <span className="font-semibold">Ver Reglamento para {data.category}</span>
+                    <span className="font-semibold">
+                        {config.currentValue ? `Ver Reglamento de ${config.currentValue}` : `Ver Reglamentos de ${data.category}`}
+                    </span>
                 </motion.button>
 
                 <label className="flex items-center gap-3 cursor-pointer group p-2 rounded-lg hover:bg-neutral-900/50 transition-colors select-none">

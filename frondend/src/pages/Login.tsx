@@ -42,11 +42,10 @@ const Login = () => {
         className="w-full max-w-md bg-white border border-neutral-100 rounded-[3rem] p-12 shadow-2xl shadow-neutral-200/60 relative overflow-hidden"
       >
         <div className="flex flex-col items-center mb-12">
-          <div className="w-20 h-20 flex items-center justify-center text-brand mb-6">
-            <img src="/favicon.svg" alt="Logo" />
+          <div className="w-60 h-45 flex items-center justify-center rounded-2xl p-3 mb-6">
+            <img src="/logo-yellow.png" alt="Logo" className="w-full h-full object-contain drop-shadow-md" />
           </div>
-          <h1 className="text-4xl font-black tracking-tight text-black mb-2">CatoBots IV</h1>
-          <p className="text-neutral-400 font-bold uppercase tracking-widest text-[10px]">Inicio de Sesión</p>
+          <p className="text-yellow-300 font-black uppercase text-3xl">Inicio de Sesión</p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-6">

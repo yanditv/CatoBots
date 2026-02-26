@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Play, Pause, RotateCcw, Plus, ShieldAlert, Timer, Trophy, ChevronLeft, Target, LogOut } from 'lucide-react';
+import { Play, Pause, RotateCcw, Plus, ShieldAlert, Timer, Trophy, ChevronLeft, LogOut } from 'lucide-react';
 import type { MatchState } from '../App';
 import { useAuth } from '../context/AuthContext';
 
@@ -36,8 +36,8 @@ const RefereeControl = ({ matches, onControl }: RefereeControlProps) => {
       <div className="min-h-screen bg-neutral-50 p-8 flex flex-col">
         <header className="flex justify-between items-center mb-12">
           <div className="flex items-center gap-4">
-             <div className="w-12 h-12 bg-brand rounded-2xl flex items-center justify-center text-white shadow-lg shadow-brand/20">
-                <Target size={24} />
+             <div className="w-60 h-30 rounded-2xl flex items-center justify-center p-2">
+                <img src="/logo-yellow.png" alt="Logo" className="w-full h-full object-contain drop-shadow-md" />
              </div>
              <div>
                 <h1 className="text-2xl text-neutral-500 font-black tracking-tight">CONTROL <span className="text-brand">ÁRBITRO</span></h1>
