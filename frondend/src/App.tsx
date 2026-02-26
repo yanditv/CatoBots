@@ -70,9 +70,10 @@ function AppContent() {
   return (
     <div className="min-h-screen bg-neutral-950 text-neutral-100 font-sans selection:bg-brand/30">
       <Routes>
-        {/* Public Form */}
+        {/* Public Landing */}
         <Route path="/" element={<LandingPage />} />
-        <Route path="/registro" element={<WizardForm />} />
+        
+        {/* Public Form - Compact Version */}
         <Route path="/registro" element={<WizardForm />} />
 
         {/* Public Scoreboard */}

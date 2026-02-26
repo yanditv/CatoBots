@@ -7,6 +7,9 @@ services:
     environment:
       MYSQL_ROOT_PASSWORD: ${DB_PASS:-rootpassword}
       MYSQL_DATABASE: ${DB_NAME:-cato_bots}
+
+    ports:
+      - "3306:3306"
     volumes:
       - mysql_data:/var/lib/mysql
     healthcheck:
