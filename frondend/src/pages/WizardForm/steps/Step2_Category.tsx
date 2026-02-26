@@ -1,5 +1,5 @@
 import { motion } from "framer-motion";
-import { Baby, Bot, GraduationCap } from "lucide-react";
+import { Baby, Bot, GraduationCap, Check } from "lucide-react";
 
 interface Step2Props {
     data: {
@@ -15,96 +15,96 @@ export default function Step2_Category({ data, updateData, handleNext, handleBac
     const categories = [
         {
             id: "Junior",
-            title: "Junior",
-            description: "Nivel escolar/básico",
+            title: "JUNIOR",
+            description: "OPERADORES EN FORMACIÓN (Básico)",
             icon: Baby,
-            color: "from-blue-500 to-cyan-400"
         },
         {
             id: "Senior",
-            title: "Senior",
-            description: "Nivel bachillerato/intermedio",
+            title: "SENIOR",
+            description: "COMBATIENTES INTERMEDIOS (Bachillerato)",
             icon: Bot,
-            color: "from-purple-500 to-pink-400"
         },
         {
             id: "Master",
-            title: "Master",
-            description: "Universidades y Clubes Independientes",
+            title: "MASTER",
+            description: "INGENIERÍA PESADA (Universidades/Clubes)",
             icon: GraduationCap,
-            color: "from-amber-500 to-orange-400"
         }
     ];
 
     return (
         <div className="space-y-8">
-            <div className="text-center">
-                <h2 className="text-2xl font-bold text-white mb-2">Selecciona tu Categoría</h2>
-                <p className="text-neutral-400">Elige el nivel de competencia adecuado para tu equipo</p>
+            <div className="text-center md:text-left mb-10 border-b-4 border-cb-black-pure pb-6">
+                <h2 className="text-3xl font-tech font-black text-cb-black-pure mb-2 uppercase drop-shadow-[2px_2px_0_rgba(255,240,0,1)]">Clasificación de Nivel</h2>
+                <p className="font-tech text-cb-black-pure text-lg font-bold">SELECCIONA EL GRADO DE AMENAZA DE TU EQUIPO</p>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 {categories.map((cat) => (
                     <motion.button
                         key={cat.id}
-                        whileHover={{ scale: 1.05, y: -5 }}
-                        whileTap={{ scale: 0.95 }}
-                        onClick={() => {
-                            updateData({ category: cat.id });
-                            // Auto advance after selection for smoother flow? 
-                            // Or keep it manual? Let's do manual for now but maybe later auto.
-                            // Actually, let's keep it selected and user clicks next, OR we can auto-advance.
-                            // For step 2, clicking IS selecting, so maybe better to auto-advance or just highlight.
-                        }}
+                        whileHover={{ scale: 1.02, y: -4 }}
+                        whileTap={{ scale: 0.98 }}
+                        onClick={() => updateData({ category: cat.id })}
                         className={`
-                            relative overflow-hidden rounded-2xl p-6 text-left border transition-all duration-300 group
+                            relative overflow-hidden p-6 text-left border-4 transition-all duration-200 group rounded-none
                             ${data.category === cat.id
-                                ? "border-purple-500 bg-neutral-800 shadow-xl shadow-purple-500/10"
-                                : "border-neutral-800 bg-neutral-900/50 hover:bg-neutral-800 hover:border-neutral-700"}
+                                ? "border-cb-black-pure bg-cb-yellow-neon shadow-[8px_8px_0px_#000]"
+                                : "border-cb-black-pure bg-cb-gray-industrial hover:bg-cb-black-pure hover:border-cb-yellow-neon shadow-block-sm"}
                         `}
                     >
-                        <div className={`absolute top-0 right-0 p-24 opacity-10 bg-gradient-to-br ${cat.color} blur-3xl rounded-full -mr-10 -mt-10 pointer-events-none transition-opacity duration-500 ${data.category === cat.id ? 'opacity-20' : ''}`} />
-
-                        <div className={`w-12 h-12 rounded-xl bg-gradient-to-br ${cat.color} flex items-center justify-center mb-4 text-white shadow-lg`}>
-                            <cat.icon size={24} />
+                        <div className={`w-14 h-14 border-4 flex items-center justify-center mb-6 shadow-block-sm transition-colors
+                             ${data.category === cat.id 
+                                ? "bg-cb-black-pure border-cb-black-pure text-cb-yellow-neon" 
+                                : "bg-cb-white-tech border-cb-black-pure text-cb-black-pure group-hover:bg-cb-yellow-neon group-hover:text-cb-black-pure"}
+                        `}>
+                            <cat.icon size={28} strokeWidth={2.5} />
                         </div>
 
-                        <h3 className="text-lg font-bold text-white mb-1 group-hover:text-purple-400 transition-colors">
+                        <h3 className={`text-2xl font-tech font-black mb-2 transition-colors uppercase
+                            ${data.category === cat.id ? "text-cb-black-pure" : "text-cb-white-tech group-hover:text-cb-yellow-neon"}
+                        `}>
                             {cat.title}
                         </h3>
-                        <p className="text-sm text-neutral-400 leading-relaxed">
+                        <p className={`text-sm font-tech font-bold leading-tight transition-colors uppercase tracking-wide
+                            ${data.category === cat.id ? "text-cb-black-pure/80" : "text-neutral-400 group-hover:text-cb-white-tech"}
+                        `}>
                             {cat.description}
                         </p>
 
-                        {/* Selection Indicator */}
-                        <div className={`absolute top-4 right-4 w-4 h-4 rounded-full border-2 transition-all ${data.category === cat.id
-                            ? "border-purple-500 bg-purple-500"
-                            : "border-neutral-700"
-                            }`} />
+                        {/* Selection Indicator Square */}
+                        <div className={`absolute top-6 right-6 w-6 h-6 border-4 flex items-center justify-center transition-all 
+                            ${data.category === cat.id
+                                ? "border-cb-black-pure bg-cb-black-pure shadow-[2px_2px_0_#FFF]"
+                                : "border-cb-black-pure bg-transparent"}
+                            `}>
+                            {data.category === cat.id && <Check strokeWidth={4} className="text-cb-yellow-neon" size={16} />}
+                        </div>
                     </motion.button>
                 ))}
             </div>
 
-            <div className="flex justify-between pt-6 border-t border-neutral-800">
+            <div className="flex flex-col-reverse md:flex-row gap-4 justify-between pt-8 border-t-4 border-cb-black-pure mt-10">
                 {showBackButton ? (
                     <button
                         onClick={handleBack}
-                        className="px-6 py-2 rounded-lg font-medium text-neutral-400 hover:text-white transition-colors"
+                        className="w-full md:w-auto px-6 py-3 border-4 border-cb-black-pure bg-cb-white-tech text-cb-black-pure font-tech font-bold uppercase tracking-widest hover:bg-cb-black-pure hover:text-cb-white-tech transition-all shadow-block-sm hover:shadow-none hover:translate-x-1 hover:translate-y-1"
                     >
-                        Atrás
+                        RETROCEDER
                     </button>
-                ) : <div />}
+                ) : <div className="hidden md:block" />}
                 <button
                     onClick={handleNext}
                     disabled={!data.category}
                     className={`
-                        px-8 py-2 rounded-lg font-bold text-sm tracking-wide transition-all
+                        w-full md:w-auto px-8 py-3 border-4 border-cb-black-pure font-tech text-xl font-bold uppercase tracking-widest transition-all
                         ${data.category
-                            ? "bg-white text-neutral-900 hover:bg-neutral-200"
-                            : "bg-neutral-800 text-neutral-500 cursor-not-allowed"}
+                            ? "bg-cb-yellow-neon text-cb-black-pure shadow-block-sm hover:-translate-y-1"
+                            : "bg-cb-gray-industrial text-neutral-500 cursor-not-allowed"}
                     `}
                 >
-                    Siguiente
+                    AVANZAR COMANDO
                 </button>
             </div>
         </div>

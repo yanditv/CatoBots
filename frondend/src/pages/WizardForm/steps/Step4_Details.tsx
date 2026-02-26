@@ -1,4 +1,4 @@
-import { Bot, Phone, User, Users } from "lucide-react";
+import { Bot, Phone, User, Users, Check } from "lucide-react";
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { validatePhone } from "../../../utils/validation";
@@ -49,38 +49,26 @@ export default function Step4_Details({ data, categoryType, updateData, handleNe
 
         const words = clean.split(" ").filter(w => w.length > 0);
 
-        // Strategy 1: Acronym for multiple words (e.g., "Super Killer Robot" -> "SKR")
         if (words.length > 1) {
             let abbr = words.map(w => w[0]).join("");
-            // If acronym is too short (mask < 3), append meaningful chars from the last word
             if (abbr.length < 3) {
                 const lastWord = words[words.length - 1];
-                // Try to add consonants from last word, excluding the first char (already in abbr)
                 const consonants = lastWord.slice(1).replace(/[AEIOU]/g, '');
                 abbr += consonants.substring(0, 4 - abbr.length);
             }
             return abbr.substring(0, 5);
         }
 
-        // Strategy 2: Single Word Smart Contraction (e.g., "Killbe" -> "KLBE" or "KIBE")
         const word = words[0];
-        // Always take first and last
         const first = word[0];
         const last = word[word.length - 1];
-
-        // Middle distinct characters (prioritize consonants, then vowels)
-        // Remove duplicates for "variety"
         const middle = word.slice(1, -1);
-
-        // Filter middle: 1. Consonants, 2. Unique
         const distinctConsonants = Array.from(new Set(middle.replace(/[AEIOU]/g, '').split(''))).join('');
 
-        // Construct: First + 2 Consonants + Last?
         if (distinctConsonants.length >= 2) {
             return (first + distinctConsonants.substring(0, 2) + last).substring(0, 4);
         }
 
-        // If not enough consonants, just take distinctive chars in order
         const distinctChars = Array.from(new Set(middle.split(''))).join('');
         return (first + distinctChars.substring(0, 2) + last).substring(0, 4);
     };
@@ -110,7 +98,7 @@ export default function Step4_Details({ data, categoryType, updateData, handleNe
         const newErrors: { [key: string]: string } = {};
 
         if (data.advisorPhone && !validatePhone(data.advisorPhone)) {
-            newErrors.advisorPhone = "Teléfono inválido (09XXXXXXXX)";
+            newErrors.advisorPhone = "ENLACE INVÁLIDO (USE FORMATO: 09XXXXXXXX)";
         }
 
         setErrors(newErrors);
@@ -133,50 +121,58 @@ export default function Step4_Details({ data, categoryType, updateData, handleNe
     }, [data.advisorPhone]);
 
     return (
-        <div className="space-y-6">
-            <div className="text-center mb-6">
-                <h2 className="text-2xl font-bold text-white mb-2">Detalles del Equipo</h2>
-                <p className="text-neutral-400">Cuéntanos sobre los participantes</p>
+        <div className="space-y-8">
+            <div className="text-center md:text-left mb-10 border-b-4 border-cb-black-pure pb-6">
+                <h2 className="text-3xl font-tech font-black text-cb-black-pure mb-2 uppercase drop-shadow-[2px_2px_0_rgba(255,240,0,1)]">ESPECIFICACIONES DE LA UNIDAD</h2>
+                <p className="font-tech text-cb-black-pure text-lg font-bold mt-4">INGRESAR PERFIL TÁCTICO DEL EQUIPO Y ROBOT</p>
             </div>
 
             <div className="grid grid-cols-1 gap-8">
                 {/* Robot Section */}
                 {isRobotica && (
-                    <div className="bg-neutral-900/50 border border-neutral-800 rounded-2xl p-6 space-y-4 relative overflow-hidden">
-                        <div className="absolute top-0 right-0 w-32 h-32 bg-purple-500/5 blur-[80px] rounded-full"></div>
-                        <h3 className="text-lg font-bold text-white flex items-center gap-2 mb-4">
-                            <Bot className="text-purple-400" size={20} />
-                            Registro del Robot
-                        </h3>
+                    <div className="bg-cb-gray-industrial border-4 border-cb-black-pure p-8 space-y-6 relative overflow-visible shadow-block-sm">
+                        
+                        {/* Title Badge overlay */}
+                        <div className="absolute -top-4 md:-top-5 left-2 md:left-4 bg-cb-black-pure px-3 md:px-4 py-1.5 md:py-2 border-4 border-cb-black-pure shadow-[4px_4px_0_#FFF] flex items-center gap-2 md:gap-3">
+                            <Bot className="text-cb-yellow-neon w-5 h-5 md:w-6 md:h-6" strokeWidth={2.5} />
+                            <h3 className="text-sm md:text-xl font-tech font-black text-cb-white-tech tracking-widest uppercase truncate max-w-[200px] sm:max-w-none">REGISTRO MÁQUINA</h3>
+                        </div>
 
-                        <div className="space-y-4">
-                            <div className="space-y-2">
-                                <label className="text-sm font-medium text-neutral-300">
-                                    Nombre del Robot
+                        <div className="space-y-6 pt-8 md:pt-4">
+                            <div className="space-y-2 group">
+                                <label className="block text-sm font-tech font-black uppercase tracking-widest text-cb-white-tech mb-2">
+                                    IDENTIFICADOR (NOMBRE DEL ROBOT)
                                 </label>
                                 <input
                                     type="text"
                                     value={data.robotName}
                                     onChange={(e) => updateData({ robotName: e.target.value })}
-                                    className="w-full bg-neutral-900 border border-neutral-700 rounded-lg px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-purple-500/50 transition-all"
-                                    placeholder="Ej. Terminator"
+                                    className="w-full bg-cb-white-tech border-4 border-cb-black-pure rounded-none px-4 py-3 text-cb-black-pure font-tech text-lg focus:outline-none focus:ring-4 focus:ring-cb-yellow-neon uppercase placeholder:text-neutral-400 transition-all shadow-[4px_4px_0_#000] focus:shadow-none translate-y-0 focus:translate-y-1 block"
+                                    placeholder="EJ. TERMINATOR DESTRUCTOR"
                                 />
                             </div>
 
-                            <div className="space-y-2">
-                                <div className="flex justify-between items-center">
-                                    <label className="text-sm font-medium text-neutral-300 flex items-center gap-2">
-                                        <span className="bg-purple-500/10 text-purple-400 px-2 py-0.5 rounded text-xs font-bold border border-purple-500/20">ABR</span>
-                                        Abreviatura (Scoreboard)
+                            <div className="space-y-2 group">
+                                <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center mb-2 gap-3 lg:gap-0">
+                                    <label className="text-xs md:text-sm font-tech font-black uppercase tracking-widest text-cb-white-tech flex items-center gap-2">
+                                        <span className="bg-cb-black-pure text-cb-yellow-neon px-2 py-0.5 border-2 border-cb-yellow-neon">ABR</span>
+                                        CLAVE DE SCOREBOARD
                                     </label>
-                                    <label className="flex items-center gap-2 cursor-pointer select-none">
-                                        <input
-                                            type="checkbox"
-                                            checked={isEditingAbbreviation}
-                                            onChange={(e) => setIsEditingAbbreviation(e.target.checked)}
-                                            className="w-4 h-4 rounded border-neutral-600 bg-neutral-800 text-purple-500 focus:ring-purple-500/50 accent-purple-500"
-                                        />
-                                        <span className="text-xs text-neutral-400 hover:text-white transition-colors">Editar manualmente</span>
+                                    <label className="flex items-center gap-2 cursor-pointer select-none self-start lg:self-auto group">
+                                        <div className="relative flex">
+                                            <input
+                                                type="checkbox"
+                                                checked={isEditingAbbreviation}
+                                                onChange={(e) => setIsEditingAbbreviation(e.target.checked)}
+                                                className="peer sr-only"
+                                            />
+                                            <div className={`w-6 h-6 flex items-center justify-center border-4 border-cb-black-pure transition-all
+                                                ${isEditingAbbreviation ? "bg-cb-yellow-neon shadow-[2px_2px_0_#FFF]" : "bg-cb-white-tech group-hover:bg-cb-yellow-neon/20 shadow-block-sm"}
+                                            `}>
+                                                {isEditingAbbreviation && <Check strokeWidth={4} className="text-cb-black-pure" size={16} />}
+                                            </div>
+                                        </div>
+                                        <span className="text-xs md:text-sm font-tech font-bold uppercase text-cb-white-tech group-hover:text-cb-yellow-neon transition-colors mt-0.5">MODIFICACIÓN MANUAL</span>
                                     </label>
                                 </div>
 
@@ -186,15 +182,17 @@ export default function Step4_Details({ data, categoryType, updateData, handleNe
                                     value={data.robotAbbreviation || ''}
                                     disabled={!isEditingAbbreviation}
                                     onChange={(e) => updateData({ robotAbbreviation: e.target.value.toUpperCase() })}
-                                    className={`w-full bg-neutral-900 border rounded-lg px-4 py-3 text-white focus:outline-none focus:ring-2 transition-all font-mono tracking-wider uppercase
-                                        ${!isEditingAbbreviation ? 'opacity-50 cursor-not-allowed border-neutral-800' : 'border-neutral-700 focus:ring-purple-500/50'}
-                                    `}
-                                    placeholder="Ej. TERM"
+                                    className={`w-full border-4 rounded-none px-4 py-3 font-tech text-2xl font-black uppercase tracking-[0.3em] text-center transition-all ${
+                                        !isEditingAbbreviation 
+                                            ? 'bg-neutral-300 border-neutral-500 text-neutral-600 cursor-not-allowed' 
+                                            : 'bg-cb-yellow-neon border-cb-black-pure text-cb-black-pure shadow-[4px_4px_0_#000] focus:shadow-none hover:shadow-none translate-y-0 focus:translate-y-1 focus:ring-4 focus:ring-cb-black-pure'
+                                    }`}
+                                    placeholder="TRMN"
                                 />
                                 {!isEditingAbbreviation && data.robotAbbreviation && (
-                                    <p className="text-xs text-neutral-500 flex items-center gap-1">
-                                        <span className="w-1.5 h-1.5 rounded-full bg-green-500"></span>
-                                        Sugerencia automática basada en el nombre
+                                    <p className="text-xs font-tech font-bold uppercase text-cb-white-tech flex items-center gap-2 mt-2">
+                                        <span className="w-2 h-2 bg-cb-green-vibrant border border-cb-black-pure animate-pulse shadow-[1px_1px_0_#000]"></span>
+                                        CÁLCULO AUTOMÁTICO DE SCOREBOARD ACTIVO
                                     </p>
                                 )}
                             </div>
@@ -203,40 +201,39 @@ export default function Step4_Details({ data, categoryType, updateData, handleNe
                 )}
 
                 {/* Team Section */}
-                <div className="bg-neutral-900/50 border border-neutral-800 rounded-2xl p-6 space-y-6 relative overflow-hidden">
-                    <div className="absolute top-0 right-0 w-32 h-32 bg-blue-500/5 blur-[80px] rounded-full"></div>
-                    <h3 className="text-lg font-bold text-white flex items-center gap-2 mb-2">
-                        <Users className="text-blue-400" size={20} />
-                        Registro del Equipo
-                    </h3>
-
-                    {/* Team Name and Contact Email */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        {!isRobotica && (
-                            <div className="space-y-2">
-                                <label className="text-sm font-medium text-neutral-300">
-                                    Nombre del Equipo
-                                </label>
-                                <input
-                                    type="text"
-                                    value={data.teamName}
-                                    onChange={(e) => updateData({ teamName: e.target.value })}
-                                    className="w-full bg-neutral-900 border border-neutral-700 rounded-lg px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-all"
-                                    placeholder="Ej. Los Innovadores"
-                                />
-                            </div>
-                        )}
+                <div className="bg-cb-gray-industrial border-4 border-cb-black-pure p-8 pt-10 space-y-8 relative overflow-visible shadow-block-sm mt-8">
+                    {/* Title Badge overlay */}
+                    <div className="absolute -top-4 md:-top-5 left-2 md:left-4 bg-cb-white-tech px-3 md:px-4 py-1.5 md:py-2 border-4 border-cb-black-pure shadow-[4px_4px_0_#000] flex items-center gap-2 md:gap-3 z-10">
+                        <Users className="text-cb-black-pure w-5 h-5 md:w-6 md:h-6" strokeWidth={2.5} />
+                        <h3 className="text-sm md:text-xl font-tech font-black text-cb-black-pure tracking-widest uppercase truncate max-w-[220px] sm:max-w-none">REGISTRO ESCUADRÓN</h3>
                     </div>
 
+                    <div className="pt-8 md:pt-4 space-y-8">
+                    {/* Team Name */}
+                    {!isRobotica && (
+                        <div className="space-y-2 group">
+                            <label className="block text-sm font-tech font-black uppercase tracking-widest text-cb-white-tech mb-2">
+                                DESIGNACIÓN DEL ESCUADRÓN
+                            </label>
+                            <input
+                                type="text"
+                                value={data.teamName}
+                                onChange={(e) => updateData({ teamName: e.target.value })}
+                                className="w-full bg-cb-white-tech border-4 border-cb-black-pure rounded-none px-4 py-3 text-cb-black-pure font-tech text-lg focus:outline-none focus:ring-4 focus:ring-cb-yellow-neon uppercase placeholder:text-neutral-400 transition-all shadow-[4px_4px_0_#000] focus:shadow-none translate-y-0 focus:translate-y-1 block"
+                                placeholder="EJ. COMANDOS CIBERNÉTICOS"
+                            />
+                        </div>
+                    )}
+
                     {/* Members Section */}
-                    <div className="space-y-4 pt-2">
-                        <div className="flex items-center justify-between">
-                            <label className="text-sm font-medium text-neutral-300 flex items-center gap-2">
-                                <Users size={16} className="text-purple-400" />
-                                Integrantes
+                    <div className="space-y-6 bg-cb-black-pure p-6 shadow-block-sm">
+                        <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between border-b-4 border-cb-white-tech/20 pb-4">
+                            <label className="text-sm font-tech font-black uppercase tracking-widest text-cb-yellow-neon flex items-center gap-3">
+                                <Users size={20} className="text-cb-white-tech" />
+                                PERSONAL ASIGNADO
                             </label>
 
-                            <label className="flex items-center gap-2 cursor-pointer group">
+                            <label className="flex items-center gap-3 cursor-pointer group bg-cb-gray-industrial px-4 py-2 border-4 border-cb-black-pure hover:bg-cb-yellow-neon hover:text-cb-black-pure transition-colors">
                                 <div className="relative">
                                     <input
                                         type="checkbox"
@@ -244,76 +241,70 @@ export default function Step4_Details({ data, categoryType, updateData, handleNe
                                         checked={hasSecondMember}
                                         onChange={(e) => setHasSecondMember(e.target.checked)}
                                     />
-                                    <div className={`w-10 h-6 rounded-full transition-colors ${hasSecondMember ? "bg-purple-600" : "bg-neutral-700"
-                                        }`}></div>
-                                    <div className={`absolute top-1 left-1 bg-white w-4 h-4 rounded-full transition-transform ${hasSecondMember ? "translate-x-4" : "translate-x-0"
-                                        }`}></div>
+                                    <div className={`w-12 h-6 border-4 border-cb-black-pure transition-colors ${hasSecondMember ? "bg-cb-green-vibrant" : "bg-neutral-400"}`}></div>
+                                    <div className={`absolute top-1 left-1 bg-cb-black-pure w-4 h-4 transition-transform ${hasSecondMember ? "translate-x-6 bg-cb-yellow-warning" : "translate-x-0"}`}></div>
                                 </div>
-                                <span className="text-xs text-neutral-400 group-hover:text-white transition-colors">
-                                    2 Integrantes
+                                <span className="text-sm font-tech font-bold uppercase transition-colors text-cb-white-tech group-hover:text-cb-black-pure">
+                                    ACTIVAR 2DO INTEGRANTE
                                 </span>
                             </label>
                         </div>
 
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                             {/* Member 1 */}
                             <div className="space-y-2">
-                                <div className="input-group">
-                                    <input
-                                        type="text"
-                                        value={member1}
-                                        onChange={(e) => setMember1(e.target.value)}
-                                        className="w-full bg-neutral-900 border border-neutral-700 rounded-lg px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-purple-500/50 transition-all"
-                                        placeholder="Nombre del Capitán"
-                                    />
-                                    <p className="text-xs text-neutral-500 mt-1 ml-1">Capitán / Integrante 1</p>
-                                </div>
+                                <label className="block text-xs font-tech font-bold uppercase text-cb-white-tech/70">COMANDANTE EN JEFE (INTEGRANTE 1)</label>
+                                <input
+                                    type="text"
+                                    value={member1}
+                                    onChange={(e) => setMember1(e.target.value)}
+                                    className="w-full bg-cb-white-tech border-4 border-cb-white-tech rounded-none px-4 py-3 text-cb-black-pure font-tech text-lg focus:outline-none focus:ring-4 focus:ring-cb-yellow-neon uppercase placeholder:text-neutral-500 transition-all"
+                                    placeholder="NOMBRE COMPLETO"
+                                />
                             </div>
 
                             {/* Member 2 - Conditional */}
                             {hasSecondMember && (
                                 <motion.div
-                                    initial={{ opacity: 0, x: -10 }}
-                                    animate={{ opacity: 1, x: 0 }}
-                                    className="space-y-2"
+                                    initial={{ opacity: 0, scaleY: 0.8 }}
+                                    animate={{ opacity: 1, scaleY: 1 }}
+                                    className="space-y-2 origin-top"
                                 >
-                                    <div className="input-group">
-                                        <input
-                                            type="text"
-                                            value={member2}
-                                            onChange={(e) => setMember2(e.target.value)}
-                                            className="w-full bg-neutral-900 border border-neutral-700 rounded-lg px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-purple-500/50 transition-all"
-                                            placeholder="Nombre del Segundo Integrante"
-                                        />
-                                        <p className="text-xs text-neutral-500 mt-1 ml-1">Integrante 2</p>
-                                    </div>
+                                     <label className="block text-xs font-tech font-bold uppercase text-cb-white-tech/70">OPERADOR DE APOYO (INTEGRANTE 2)</label>
+                                    <input
+                                        type="text"
+                                        value={member2}
+                                        onChange={(e) => setMember2(e.target.value)}
+                                        className="w-full bg-cb-white-tech border-4 border-cb-white-tech rounded-none px-4 py-3 text-cb-black-pure font-tech text-lg focus:outline-none focus:ring-4 focus:ring-cb-yellow-neon uppercase placeholder:text-neutral-500 transition-all"
+                                        placeholder="NOMBRE COMPLETO"
+                                    />
                                 </motion.div>
                             )}
                         </div>
                     </div>
 
                     {/* Advisor Section */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-2 border-t border-neutral-800/50">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8 pt-6 border-t-4 border-cb-black-pure">
                         {/* Advisor Name */}
-                        <div className="space-y-2">
-                            <label className="text-sm font-medium text-neutral-300 flex items-center gap-2">
-                                <User size={16} className="text-purple-400" />
-                                Nombre del Asesor
+                        <div className="space-y-2 group">
+                            <label className="text-sm font-tech font-black uppercase tracking-widest text-cb-white-tech mb-2 flex items-center gap-2">
+                                <User size={20} className="text-cb-white-tech" />
+                                MENTOR / DOCENTE RESPONSABLE
                             </label>
                             <input
                                 type="text"
                                 value={data.advisorName}
                                 onChange={(e) => updateData({ advisorName: e.target.value })}
-                                className="w-full bg-neutral-900 border border-neutral-700 rounded-lg px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-purple-500/50 transition-all"
-                                placeholder="Nombre del docente o asesor"
+                                className="w-full bg-cb-white-tech border-4 border-cb-black-pure rounded-none px-4 py-3 text-cb-black-pure font-tech text-lg focus:outline-none focus:ring-4 focus:ring-cb-yellow-neon uppercase placeholder:text-neutral-400 transition-all shadow-[4px_4px_0_#000] focus:shadow-none translate-y-0 focus:translate-y-1 block"
+                                placeholder="NOMBRE DEL DOCENTE"
                             />
                         </div>
 
                         {/* Advisor Phone */}
-                        <div className="space-y-2">
-                            <label className="text-sm font-medium text-neutral-300 flex items-center gap-2">
-                                <Phone size={16} className="text-purple-400" />
-                                Teléfono del Asesor
+                        <div className="space-y-2 group">
+                            <label className="text-sm font-tech font-black uppercase tracking-widest text-cb-white-tech mb-2 flex items-center gap-2">
+                                <Phone size={20} className="text-cb-white-tech" />
+                                CANAL DE COMUNICACIÓN (WHATSAPP)
                             </label>
                             <input
                                 type="tel"
@@ -323,33 +314,34 @@ export default function Step4_Details({ data, categoryType, updateData, handleNe
                                     const val = e.target.value.replace(/\D/g, '');
                                     updateData({ advisorPhone: val });
                                 }}
-                                className={`w-full bg-neutral-900 border rounded-lg px-4 py-3 text-white focus:outline-none focus:ring-2 transition-all ${errors.advisorPhone ? "border-red-500 focus:ring-red-500/50" : "border-neutral-700 focus:ring-purple-500/50"}`}
-                                placeholder="099..."
+                                className={`w-full bg-cb-white-tech border-4 rounded-none px-4 py-3 text-cb-black-pure font-tech text-lg focus:outline-none focus:ring-4 transition-all shadow-[4px_4px_0_#000] focus:shadow-none translate-y-0 focus:translate-y-1 block ${errors.advisorPhone ? "border-red-600 focus:ring-red-600 focus:bg-red-50" : "border-cb-black-pure focus:ring-cb-yellow-neon"}`}
+                                placeholder="09XXXXXXXX"
                             />
-                            {errors.advisorPhone && <p className="text-xs text-red-500 ml-1">{errors.advisorPhone}</p>}
+                            {errors.advisorPhone && <p className="text-xs font-tech font-bold text-red-600 bg-red-100 border-2 border-red-600 px-2 py-1 uppercase mt-2 w-fit">{errors.advisorPhone}</p>}
                         </div>
+                    </div>
                     </div>
                 </div>
             </div>
 
-            <div className="flex justify-between pt-6 border-t border-neutral-800 mt-8">
+            <div className="flex flex-col-reverse md:flex-row gap-4 justify-between pt-8 border-t-4 border-cb-black-pure mt-10">
                 <button
                     onClick={handleBack}
-                    className="px-6 py-2 rounded-lg font-medium text-neutral-400 hover:text-white transition-colors"
+                    className="w-full md:w-auto px-6 py-3 border-4 border-cb-black-pure bg-cb-white-tech text-cb-black-pure font-tech font-bold uppercase tracking-widest hover:bg-cb-black-pure hover:text-cb-white-tech transition-all shadow-block-sm hover:shadow-none hover:translate-x-1 hover:translate-y-1"
                 >
-                    Atrás
+                    RETROCEDER
                 </button>
                 <button
                     onClick={handleNext}
                     disabled={!isFormValid}
                     className={`
-                        px-8 py-2 rounded-lg font-bold text-sm tracking-wide transition-all
+                        w-full md:w-auto px-8 py-3 border-4 border-cb-black-pure font-tech text-xl font-bold uppercase tracking-widest transition-all
                         ${isFormValid
-                            ? "bg-white text-neutral-900 hover:bg-neutral-200"
-                            : "bg-neutral-800 text-neutral-500 cursor-not-allowed"}
+                            ? "bg-cb-yellow-neon text-cb-black-pure shadow-block-sm hover:-translate-y-1"
+                            : "bg-cb-gray-industrial text-neutral-500 cursor-not-allowed"}
                     `}
                 >
-                    Siguiente
+                    AVANZAR COMANDO
                 </button>
             </div>
         </div>

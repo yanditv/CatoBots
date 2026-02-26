@@ -3,6 +3,7 @@ import { useAuth } from "../../context/AuthContext";
 import { useGoogleLogin, useGoogleOneTapLogin } from "@react-oauth/google";
 import { jwtDecode } from "jwt-decode";
 import WizardLayout from "./WizardLayout";
+import Step0_PaymentInfo from "./steps/Step0_PaymentInfo";
 import Step1_EventDetails from "./steps/Step1_EventDetails";
 import Step2_Category from "./steps/Step2_Category";
 import Step3_SubCategory from "./steps/Step3_SubCategory";
@@ -33,7 +34,8 @@ export default function WizardForm() {
         advisorName: "",
         advisorPhone: "",
         paymentProof: null as string | null,
-        termsAccepted: false
+        termsAccepted: false,
+        paymentReadyConfirmed: false
     });
 
     const updateData = (newData: any) => {
@@ -173,29 +175,28 @@ export default function WizardForm() {
     }
 
     const steps = [
-        { id: 1, title: "Categoría", description: "Nivel de competencia" },
+        { id: 1, title: "Requisito", description: "Verificación de Pago" },
         { id: 2, title: "Datos", description: "Institución y Contacto" },
-        { id: 3, title: "Competencia", description: "Selección específica" },
-        { id: 4, title: "Detalles", description: "Equipo y asesor" },
-        { id: 5, title: "Pago", description: "Comprobante" },
-        { id: 6, title: "Confirmar", description: "Revisión final" },
+        { id: 3, title: "Categoría", description: "Nivel de competencia" },
+        { id: 4, title: "Competencia", description: "Selección específica" },
+        { id: 5, title: "Detalles", description: "Equipo y asesor" },
+        { id: 6, title: "Pago", description: "Comprobante" },
+        { id: 7, title: "Confirmar", description: "Revisión final" },
     ];
 
     return (
         <WizardLayout
             currentStep={currentStep}
-            totalSteps={6}
+            totalSteps={7}
             steps={steps}
-            title="CatoBots IV"
+            title="IV"
             subtitle="Formulario de Inscripción Oficial"
         >
             {currentStep === 1 && (
-                <Step2_Category
+                <Step0_PaymentInfo
                     data={formData}
                     updateData={updateData}
                     handleNext={handleNext}
-                    handleBack={handleBack}
-                    showBackButton={false}
                 />
             )}
 
@@ -206,11 +207,21 @@ export default function WizardForm() {
                     googleUser={googleUser}
                     handleGoogleLogin={() => handleGoogleLogin()}
                     handleNext={handleNext}
-                    handleBack={handleBack}
+                    // No handleBack for first step
                 />
             )}
 
             {currentStep === 3 && (
+                <Step2_Category
+                    data={formData}
+                    updateData={updateData}
+                    handleNext={handleNext}
+                    handleBack={handleBack}
+                    showBackButton={true}
+                />
+            )}
+
+            {currentStep === 4 && (
                 <Step3_SubCategory
                     data={formData}
                     updateData={updateData}
@@ -220,7 +231,7 @@ export default function WizardForm() {
                 />
             )}
 
-            {currentStep === 4 && (
+            {currentStep === 5 && (
                 <Step4_Details
                     data={formData}
                     categoryType={getCategoryType()}
@@ -230,7 +241,7 @@ export default function WizardForm() {
                 />
             )}
 
-            {currentStep === 5 && (
+            {currentStep === 6 && (
                 <Step5_Payment
                     data={formData}
                     updateData={updateData}
@@ -239,7 +250,7 @@ export default function WizardForm() {
                 />
             )}
 
-            {currentStep === 6 && (
+            {currentStep === 7 && (
                 <Step6_Summary
                     data={formData}
                     categoryType={getCategoryType()}

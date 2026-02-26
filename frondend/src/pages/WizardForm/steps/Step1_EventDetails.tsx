@@ -19,89 +19,88 @@ export default function Step1_EventDetails({ data, updateData, googleUser, handl
     const isValid = data.email && isEmailValid && data.institution && data.institution.trim().length > 3;
 
     return (
-        <div className="space-y-6">
-            <div className="text-center md:text-left mb-8">
-                <h2 className="text-2xl font-bold text-white mb-2">Información del Evento</h2>
-                <div className="flex flex-col gap-2 text-neutral-400 text-sm">
-                    <p className="flex items-center gap-2 justify-center md:justify-start">
-                        <span className="font-semibold text-purple-400">FECHA:</span> 20 DE MARZO DEL 2026
+        <div className="space-y-8">
+            <div className="text-center md:text-left mb-10 border-b-4 border-cb-black-pure pb-6">
+                <h2 className="text-3xl font-tech font-black text-cb-black-pure mb-4 uppercase drop-shadow-[2px_2px_0_rgba(255,240,0,1)]">Información del Evento</h2>
+                <div className="flex flex-col gap-3 font-tech text-cb-black-pure text-lg">
+                    <p className="flex items-center gap-3 justify-center md:justify-start">
+                        <span className="font-extrabold bg-cb-black-pure text-cb-yellow-neon px-2 py-1 uppercase text-sm shadow-block-sm">TIEMPO:</span> 20 DE MARZO DEL 2026
                     </p>
-                    <p className="flex items-center gap-2 justify-center md:justify-start">
-                        <span className="font-semibold text-purple-400">LUGAR:</span> COLISEO DE LAS AGUILAS ROJAS
+                    <p className="flex items-center gap-3 justify-center md:justify-start">
+                        <span className="font-extrabold bg-cb-black-pure text-cb-yellow-neon px-2 py-1 uppercase text-sm shadow-block-sm">TERRENO:</span> COMPLEJO DEPORTIVO BANCO CENTRAL
                     </p>
                     <a
-                        href="https://maps.app.goo.gl/dwUEErcrpNe4CiN59"
+                        href="https://maps.app.goo.gl/FjRKZn9o9d1hV2nA7"
                         target="_blank"
                         rel="noreferrer"
-                        className="text-blue-400 hover:text-blue-300 underline flex items-center gap-1 justify-center md:justify-start"
+                        className="text-cb-black-pure hover:bg-cb-yellow-neon px-2 py-1 transition-colors flex items-center gap-2 justify-center md:justify-start w-fit mx-auto md:mx-0 font-bold underline decoration-4 underline-offset-4"
                     >
-                        <MapPin size={14} /> Ver ubicación
+                        <MapPin size={20} /> VISUALIZAR MAPA TÁCTICO
                     </a>
                 </div>
             </div>
 
-            <div className="space-y-4">
+            <div className="space-y-6">
                 {/* Email Section */}
-                <div className="bg-neutral-800/50 p-4 rounded-xl border border-neutral-700/50">
-                    <label className="block text-sm font-medium text-neutral-300 mb-2 flex items-center gap-2">
-                        <Mail size={16} className="text-purple-400" /> Correo Electrónico
+                <div className="bg-cb-gray-industrial p-6 border-4 border-cb-black-pure shadow-block-sm relative group">
+                    <label className="block text-sm font-tech font-black uppercase tracking-widest text-cb-white-tech mb-4 flex items-center gap-3">
+                        <Mail size={20} className="text-cb-yellow-neon" /> OPERADOR ENLACE (EMAIL)
                     </label>
-                    <div className="flex gap-2">
+                    <div className="flex flex-col sm:flex-row gap-4">
                         <input
                             type="email"
                             value={data.email}
                             onChange={(e) => updateData({ email: e.target.value })}
-                            placeholder="tu@email.com"
-                            className="flex-1 bg-neutral-900 border border-neutral-700 rounded-lg px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-purple-500/50 transition-all"
+                            placeholder="OPERADOR@SISTEMA.COM"
+                            className="flex-1 bg-cb-black-pure border-4 border-cb-black-pure rounded-none px-4 py-3 text-cb-yellow-neon font-tech text-lg focus:outline-none focus:ring-4 focus:ring-cb-yellow-neon focus:border-cb-black-pure placeholder:text-neutral-600 transition-all uppercase"
                         />
                         <button
                             onClick={handleGoogleLogin}
-                            className="bg-white text-neutral-900 px-4 py-2 rounded-lg font-medium hover:bg-neutral-200 transition-colors flex items-center gap-2 text-sm whitespace-nowrap"
+                            className="bg-cb-white-tech text-cb-black-pure px-6 py-3 border-4 border-cb-black-pure font-tech font-bold uppercase tracking-widest hover:bg-cb-yellow-neon hover:-translate-y-1 transition-all shadow-block-sm flex items-center justify-center gap-3"
                         >
-                            <img src="https://www.google.com/favicon.ico" alt="G" className="w-4 h-4" />
-                            {googleUser ? "Cambiar" : "Usar Google"}
+                            <img src="https://www.google.com/favicon.ico" alt="G" className="w-5 h-5 grayscale" />
+                            {googleUser ? "REASIGNAR" : "VÍNCULO GOOGLE"}
                         </button>
                     </div>
                 </div>
 
                 {/* Institution Section */}
-                <div className="bg-neutral-800/50 p-4 rounded-xl border border-neutral-700/50">
-                    <label className="block text-sm font-medium text-neutral-300 mb-2 flex items-center gap-2">
-                        <Building size={16} className="text-purple-400" /> Institución Educativa
+                <div className="bg-cb-gray-industrial p-6 border-4 border-cb-black-pure shadow-block-sm relative group">
+                    <label className="block text-sm font-tech font-black uppercase tracking-widest text-cb-white-tech mb-4 flex items-center gap-3">
+                        <Building size={20} className="text-cb-yellow-neon" /> FACCIÓN / INSTITUCIÓN
                     </label>
                     <input
                         type="text"
                         value={data.institution}
                         onChange={(e) => updateData({ institution: e.target.value })}
-                        placeholder="Nombre de la Unidad Educativa"
-                        className="w-full bg-neutral-900 border border-neutral-700 rounded-lg px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-purple-500/50 transition-all"
+                        placeholder="INGRESE EL NOMBRE DE LA ORGANIZACIÓN"
+                        className="w-full bg-cb-black-pure border-4 border-cb-black-pure rounded-none px-4 py-3 text-cb-yellow-neon font-tech text-lg focus:outline-none focus:ring-4 focus:ring-cb-yellow-neon focus:border-cb-black-pure placeholder:text-neutral-600 transition-all uppercase"
                     />
                 </div>
             </div>
 
-            <div className="flex justify-between pt-6 border-t border-neutral-800 mt-8">
+            <div className="flex flex-col-reverse md:flex-row gap-4 justify-between pt-8 border-t-4 border-cb-black-pure mt-10">
                 {handleBack ? (
                     <button
                         onClick={handleBack}
-                        className="px-6 py-2 rounded-lg font-medium text-neutral-400 hover:text-white transition-colors"
+                        className="w-full md:w-auto px-6 py-3 border-4 border-cb-black-pure bg-cb-white-tech text-cb-black-pure font-tech font-bold uppercase tracking-widest hover:bg-cb-black-pure hover:text-cb-white-tech transition-all shadow-block-sm hover:shadow-none hover:translate-x-1 hover:translate-y-1"
                     >
-                        Atrás
+                        RETROCEDER
                     </button>
-                ) : <div />}
+                ) : <div className="hidden md:block" />}
 
                 <motion.button
-                    whileHover={{ scale: 1.02 }}
-                    whileTap={{ scale: 0.98 }}
+                    whileTap={isValid ? { scale: 0.95 } : {}}
                     onClick={handleNext}
                     disabled={!isValid}
                     className={`
-                        px-8 py-3 rounded-xl font-bold text-sm tracking-wide transition-all
+                        w-full md:w-auto px-8 py-3 border-4 border-cb-black-pure font-tech text-xl font-bold uppercase tracking-widest transition-all
                         ${isValid
-                            ? "bg-gradient-to-r from-purple-600 to-blue-600 text-white shadow-lg shadow-purple-600/20"
-                            : "bg-neutral-800 text-neutral-500 cursor-not-allowed"}
+                            ? "bg-cb-yellow-neon text-cb-black-pure shadow-block-sm hover:-translate-y-1"
+                            : "bg-cb-gray-industrial text-neutral-500 cursor-not-allowed"}
                     `}
                 >
-                    SIGUIENTE
+                    AVANZAR COMANDO
                 </motion.button>
             </div>
         </div>
