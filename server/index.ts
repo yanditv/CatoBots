@@ -419,7 +419,7 @@ app.put('/api/registrations/:id', authenticateJWT, isAdmin, async (req, res) => 
 
   if (updatedRegistration && (paymentStatus === 'APPROVED' || paymentStatus === 'REJECTED')) {
     const targetEmail = updatedRegistration.data?.email || updatedRegistration.google_email;
-    await sendStatusEmail(targetEmail, paymentStatus);
+    await sendStatusEmail(targetEmail, paymentStatus, updatedRegistration.data);
   }
 
   res.json(updatedRegistration);

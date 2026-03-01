@@ -59,11 +59,11 @@ export default function Step6_Summary({ data, categoryType, updateData, handleBa
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div className="space-y-1">
                             <p className="text-sm font-tech font-bold text-neutral-500 uppercase">BASE DE OPERACIONES (INSTITUCIÓN)</p>
-                            <p className="text-lg font-tech font-black text-cb-black-pure uppercase drop-shadow-[1px_1px_0_#FFF]">{data.institution}</p>
+                            <p className="text-lg font-tech font-black text-white/70 uppercase drop-shadow-[1px_1px_0_#FFF]">{data.institution}</p>
                         </div>
                         <div className="space-y-1">
                             <p className="text-sm font-tech font-bold text-neutral-500 uppercase">CANAL PRINCIPAL (CORREO)</p>
-                            <p className="text-lg font-tech font-black text-cb-black-pure uppercase drop-shadow-[1px_1px_0_#FFF]">{data.email}</p>
+                            <p className="text-lg font-tech font-black text-white/70 uppercase drop-shadow-[1px_1px_0_#FFF]">{data.email}</p>
                         </div>
                         <div className="space-y-1 md:col-span-2 bg-cb-black-pure p-4 border-l-8 border-cb-yellow-neon">
                             <p className="text-sm font-tech font-bold text-neutral-400 uppercase">DIVISIÓN ASIGNADA (CATEGORÍA)</p>

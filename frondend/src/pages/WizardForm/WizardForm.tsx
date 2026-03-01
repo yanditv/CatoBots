@@ -11,6 +11,7 @@ import Step4_Details from "./steps/Step4_Details";
 import Step5_Payment from "./steps/Step5_Payment";
 import Step6_Summary from "./steps/Step6_Summary";
 import Rules from "../Form/Regulations/rules";
+import AlertModal from "./AlertModal";
 import { Loader2 } from "lucide-react";
 import { api } from "../../config/api";
 
@@ -19,6 +20,7 @@ export default function WizardForm() {
     const [isLoading, setIsLoading] = useState(true);
     const [currentStep, setCurrentStep] = useState(1);
     const [showRules, setShowRules] = useState(false);
+    const [alertConfig, setAlertConfig] = useState<{title: string, message: string, type: 'success' | 'warning' | 'error', onClose?: () => void} | null>(null);
 
     const [formData, setFormData] = useState({
         email: "",
@@ -131,7 +133,12 @@ export default function WizardForm() {
         const email = formData.email || googleUser?.email;
         
         if (!email) {
-            alert('Por favor, ingresa tu correo electrónico o inicia sesión con Google.');
+            setAlertConfig({
+                title: "REQUISITO INCOMPLETO",
+                message: "Por favor, ingresa tu correo electrónico o inicia sesión con Google.",
+                type: 'warning',
+                onClose: () => setAlertConfig(null)
+            });
             return;
         }
         
@@ -144,11 +151,23 @@ export default function WizardForm() {
                 const errorData = await response.json().catch(() => ({}))
                 throw new Error(errorData.message || `Error ${response.status}`)
             }
-            alert("¡Inscripción enviada exitosamente! Nos vemos en la competencia.");
-            window.location.reload();
+            setAlertConfig({
+                title: "¡TRANSMISIÓN EXITOSA!",
+                message: "Expediente de inscripción recibido. Prepara tu unidad para el combate.",
+                type: 'success',
+                onClose: () => {
+                    setAlertConfig(null);
+                    window.location.reload();
+                }
+            });
         } catch (error: any) {
             console.error("Submit failed", error);
-            alert(`Error al enviar el formulario: ${error.message}`);
+            setAlertConfig({
+                title: "ERROR DE COMUNICACIÓN",
+                message: `Hubo un error al transmitir el formulario: ${error.message}`,
+                type: 'error',
+                onClose: () => setAlertConfig(null)
+            });
         }
     };
 
@@ -265,6 +284,15 @@ export default function WizardForm() {
                     category={formData.category} 
                     subCategory={formData.category === "Junior" ? formData.juniorCategory : formData.category === "Senior" ? formData.seniorCategory : formData.masterCategory}
                     onClose={() => setShowRules(false)} 
+                />
+            )}
+
+            {alertConfig && (
+                <AlertModal 
+                    title={alertConfig.title}
+                    message={alertConfig.message}
+                    type={alertConfig.type}
+                    onClose={alertConfig.onClose || (() => setAlertConfig(null))}
                 />
             )}
         </WizardLayout>

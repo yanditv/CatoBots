@@ -29,21 +29,18 @@ const rulesUrls: Record<string, string> = {
 };
 
 const getBaseStyle = () => `
-    font-family: 'Inter', 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-    background-color: #0a0a0a;
-    color: #e5e5e5;
+    font-family: 'Montserrat', 'Inter', 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+    background-color: #000000;
+    color: #FFFFFF;
     margin: 0;
-    padding: 0;
+    padding: 20px;
 `;
 
 const getContainerStyle = () => `
     max-width: 600px;
-    margin: 40px auto;
-    background-color: #171717;
-    border-radius: 16px;
-    overflow: hidden;
-    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
-    border: 1px solid #262626;
+    margin: 0 auto;
+    background-color: #111111;
+    border: 4px solid #000000;
 `;
 
 export const sendWelcomeEmail = async (to: string, formData: any) => {
@@ -66,44 +63,52 @@ export const sendWelcomeEmail = async (to: string, formData: any) => {
     const rulesLinksHtml = uniqueCategories.map(cat => {
         const url = rulesUrls[cat];
         if (url) {
-            return `<a href="${url}" style="display: inline-block; background-color: #262626; color: #a855f7; padding: 10px 16px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 14px; margin: 5px;">📜 Reglas ${cat}</a>`;
+            return `<a href="${url}" style="display: inline-block; background-color: #000000; color: #FFF000; padding: 12px 20px; text-decoration: none; font-weight: 900; font-size: 14px; margin: 5px; border: 2px solid #FFF000; text-transform: uppercase; letter-spacing: 1px;">📜 REGLAS ${cat}</a>`;
         }
         return '';
     }).join('');
 
     const htmlContent = `
     <div style="${getBaseStyle()}">
-        <div style="${getContainerStyle()}">
-            <div style="background: linear-gradient(135deg, #7c3aed 0%, #c026d3 100%); padding: 40px 20px; text-align: center;">
-                <img src="${ROBOT_ICON_URL}" alt="CatoBots" style="width: 80px; height: 80px; margin-bottom: 20px; filter: drop-shadow(0 4px 6px rgba(0,0,0,0.3));" />
-                <h1 style="color: #ffffff; margin: 0; font-size: 28px; font-weight: 800; letter-spacing: -0.5px;">¡Inscripción Finalizada!</h1>
+        <div style="${getContainerStyle()}; box-shadow: 8px 8px 0px #10B961;">
+            
+            <!-- HEADER -->
+            <div style="background-color: #10B961; padding: 40px 20px; text-align: center; border-bottom: 4px solid #000000; position: relative;">
+                <img src="${ROBOT_ICON_URL}" alt="CatoBots" style="width: 80px; height: 80px; margin-bottom: 20px; filter: drop-shadow(4px 4px 0px #000000);" />
+                <h1 style="color: #FFF000; margin: 0; font-size: 32px; font-weight: 900; font-style: italic; text-transform: uppercase; letter-spacing: 2px; text-shadow: 3px 3px 0px #000000;">¡TRANSMISIÓN RECIBIDA!</h1>
+                <p style="color: #000000; font-weight: 900; margin-top: 5px; text-transform: uppercase; letter-spacing: 3px; font-size: 14px;">SECUENCIA DE INSCRIPCIÓN</p>
             </div>
             
-            <div style="padding: 40px 30px;">
-                <p style="font-size: 16px; line-height: 1.6; color: #d4d4d4; margin-bottom: 24px;">
-                    Hola, nos alegra informarte que hemos recibido tu inscripción a <strong>CatoBots IV Edición</strong> exitosamente.
+            <!-- CONTENT -->
+            <div style="padding: 40px 30px; background-color: #111111;">
+                <p style="font-size: 16px; line-height: 1.6; color: #FFFFFF; margin-bottom: 24px; font-weight: 500; text-transform: uppercase;">
+                    ATENCIÓN COMANDANTE:<br><br>
+                    HEMOS RECIBIDO TUS DATOS DE INSCRIPCIÓN PARA LA <span style="color: #10B961; font-weight: 900;">IV EDICIÓN DE CATOBOTS</span>.
                 </p>
 
                 ${rulesLinksHtml ? `
-                <div style="background-color: #1f1f1f; border: 1px solid #333; border-radius: 12px; padding: 20px; margin-bottom: 30px;">
-                    <h3 style="color: #ffffff; margin-top: 0; margin-bottom: 15px; font-size: 16px;">📚 Repasa los Reglamentos</h3>
-                    <p style="font-size: 14px; color: #a3a3a3; margin-bottom: 15px;">Hemos detectado las categorías en las que participas. Aquí tienes acceso directo a tus reglamentos:</p>
+                <div style="background-color: #000000; border-left: 8px solid #FFF000; padding: 25px; margin-bottom: 30px;">
+                    <h3 style="color: #FFFFFF; margin-top: 0; margin-bottom: 15px; font-size: 18px; font-weight: 900; text-transform: uppercase;">📚 NORMATIVA DE COMBATE</h3>
+                    <p style="font-size: 14px; color: #A3A3A3; margin-bottom: 20px; text-transform: uppercase; font-weight: bold;">ACCEDE A TUS MANUALES OFICIALES ANTES DE ENTRAR A LA ARENA:</p>
                     <div style="display: flex; flex-wrap: wrap; gap: 10px;">
                         ${rulesLinksHtml}
                     </div>
                 </div>
                 ` : ''}
 
-                <div style="background-color: #3b0764; border-left: 4px solid #a855f7; padding: 16px 20px; border-radius: 4px 8px 8px 4px;">
-                    <p style="font-size: 15px; color: #e9d5ff; margin: 0; font-weight: 500;">
-                        ⏳ <strong>Estado:</strong> Estamos verificando tu pago. Te enviaremos otro correo en cuanto el panel administrativo apruebe o rechace tu inscripción.
+                <div style="background-color: #FFF000; border: 4px solid #000000; padding: 20px; box-shadow: 4px 4px 0px #10B961;">
+                    <p style="font-size: 16px; color: #000000; margin: 0; font-weight: 900; text-transform: uppercase;">
+                        ⏳ ESTADO DE OPERACIÓN: VERIFICANDO FONDOS<br><br>
+                        <span style="font-weight: 500; font-size: 14px;">NUESTROS SISTEMAS ESTÁN REVISANDO TU PAGO. RECIBIRÁS OTRA ALERTA EN CUANTO EL CENTRO DE MANDO APRUEBE O RECHACE TU SOLICITUD.</span>
                     </p>
                 </div>
             </div>
 
-            <div style="background-color: #0f0f0f; padding: 20px; text-align: center; border-top: 1px solid #262626;">
-                <p style="color: #737373; font-size: 13px; margin: 0;">© 2026 CatoBots. Todos los derechos reservados.</p>
+            <!-- FOOTER -->
+            <div style="background-color: #000000; padding: 20px; text-align: center; border-top: 4px solid #000000;">
+                <p style="color: #10B961; font-size: 12px; margin: 0; font-weight: 900; letter-spacing: 2px;">© 2026 CATOBOTS | HIGH ENERGY ESPORTS</p>
             </div>
+            
         </div>
     </div>
     `;
@@ -138,38 +143,47 @@ export const sendWelcomeEmail = async (to: string, formData: any) => {
     }
 };
 
-export const sendStatusEmail = async (to: string, status: 'APPROVED' | 'REJECTED') => {
+export const sendStatusEmail = async (to: string, status: 'APPROVED' | 'REJECTED', formData?: any) => {
     const isApproved = status === 'APPROVED';
-    const statusColor = isApproved ? '#22c55e' : '#ef4444'; // Green or Red
-    const statusBg = isApproved ? '#14532d' : '#7f1d1d';
-    const title = isApproved ? 'Pago Aprobado' : 'Pago Rechazado';
+    const statusColor = isApproved ? '#10B961' : '#DC2626'; // Vibrant Green or Deep Red
+    const titleColor = isApproved ? '#FFF000' : '#FFFFFF';
+    const title = isApproved ? '¡ACREDITACIÓN APROBADA!' : '¡SOLICITUD RECHAZADA!';
+    const bgHeader = isApproved ? '#10B961' : '#DC2626';
     const message = isApproved
-        ? '¡Excelentes noticias! Tu pago ha sido verificado y tu inscripción está oficialmente aprobada. Estás listo para competir en CatoBots IV.'
-        : 'Lo sentimos, ha habido un problema al verificar tu pago y tu inscripción ha sido rechazada. Por favor, comunícate con la organización para resolver este inconveniente.';
+        ? '¡EXCELENTES NOTICIAS COMANDANTE! TU PAGO HA SIDO VERIFICADO Y TU UNIDAD ESTÁ OFICIALMENTE REGISTRADA PARA EL COMBATE EN CATOBOTS IV.'
+        : 'ENCONTRAMOS UN PROBLEMA. TU PAGO NO PUDO SER VERIFICADO Y TU INSCRIPCIÓN HA SIDO RECHAZADA. COMUNÍCATE INMEDIATAMENTE CON EL CENTRO DE MANDO PARA RESOLVER ESTO.';
 
     const htmlContent = `
     <div style="${getBaseStyle()}">
-        <div style="${getContainerStyle()}">
-            <div style="background: linear-gradient(135deg, ${statusColor} 0%, ${statusBg} 100%); padding: 40px 20px; text-align: center;">
-                <img src="${ROBOT_ICON_URL}" alt="CatoBots" style="width: 80px; height: 80px; margin-bottom: 20px; filter: drop-shadow(0 4px 6px rgba(0,0,0,0.3));" />
-                <h1 style="color: #ffffff; margin: 0; font-size: 28px; font-weight: 800; letter-spacing: -0.5px;">${title}</h1>
+        <div style="${getContainerStyle()}; box-shadow: 8px 8px 0px ${statusColor};">
+            
+            <!-- HEADER -->
+            <div style="background-color: ${bgHeader}; padding: 40px 20px; text-align: center; border-bottom: 4px solid #000000;">
+                <img src="${ROBOT_ICON_URL}" alt="CatoBots" style="width: 80px; height: 80px; margin-bottom: 20px; filter: drop-shadow(4px 4px 0px #000000);" />
+                <h1 style="color: ${titleColor}; margin: 0; font-size: 30px; font-weight: 900; font-style: italic; text-transform: uppercase; letter-spacing: 2px; text-shadow: 3px 3px 0px #000000;">${title}</h1>
+                <p style="color: #000000; font-weight: 900; margin-top: 5px; text-transform: uppercase; letter-spacing: 3px; font-size: 14px;">ACTUALIZACIÓN DE ESTADO</p>
             </div>
             
-            <div style="padding: 40px 30px;">
-                <p style="font-size: 16px; line-height: 1.6; color: #d4d4d4; margin-bottom: 24px;">
-                    Hola, te contactamos para informarte sobre el estado de tu inscripción a <strong>CatoBots IV Edición</strong>.
+            <!-- CONTENT -->
+            <div style="padding: 40px 30px; background-color: #111111;">
+                <p style="font-size: 16px; line-height: 1.6; color: #FFFFFF; margin-bottom: 24px; font-weight: 500; text-transform: uppercase;">
+                    ATENCIÓN COMANDANTE:<br><br>
+                    TENEMOS NUEVA INFORMACIÓN SOBRE TU EXPEDIENTE DE INSCRIPCIÓN PARA LA <span style="color: #10B961; font-weight: 900;">IV EDICIÓN</span>.
+                    ${formData?.category ? `<br><br><span style="color: ${titleColor};">CATEGORÍA ASIGNADA: ${formData.category} ${formData.juniorCategory || formData.seniorCategory || formData.masterCategory || ''}</span>` : ''}
                 </p>
 
-                <div style="background-color: ${isApproved ? 'rgba(34, 197, 94, 0.1)' : 'rgba(239, 68, 68, 0.1)'}; border: 1px solid ${statusColor}; padding: 20px; border-radius: 12px; margin-bottom: 30px;">
-                    <p style="font-size: 16px; color: #ffffff; margin: 0; font-weight: 500; text-align: center;">
+                <div style="background-color: ${isApproved ? '#10B961' : '#DC2626'}; border: 4px solid #000000; padding: 25px; box-shadow: 4px 4px 0px #000000;">
+                    <p style="font-size: 18px; color: ${isApproved ? '#000000' : '#FFFFFF'}; margin: 0; font-weight: 900; text-align: center; text-transform: uppercase; line-height: 1.5;">
                         ${message}
                     </p>
                 </div>
             </div>
 
-            <div style="background-color: #0f0f0f; padding: 20px; text-align: center; border-top: 1px solid #262626;">
-                <p style="color: #737373; font-size: 13px; margin: 0;">© 2026 CatoBots. Todos los derechos reservados.</p>
+            <!-- FOOTER -->
+            <div style="background-color: #000000; padding: 20px; text-align: center; border-top: 4px solid #000000;">
+                <p style="color: ${statusColor}; font-size: 12px; margin: 0; font-weight: 900; letter-spacing: 2px;">© 2026 CATOBOTS | HIGH ENERGY ESPORTS</p>
             </div>
+            
         </div>
     </div>
     `;
