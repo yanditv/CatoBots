@@ -276,7 +276,7 @@ const AdminPanel = () => {
 
   return (
     <div className="min-h-screen bg-neutral-50 text-black flex flex-col md:flex-row font-sans">
-      <aside className="w-full md:w-80 bg-white border-r border-neutral-100 p-8 flex flex-col gap-10 shadow-sm">
+      <aside className="hidden md:flex w-80 bg-white border-r border-neutral-100 p-8 flex-col gap-10 shadow-sm fixed top-0 left-0 h-screen overflow-y-auto">
         <div className="flex items-center gap-4 px-2">
           <div className="w-60 h-30 flex items-center justify-center rounded-2xl p-2">
             <img src="/logo-yellow.png" alt="Logo" className="w-60 h-30 object-contain" />
@@ -312,7 +312,7 @@ const AdminPanel = () => {
         </div>
       </aside>
 
-      <main className="flex-1 p-8 md:p-16 overflow-y-auto">
+      <main className="flex-1 p-8 md:p-16 md:ml-80 overflow-y-auto">
         <header className="mb-16 flex flex-col sm:flex-row justify-between items-start sm:items-end gap-6">
           <div>
             <span className="text-md font-black uppercase text-neutral-400 mb-2 block px-2">Nodo Administrativo</span>
