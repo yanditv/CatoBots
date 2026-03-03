@@ -61,6 +61,7 @@ export default function WizardLayout({
         // Row 5 (y: ~85-95%)
         { id: 14, top: "90%", left: "8%", size: "w-16 md:w-24", rotate: [15, -10, 15], scale: [1, 1.15, 1], opacity: [0.06, 0.12, 0.06], duration: 21, delay: 5 },
         { id: 15, top: "93%", left: "35%", size: "w-24 md:w-36", rotate: [-5, 15, -5], scale: [1, 1.1, 1], opacity: [0.04, 0.09, 0.04], duration: 25, delay: 0 },
+                        
         { id: 16, top: "85%", left: "60%", size: "w-12 md:w-16", rotate: [30, -30, 30], scale: [1, 1.2, 1], opacity: [0.08, 0.15, 0.08], duration: 16, delay: 3 },
         { id: 17, top: "89%", left: "90%", size: "w-20 md:w-32", rotate: [-15, 0, -15], scale: [1, 1.1, 1], opacity: [0.05, 0.1, 0.05], duration: 27, delay: 1 },
     ];
@@ -121,15 +122,11 @@ export default function WizardLayout({
                     <div className="flex flex-col items-center md:items-start gap-1">
                         {/* Fused Logo + "IV" Container */}
                         <div className="flex items-center justify-center md:justify-start -ml-2">
-                            <img 
-                                src="/logo-yellow.png" 
-                                alt="CatoBots Logo" 
-                                className="h-24 md:h-35 w-auto object-contain drop-shadow-[5px_2px_0_#000] z-10" 
-                            />
+                            
                             <motion.h1
-                                initial={{ opacity: 0, x: -10, y:10, rotate: -4 }}
-                                animate={{ opacity: 1, x: 20, rotate: -4 }}
-                                className="text-5xl mt-4 md:text-7xl lg:text-8xl font-tech font-black uppercase text-cb-yellow-neon leading-none italic tracking-tighter drop-shadow-[5px_5px_0_#000] -ml-5 z-0"
+                                initial={{ opacity: 0, x: -10, y:10}}
+                                animate={{ opacity: 1, x: 20, rotate: -2}}
+                                className="text-xl mt-4 md:text-7xl lg:text-7xl font-tech font-black uppercase text-cb-yellow-neon leading-none italic tracking-tighter drop-shadow-[5px_5px_0_#000] -ml-5 z-0"
                                 style={{ WebkitTextStroke: "3px #000" }}
                             >
                                 {title}
@@ -156,6 +153,25 @@ export default function WizardLayout({
                 </div>
 
                 {/* Tracking / Steps Indicator (Industrial Bar) */}
+                
+                {/* Massive Form Container */}
+                <motion.div
+                    key={currentStep}
+                    initial={{ opacity: 0, x: 20, rotateX: 10 }}
+                    animate={{ opacity: 1, x: 0, rotateX: 0 }}
+                    exit={{ opacity: 0, x: -20, rotateX: -10 }}
+                    transition={{ duration: 0.3, type: "spring" }}
+                    className="w-full bg-cb-white-tech border-8 border-cb-black-pure shadow-block-lg min-h-[500px] relative mt-10 md:mt-4 p-8 md:p-12 mb-20"
+                >
+                    {/* Warning Tape Headers */}
+                    <div className="absolute top-0 left-0 w-full h-4 bg-warning-tape -translate-y-[8px]" />
+                    <div className="absolute bottom-0 left-0 w-full h-4 bg-warning-tape translate-y-[8px]" />
+                    
+                    {/* Main Children rendering for the Step */}
+                    <div className="w-full relative z-10">
+                        {children}
+                    </div>
+                </motion.div>
                 {showSteps && (
                     <div className="mb-14 px-2">
                         {/* Mobile Progress Bar (Tape) */}
@@ -212,25 +228,7 @@ export default function WizardLayout({
                         </div>
                     </div>
                 )}
-
-                {/* Massive Form Container */}
-                <motion.div
-                    key={currentStep}
-                    initial={{ opacity: 0, x: 20, rotateX: 10 }}
-                    animate={{ opacity: 1, x: 0, rotateX: 0 }}
-                    exit={{ opacity: 0, x: -20, rotateX: -10 }}
-                    transition={{ duration: 0.3, type: "spring" }}
-                    className="w-full bg-cb-white-tech border-8 border-cb-black-pure shadow-block-lg min-h-[500px] relative mt-10 md:mt-4 p-8 md:p-12 mb-20"
-                >
-                    {/* Warning Tape Headers */}
-                    <div className="absolute top-0 left-0 w-full h-4 bg-warning-tape -translate-y-[8px]" />
-                    <div className="absolute bottom-0 left-0 w-full h-4 bg-warning-tape translate-y-[8px]" />
-                    
-                    {/* Main Children rendering for the Step */}
-                    <div className="w-full relative z-10">
-                        {children}
-                    </div>
-                </motion.div>
+    
             </div>
         </div>
     );

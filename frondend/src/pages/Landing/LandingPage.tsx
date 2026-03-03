@@ -116,12 +116,12 @@ export default function LandingPage() {
             </header>
 
             {/* Hero Section V2 (Extreme Grunge) */}
-            <section className="relative pt-28 pb-16 md:pt-32 md:pb-24 lg:pt-48 lg:pb-32 px-4 md:px-6 lg:px-8 flex flex-col items-center justify-center min-h-[85vh] md:min-h-[90vh] text-center border-b-8 border-cb-black-pure overflow-hidden">
+            <section className="relative pt-32 pb-16 md:pt-32 md:pb-32 lg:pt-48 lg:pb-32 px-4 md:px-6 lg:px-8 flex flex-col items-center justify-center min-h-[85vh] md:min-h-[90vh] text-center border-b-8 border-cb-black-pure overflow-hidden">
                 {/* Rayos/Speedlines Background Elements */}
                 <div className="absolute top-[-10%] left-[-10%] w-[120%] h-[120%] pointer-events-none opacity-20 bg-[url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxMDAlIiBoZWlnaHQ9IjEwMCUiPjxkZWZzPjxwYXR0ZXJuIGlkPSJwb2wiIHdpZHRoPSI0MCIgaGVpZ2h0PSI0MCIgcGF0dGVyblVuaXRzPSJ1c2VyU3BhY2VPblVzZSI+PHBhdGggZD0iTTAgNDBoNDBWMEgwem0yMCAwbDJwLTEwaDEwbDItMTBoLTEyem0tMTAtMTBsMmwtMTBoMTBsMi0xMGgtMTJ6IiBmaWxsPSIjMDAwIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiLz48L3BhdHRlcm4+PC9kZWZzPjxyZWN0IHdpZHRoPSIxMDAlIiBoZWlnaHQ9IjEwMCUiIGZpbGw9InVybCgjcG9sKSIvPjwvc3ZnPg==')] mix-blend-overlay" />
                 
                 {/* Cinta de peligro flotante */}
-                <div className="absolute top-24 -left-10 w-[120%] h-8 bg-warning-tape -rotate-3 border-y-4 border-cb-black-pure z-0 shadow-block-sm" />
+                <div className="absolute top-25 -left-10 w-[120%] h-8 bg-warning-tape -rotate-0 border-y-4 border-cb-black-pure z-0 shadow-block-sm" />
 
                 <motion.div
                     initial={{ opacity: 0, scale: 0.8, rotate: -5 }}
@@ -155,7 +155,7 @@ export default function LandingPage() {
                 </motion.div>
                 
                 {/* Cinta de peligro inferior */}
-                <div className="absolute bottom-10 -right-10 w-[120%] h-12 bg-warning-tape rotate-2 border-y-4 border-cb-black-pure z-0 shadow-block-sm" />
+                <div className="absolute bottom-10 -right-10 w-[120%] h-12 bg-warning-tape rotate border-y-4 border-cb-black-pure z-0 shadow-block-sm" />
             </section>
 
             {/* Steps Section V2 (Solid Blocks) */}

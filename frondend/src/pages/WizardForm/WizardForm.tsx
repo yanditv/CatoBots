@@ -208,7 +208,7 @@ export default function WizardForm() {
             currentStep={currentStep}
             totalSteps={7}
             steps={steps}
-            title="IV"
+            title="CatoBots 2024"
             subtitle="Formulario de Inscripción Oficial"
         >
             {currentStep === 1 && (

@@ -54,13 +54,6 @@ export default function Step1_EventDetails({ data, updateData, googleUser, handl
                             placeholder="OPERADOR@SISTEMA.COM"
                             className="flex-1 bg-cb-black-pure border-4 border-cb-black-pure rounded-none px-4 py-3 text-cb-yellow-neon font-tech text-lg focus:outline-none focus:ring-4 focus:ring-cb-yellow-neon focus:border-cb-black-pure placeholder:text-neutral-600 transition-all uppercase"
                         />
-                        <button
-                            onClick={handleGoogleLogin}
-                            className="bg-cb-white-tech text-cb-black-pure px-6 py-3 border-4 border-cb-black-pure font-tech font-bold uppercase tracking-widest hover:bg-cb-yellow-neon hover:-translate-y-1 transition-all shadow-block-sm flex items-center justify-center gap-3"
-                        >
-                            <img src="https://www.google.com/favicon.ico" alt="G" className="w-5 h-5 grayscale" />
-                            {googleUser ? "REASIGNAR" : "VÍNCULO GOOGLE"}
-                        </button>
                     </div>
                 </div>
 
