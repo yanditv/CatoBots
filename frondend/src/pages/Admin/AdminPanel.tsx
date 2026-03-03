@@ -255,8 +255,11 @@ const AdminPanel = () => {
   const TabButton = ({ id, icon: Icon, label }: any) => (
     <button
       onClick={() => { setActiveTab(id); setSearchQuery(''); }}
-      className={`flex items-center gap-4 px-6 py-4 rounded-2xl transition-all font-black text-sm uppercase ${activeTab === id ? 'bg-black text-white shadow-xl shadow-black/10' : 'text-neutral-500 hover:bg-neutral-100 hover:text-black'
-        }`}
+      className={`flex items-center gap-4 px-5 py-3.5 transition-all duration-75 font-tech font-black text-sm uppercase tracking-wider border-2 ${
+        activeTab === id 
+          ? 'bg-cb-yellow-neon text-cb-black-pure border-cb-black-pure shadow-[3px_3px_0_#10B961]' 
+          : 'text-neutral-400 border-transparent hover:bg-white/5 hover:text-cb-yellow-neon hover:border-cb-yellow-neon/30'
+      }`}
     >
       <Icon size={18} /> {label}
     </button>
@@ -275,21 +278,19 @@ const AdminPanel = () => {
   };
 
   return (
-    <div className="min-h-screen bg-neutral-50 text-black flex flex-col md:flex-row font-sans">
-      <aside className="hidden md:flex w-80 bg-white border-r border-neutral-100 p-8 flex-col gap-10 shadow-sm fixed top-0 left-0 h-screen overflow-y-auto">
-        <div className="flex items-center gap-4 px-2">
-          <div className="w-60 h-30 flex items-center justify-center rounded-2xl p-2">
-            <img src="/logo-yellow.png" alt="Logo" className="w-60 h-30 object-contain" />
-          </div>
-          <div>
-            <h2 className="text-2xl font-black tracking-tighter leading-none">
-              Cato<span className="text-brand">Bots</span>
-            </h2>
-            <p className="text-sm font-black text-neutral-400 uppercase">Centro de Gestión</p>
+    <div className="min-h-screen bg-cb-black-pure text-cb-white-tech flex flex-col md:flex-row font-sans">
+      <aside className="hidden md:flex w-80 bg-[#0a0a0a] border-r-4 border-cb-yellow-neon p-6 flex-col gap-6 fixed top-0 left-0 h-screen overflow-y-auto custom-scrollbar">
+        {/* Warning tape top */}
+        <div className="absolute top-0 left-0 right-0 h-2 bg-warning-tape" />
+
+        <div className="flex flex-col items-center gap-2 pt-4 pb-2">
+          <img src="/logo-yellow.png" alt="Logo" className="w-40 h-auto object-contain" />
+          <div className="mt-1 px-3 py-1 bg-cb-yellow-neon border-2 border-cb-black-pure">
+            <p className="text-xs font-tech font-black text-cb-black-pure uppercase tracking-widest">Centro de Gestión</p>
           </div>
         </div>
 
-        <nav className="flex flex-col gap-2 flex-1">
+        <nav className="flex flex-col gap-1 flex-1">
           <TabButton id="institutions" icon={Building2} label="Instituciones" />
           <TabButton id="robots" icon={Bot} label="Robots" />
           <TabButton id="referees" icon={Users} label="Árbitros" />
@@ -297,37 +298,41 @@ const AdminPanel = () => {
           <TabButton id="sponsors" icon={Star} label="Sponsors" />
           <TabButton id="payments" icon={CreditCard} label="Pagos" />
           <TabButton id="brackets" icon={Share2} label="Generador" />
-          <button onClick={() => navigate('/keys')} className="flex items-center gap-4 px-6 py-4 rounded-2xl text-neutral-500 font-black hover:bg-neutral-100 hover:text-black transition-all text-sm uppercase">
+          <button onClick={() => navigate('/keys')} className="flex items-center gap-4 px-5 py-3.5 text-neutral-400 font-tech font-black hover:bg-white/5 hover:text-cb-yellow-neon transition-all duration-75 text-sm uppercase tracking-wider border-2 border-transparent hover:border-cb-yellow-neon/30">
             <Share2 size={18} /> Llaves del Torneo
           </button>
         </nav>
 
-        <div className="flex flex-col gap-2 pt-8 border-t border-neutral-50">
-          <button onClick={() => navigate('/dashboard')} className="flex items-center gap-4 px-6 py-4 rounded-2xl text-neutral-400 font-black hover:bg-neutral-100 hover:text-black transition-all text-sm uppercase">
+        <div className="flex flex-col gap-1 pt-4 border-t-2 border-neutral-800">
+          <button onClick={() => navigate('/dashboard')} className="flex items-center gap-4 px-5 py-3.5 text-neutral-500 font-tech font-black hover:bg-white/5 hover:text-cb-green-vibrant transition-all duration-75 text-sm uppercase tracking-wider border-2 border-transparent">
             <LayoutDashboard size={18} /> Vista Pública
           </button>
-          <button onClick={logout} className="flex items-center gap-4 px-6 py-4 rounded-2xl text-red-500 font-black hover:bg-red-50 transition-all text-sm uppercase">
+          <button onClick={logout} className="flex items-center gap-4 px-5 py-3.5 text-red-500 font-tech font-black hover:bg-red-500/10 transition-all duration-75 text-sm uppercase tracking-wider border-2 border-transparent hover:border-red-500/30">
             <LogOut size={18} /> Salir del Sistema
           </button>
         </div>
+
+        {/* Warning tape bottom */}
+        <div className="absolute bottom-0 left-0 right-0 h-2 bg-warning-tape" />
       </aside>
 
-      <main className="flex-1 p-8 md:p-16 md:ml-80 overflow-y-auto">
-        <header className="mb-16 flex flex-col sm:flex-row justify-between items-start sm:items-end gap-6">
+      <main className="flex-1 p-6 md:p-10 md:ml-80 overflow-y-auto min-h-screen">
+        <header className="mb-10 flex flex-col sm:flex-row justify-between items-start sm:items-end gap-6">
           <div>
-            <span className="text-md font-black uppercase text-neutral-400 mb-2 block px-2">Nodo Administrativo</span>
-            <h1 className="text-6xl font-black tracking-tighter uppercase text-black">{getTabLabel(activeTab)}</h1>
+            <span className="text-xs font-tech font-black uppercase text-cb-green-vibrant tracking-widest mb-2 block">Nodo Administrativo</span>
+            <h1 className="text-4xl md:text-5xl font-tech font-black tracking-wider uppercase text-cb-white-tech">{getTabLabel(activeTab)}</h1>
+            <div className="mt-2 h-1 w-24 bg-cb-yellow-neon" />
           </div>
 
-          <div className="flex items-center gap-4 w-full sm:w-auto mt-4 sm:mt-0">
+          <div className="flex items-center gap-3 w-full sm:w-auto mt-4 sm:mt-0">
             {activeTab !== 'payments' && activeTab !== 'brackets' && (
               <div className="relative flex-1 sm:w-64">
-                <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-neutral-300" size={18} />
+                <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-neutral-500" size={18} />
                 <input
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   placeholder={`Buscar...`}
-                  className="w-full bg-white border border-neutral-100 pl-12 pr-4 py-4 rounded-2xl text-md font-bold outline-none focus:border-brand/30 transition-all shadow-sm"
+                  className="w-full bg-[#1a1a1a] border-2 border-neutral-700 pl-12 pr-4 py-3.5 text-sm font-tech font-bold text-cb-white-tech outline-none focus:border-cb-yellow-neon transition-all duration-75 placeholder:text-neutral-600"
                 />
               </div>
             )}
@@ -335,7 +340,7 @@ const AdminPanel = () => {
             {activeTab !== 'payments' && activeTab !== 'brackets' && (
               <button
                 onClick={() => { setIsEditMode(false); setFormData({}); setShowModal(true); }}
-                className="bg-black text-white hover:bg-neutral-800 px-8 py-4 rounded-2xl font-black text-sm uppercase flex items-center gap-3 transition-all shadow-xl shadow-black/10 whitespace-nowrap"
+                className="bg-cb-yellow-neon text-cb-black-pure hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-none px-6 py-3.5 font-tech font-black text-sm uppercase flex items-center gap-2 transition-all duration-75 border-3 border-cb-black-pure shadow-[4px_4px_0_#10B961] whitespace-nowrap"
               >
                 <Plus size={18} /> Agregar
               </button>
@@ -346,196 +351,196 @@ const AdminPanel = () => {
         <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
           <AnimatePresence mode="wait">
             {activeTab === 'institutions' && data.institutions.filter(i => i.name.toLowerCase().includes(searchQuery.toLowerCase())).map((inst) => (
-              <motion.div key={inst.id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="bg-white border border-neutral-100 p-8 rounded-[2.5rem] flex justify-between items-center shadow-lg shadow-neutral-200/40">
-                <div className="flex items-center gap-8 min-w-0 flex-1">
-                  <div className="w-16 h-16 bg-brand/5 rounded-3xl flex items-center justify-center text-brand border border-brand/10 shadow-inner flex-shrink-0"><Building2 size={32} /></div>
+              <motion.div key={inst.id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="bg-[#111] border-3 border-neutral-800 p-6 flex justify-between items-center shadow-[4px_4px_0_#000] hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-none transition-all duration-75">
+                <div className="flex items-center gap-6 min-w-0 flex-1">
+                  <div className="w-14 h-14 bg-cb-green-vibrant/10 flex items-center justify-center text-cb-green-vibrant border-2 border-cb-green-vibrant/30 flex-shrink-0"><Building2 size={28} /></div>
                   <div className="min-w-0 flex-1">
-                    <div className="flex items-center gap-4">
-                      <h3 className="text-2xl font-black text-black">{inst.name}</h3>
+                    <div className="flex items-center gap-3">
+                      <h3 className="text-lg font-tech font-black text-cb-white-tech uppercase tracking-wider">{inst.name}</h3>
                       {inst.isPaid ? (
-                        <span className="bg-brand/10 text-brand text-xs font-black uppercase px-2 py-0.5 rounded-full border border-brand/20">PAGADO</span>
+                        <span className="bg-cb-green-vibrant/20 text-cb-green-vibrant text-[10px] font-tech font-black uppercase px-2 py-0.5 border border-cb-green-vibrant/40">PAGADO</span>
                       ) : (
-                        <span className="bg-red-500/10 text-red-500 text-xs font-black uppercase px-2 py-0.5 rounded-full border border-red-500/20">PENDIENTE</span>
+                        <span className="bg-red-500/20 text-red-400 text-[10px] font-tech font-black uppercase px-2 py-0.5 border border-red-500/40">PENDIENTE</span>
                       )}
                     </div>
-                    <div className="flex items-center gap-6 mt-3">
+                    <div className="flex items-center gap-4 mt-2">
                       <div className="flex gap-2">
                         {inst.members?.map((m: string, i: number) => (
-                          <span key={i} className="text-xs font-black text-neutral-500 px-4 py-1.5 bg-neutral-50 rounded-lg border border-neutral-100">{m}</span>
+                          <span key={i} className="text-[10px] font-tech font-bold text-neutral-400 px-3 py-1 bg-black/50 border border-neutral-700">{m}</span>
                         ))}
                       </div>
-                      {inst.contactEmail && <span className="text-xs text-neutral-400 font-bold">{inst.contactEmail}</span>}
+                      {inst.contactEmail && <span className="text-[10px] text-neutral-500 font-tech font-bold">{inst.contactEmail}</span>}
                     </div>
                   </div>
                 </div>
                 <div className="flex gap-2">
-                  <button onClick={() => handleEdit(inst)} className="text-neutral-400 hover:text-black hover:bg-neutral-50 transition-all p-4 bg-neutral-50 rounded-2xl border border-neutral-100"><Edit2 size={20} /></button>
-                  <button onClick={() => handleDelete(inst.id)} className="text-neutral-400 hover:text-red-500 hover:bg-red-50 transition-all p-4 bg-neutral-50 rounded-2xl border border-neutral-100"><Trash2 size={20} /></button>
+                  <button onClick={() => handleEdit(inst)} className="text-neutral-500 hover:text-cb-yellow-neon hover:bg-cb-yellow-neon/10 transition-all duration-75 p-3 border border-neutral-700 hover:border-cb-yellow-neon"><Edit2 size={18} /></button>
+                  <button onClick={() => handleDelete(inst.id)} className="text-neutral-500 hover:text-red-400 hover:bg-red-500/10 transition-all duration-75 p-3 border border-neutral-700 hover:border-red-500"><Trash2 size={18} /></button>
                 </div>
               </motion.div>
             ))}
 
             {activeTab === 'robots' && data.robots.filter(r => r.name.toLowerCase().includes(searchQuery.toLowerCase())).map((robot) => (
-              <motion.div key={robot.id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="bg-white border border-neutral-100 p-8 rounded-[2.5rem] flex justify-between items-center shadow-lg shadow-neutral-200/40">
-                <div className="flex items-center gap-8 min-w-0 flex-1">
-                  <div className="w-16 h-16 bg-brand/5 rounded-3xl flex items-center justify-center text-brand border border-brand/10 shadow-inner flex-shrink-0"><Bot size={32} /></div>
+              <motion.div key={robot.id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="bg-[#111] border-3 border-neutral-800 p-6 flex justify-between items-center shadow-[4px_4px_0_#000] hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-none transition-all duration-75">
+                <div className="flex items-center gap-6 min-w-0 flex-1">
+                  <div className="w-14 h-14 bg-cb-yellow-neon/10 flex items-center justify-center text-cb-yellow-neon border-2 border-cb-yellow-neon/30 flex-shrink-0"><Bot size={28} /></div>
                   <div className="min-w-0 flex-1">
-                    <div className="flex items-center gap-4">
-                      <h3 className="text-2xl font-black text-black">{robot.name}</h3>
+                    <div className="flex items-center gap-3">
+                      <h3 className="text-lg font-tech font-black text-cb-white-tech uppercase tracking-wider">{robot.name}</h3>
                       {robot.isHomologated && (
-                        <span className="bg-brand/10 text-brand text-xs font-black uppercase px-2 py-0.5 rounded-full border border-brand/20">Homologado</span>
+                        <span className="bg-cb-green-vibrant/20 text-cb-green-vibrant text-[10px] font-tech font-black uppercase px-2 py-0.5 border border-cb-green-vibrant/40">Homologado</span>
                       )}
                     </div>
-                    <div className="flex flex-wrap items-center gap-4 mt-2">
-                      <p className="text-xs font-black text-brand px-3 py-1 bg-brand/5 rounded-lg border border-brand/10">{robot.level}</p>
-                      <p className="text-xs font-black text-neutral-500 px-3 py-1 bg-neutral-50 rounded-lg border border-neutral-100">{robot.category}</p>
-                      <p className="text-xs text-neutral-400 font-bold">@{robot.Institution?.name}</p>
+                    <div className="flex flex-wrap items-center gap-3 mt-2">
+                      <p className="text-[10px] font-tech font-bold text-cb-yellow-neon px-2 py-0.5 bg-cb-yellow-neon/10 border border-cb-yellow-neon/30">{robot.level}</p>
+                      <p className="text-[10px] font-tech font-bold text-neutral-400 px-2 py-0.5 bg-black/50 border border-neutral-700">{robot.category}</p>
+                      <p className="text-[10px] text-neutral-500 font-tech font-bold">@{robot.Institution?.name}</p>
                     </div>
                   </div>
                 </div>
-                <div className="flex gap-2 ml-6">
-                  <button onClick={() => handleEdit(robot)} className="text-neutral-400 hover:text-black hover:bg-neutral-50 transition-all p-4 bg-neutral-50 rounded-2xl border border-neutral-100"><Edit2 size={20} /></button>
-                  <button onClick={() => handleDelete(robot.id)} className="text-neutral-400 hover:text-red-500 hover:bg-red-50 transition-all p-4 bg-neutral-50 rounded-2xl border border-neutral-100"><Trash2 size={20} /></button>
+                <div className="flex gap-2 ml-4">
+                  <button onClick={() => handleEdit(robot)} className="text-neutral-500 hover:text-cb-yellow-neon hover:bg-cb-yellow-neon/10 transition-all duration-75 p-3 border border-neutral-700 hover:border-cb-yellow-neon"><Edit2 size={18} /></button>
+                  <button onClick={() => handleDelete(robot.id)} className="text-neutral-500 hover:text-red-400 hover:bg-red-500/10 transition-all duration-75 p-3 border border-neutral-700 hover:border-red-500"><Trash2 size={18} /></button>
                 </div>
               </motion.div>
             ))}
 
             {activeTab === 'referees' && data.referees.filter(u => u.username.toLowerCase().includes(searchQuery.toLowerCase())).map((u) => (
-              <motion.div key={u.id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="bg-white border border-neutral-100 p-8 rounded-[2.5rem] flex justify-between items-center shadow-lg shadow-neutral-200/40">
-                <div className="flex items-center gap-6">
-                  <div className="w-16 h-16 bg-brand/5 rounded-3xl flex items-center justify-center text-brand border border-brand/10 shadow-inner flex-shrink-0"><Users size={32} /></div>
-                  <div className="flex flex-wrap items-center gap-4">
-                    <h3 className="text-xl font-black text-black">@{u.username}</h3>
-                    <p className="text-xs font-black text-neutral-500 px-3 py-1 bg-neutral-50 rounded-lg border border-neutral-100">{u.role}</p>
+              <motion.div key={u.id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="bg-[#111] border-3 border-neutral-800 p-6 flex justify-between items-center shadow-[4px_4px_0_#000] hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-none transition-all duration-75">
+                <div className="flex items-center gap-5">
+                  <div className="w-14 h-14 bg-cb-green-vibrant/10 flex items-center justify-center text-cb-green-vibrant border-2 border-cb-green-vibrant/30 flex-shrink-0"><Users size={28} /></div>
+                  <div className="flex flex-wrap items-center gap-3">
+                    <h3 className="text-lg font-tech font-black text-cb-white-tech uppercase">@{u.username}</h3>
+                    <p className="text-[10px] font-tech font-bold text-cb-yellow-neon px-2 py-0.5 bg-cb-yellow-neon/10 border border-cb-yellow-neon/30">{u.role}</p>
                   </div>
                 </div>
                 <div className="flex gap-2">
-                  <button onClick={() => handleEdit(u)} className="text-neutral-400 hover:text-black hover:bg-neutral-50 transition-all p-4 bg-neutral-50 rounded-2xl border border-neutral-100"><Edit2 size={20} /></button>
-                  <button onClick={() => handleDelete(u.id)} className="text-neutral-400 hover:text-red-500 hover:bg-red-50 transition-all p-4 bg-neutral-50 rounded-2xl border border-neutral-100"><Trash2 size={20} /></button>
+                  <button onClick={() => handleEdit(u)} className="text-neutral-500 hover:text-cb-yellow-neon hover:bg-cb-yellow-neon/10 transition-all duration-75 p-3 border border-neutral-700 hover:border-cb-yellow-neon"><Edit2 size={18} /></button>
+                  <button onClick={() => handleDelete(u.id)} className="text-neutral-500 hover:text-red-400 hover:bg-red-500/10 transition-all duration-75 p-3 border border-neutral-700 hover:border-red-500"><Trash2 size={18} /></button>
                 </div>
               </motion.div>
             ))}
 
             {activeTab === 'matches' && data.matches.filter(m => m.robotA?.name.toLowerCase().includes(searchQuery.toLowerCase()) || m.robotB?.name.toLowerCase().includes(searchQuery.toLowerCase())).map((m) => (
-              <motion.div key={m.id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="bg-white border border-neutral-100 p-8 rounded-[3rem] flex flex-col gap-6 shadow-lg shadow-neutral-200/40 relative overflow-hidden group">
-                <div className="absolute top-0 left-0 w-full h-1 bg-brand/10 transition-all group-hover:bg-brand" />
+              <motion.div key={m.id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="bg-[#111] border-3 border-neutral-800 p-6 flex flex-col gap-5 shadow-[4px_4px_0_#000] relative overflow-hidden group">
+                <div className="absolute top-0 left-0 w-full h-1 bg-cb-green-vibrant/30 transition-all duration-75 group-hover:bg-cb-green-vibrant" />
                 <div className="flex justify-between items-start">
-                  <div className="flex flex-col gap-1">
-                    <span className="text-md font-black text-brand uppercase">{m.category}</span>
-                    <span className="text-sm font-black text-neutral-400 uppercase">{m.round}</span>
+                  <div className="flex flex-col gap-0.5">
+                    <span className="text-sm font-tech font-black text-cb-yellow-neon uppercase">{m.category}</span>
+                    <span className="text-[10px] font-tech font-bold text-neutral-500 uppercase">{m.round}</span>
                   </div>
                   <div className="flex gap-2">
                     <button
                       onClick={() => handleToggleDashboard(m)}
-                      className={`transition-all p-4 rounded-2xl border ${m.showInDashboard ? 'bg-brand text-white border-brand' : 'bg-neutral-50 text-neutral-300 border-neutral-100'}`}
+                      className={`transition-all duration-75 p-3 border ${m.showInDashboard ? 'bg-cb-green-vibrant text-cb-black-pure border-cb-green-vibrant' : 'bg-transparent text-neutral-600 border-neutral-700 hover:border-cb-green-vibrant hover:text-cb-green-vibrant'}`}
                       title="Mostrar en Dashboard"
                     >
-                      <LayoutDashboard size={20} />
+                      <LayoutDashboard size={18} />
                     </button>
-                    <button onClick={() => handleEdit(m)} className="text-neutral-400 hover:text-black hover:bg-neutral-50 transition-all p-4 bg-neutral-50 rounded-2xl border border-neutral-100"><Edit2 size={20} /></button>
-                    <button onClick={() => handleDelete(m.id)} className="text-neutral-400 hover:text-red-500 hover:bg-red-50 transition-all p-4 bg-neutral-50 rounded-2xl border border-neutral-100"><Trash2 size={20} /></button>
+                    <button onClick={() => handleEdit(m)} className="text-neutral-500 hover:text-cb-yellow-neon hover:bg-cb-yellow-neon/10 transition-all duration-75 p-3 border border-neutral-700 hover:border-cb-yellow-neon"><Edit2 size={18} /></button>
+                    <button onClick={() => handleDelete(m.id)} className="text-neutral-500 hover:text-red-400 hover:bg-red-500/10 transition-all duration-75 p-3 border border-neutral-700 hover:border-red-500"><Trash2 size={18} /></button>
                   </div>
                 </div>
                 <div className="flex items-center justify-between gap-4">
                   <div className="flex-1 text-center">
-                    <p className="text-lg font-black text-black leading-tight mb-1">{m.robotA?.name || '---'}</p>
-                    <p className="text-xs font-bold text-neutral-300 uppercase truncate">{m.robotA?.Institution?.name}</p>
+                    <p className="text-sm font-tech font-black text-cb-white-tech leading-tight mb-1 uppercase">{m.robotA?.name || '---'}</p>
+                    <p className="text-[10px] font-tech font-bold text-neutral-500 uppercase truncate">{m.robotA?.Institution?.name}</p>
                   </div>
                   <div className="flex flex-col items-center">
-                    <div className="bg-neutral-50 px-4 py-2 rounded-xl border border-neutral-100 font-mono font-black text-lg text-black">
+                    <div className="bg-cb-black-pure px-4 py-2 border-2 border-cb-yellow-neon font-tech font-black text-lg text-cb-yellow-neon">
                       {m.scoreA} - {m.scoreB}
                     </div>
                   </div>
                   <div className="flex-1 text-center">
-                    <p className="text-lg font-black text-black leading-tight mb-1">{m.robotB?.name || '---'}</p>
-                    <p className="text-xs font-bold text-neutral-300 uppercase truncate">{m.robotB?.Institution?.name}</p>
+                    <p className="text-sm font-tech font-black text-cb-white-tech leading-tight mb-1 uppercase">{m.robotB?.name || '---'}</p>
+                    <p className="text-[10px] font-tech font-bold text-neutral-500 uppercase truncate">{m.robotB?.Institution?.name}</p>
                   </div>
                 </div>
-                <div className="flex items-center gap-3 pt-6 border-t border-neutral-50">
-                  <div className="w-10 h-10 bg-brand/5 rounded-2xl flex items-center justify-center text-brand border border-brand/10 shadow-inner flex-shrink-0"><Users size={20} /></div>
+                <div className="flex items-center gap-3 pt-4 border-t-2 border-neutral-800">
+                  <div className="w-8 h-8 bg-cb-green-vibrant/10 flex items-center justify-center text-cb-green-vibrant border border-cb-green-vibrant/30 flex-shrink-0"><Users size={16} /></div>
                   <div className="flex flex-col">
-                    <span className="text-sm font-black text-neutral-400">Árbitro</span>
-                    <span className="text-sm font-black text-neutral-700">@{m.referee?.username || 'Sin asignar'}</span>
+                    <span className="text-[10px] font-tech font-bold text-neutral-500 uppercase">Árbitro</span>
+                    <span className="text-xs font-tech font-black text-neutral-300">@{m.referee?.username || 'Sin asignar'}</span>
                   </div>
                 </div>
               </motion.div>
             ))}
 
             {activeTab === 'sponsors' && data.sponsors.filter(s => s.name.toLowerCase().includes(searchQuery.toLowerCase())).map((sponsor) => (
-              <motion.div key={sponsor.id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="bg-white border border-neutral-100 p-8 rounded-[2.5rem] flex justify-between items-center shadow-lg shadow-neutral-200/40">
-                <div className="flex items-center gap-6">
-                  <div className="w-20 h-20 bg-neutral-50 rounded-2xl flex items-center justify-center p-4 border border-neutral-100">
-                    {sponsor.logoUrl ? <img src={sponsor.logoUrl} alt={sponsor.name} className="w-full h-full object-contain" /> : <Star size={32} className="text-neutral-200" />}
+              <motion.div key={sponsor.id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="bg-[#111] border-3 border-neutral-800 p-6 flex justify-between items-center shadow-[4px_4px_0_#000] hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-none transition-all duration-75">
+                <div className="flex items-center gap-5">
+                  <div className="w-16 h-16 bg-[#1a1a1a] flex items-center justify-center p-3 border-2 border-neutral-700">
+                    {sponsor.logoUrl ? <img src={sponsor.logoUrl} alt={sponsor.name} className="w-full h-full object-contain" /> : <Star size={28} className="text-neutral-600" />}
                   </div>
                   <div>
-                    <h3 className="text-xl font-black text-black">{sponsor.name}</h3>
-                    <div className="flex items-center gap-2 mt-2">
-                      <p className="text-xs font-black text-brand px-3 py-1 bg-brand/5 rounded-lg border border-brand/10">{sponsor.tier}</p>
-                      <span className="text-xs text-neutral-400 font-bold">{sponsor.website}</span>
+                    <h3 className="text-lg font-tech font-black text-cb-white-tech uppercase tracking-wider">{sponsor.name}</h3>
+                    <div className="flex items-center gap-2 mt-1">
+                      <p className="text-[10px] font-tech font-bold text-cb-yellow-neon px-2 py-0.5 bg-cb-yellow-neon/10 border border-cb-yellow-neon/30">{sponsor.tier}</p>
+                      <span className="text-[10px] text-neutral-500 font-tech font-bold">{sponsor.website}</span>
                     </div>
                   </div>
                 </div>
                 <div className="flex gap-2">
-                  <button onClick={() => handleEdit(sponsor)} className="text-neutral-400 hover:text-black hover:bg-neutral-50 transition-all p-4 bg-neutral-50 rounded-2xl border border-neutral-100"><Star size={20} /></button>
-                  <button onClick={() => handleDelete(sponsor.id)} className="text-neutral-400 hover:text-red-500 hover:bg-red-50 transition-all p-4 bg-neutral-50 rounded-2xl border border-neutral-100"><Trash2 size={20} /></button>
+                  <button onClick={() => handleEdit(sponsor)} className="text-neutral-500 hover:text-cb-yellow-neon hover:bg-cb-yellow-neon/10 transition-all duration-75 p-3 border border-neutral-700 hover:border-cb-yellow-neon"><Star size={18} /></button>
+                  <button onClick={() => handleDelete(sponsor.id)} className="text-neutral-500 hover:text-red-400 hover:bg-red-500/10 transition-all duration-75 p-3 border border-neutral-700 hover:border-red-500"><Trash2 size={18} /></button>
                 </div>
               </motion.div>
             ))}
 
             {activeTab === 'payments' && data.registrations.map((reg) => (
-              <motion.div key={reg.id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="bg-white border border-neutral-100 p-8 rounded-[2.5rem] flex flex-col gap-6 shadow-lg shadow-neutral-200/40 col-span-1">
+              <motion.div key={reg.id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="bg-[#111] border-3 border-neutral-800 p-6 flex flex-col gap-5 shadow-[4px_4px_0_#000] col-span-1">
                 <div className="flex justify-between items-start">
                   <div className="flex items-center gap-4">
-                    <div className="w-16 h-16 bg-neutral-50 rounded-3xl flex items-center justify-center text-neutral-400 border border-neutral-100 shadow-inner flex-shrink-0">
-                      <FileText size={24} />
+                    <div className="w-12 h-12 bg-[#1a1a1a] flex items-center justify-center text-neutral-500 border-2 border-neutral-700 flex-shrink-0">
+                      <FileText size={20} />
                     </div>
                     <div>
-                      <h3 className="text-lg font-black text-black break-all">{reg.google_email}</h3>
+                      <h3 className="text-sm font-tech font-black text-cb-white-tech break-all uppercase">{reg.google_email}</h3>
                       <div className="flex items-center gap-2 mt-1">
-                        <span className="text-xs font-bold text-neutral-400 uppercase">{reg.data?.category} - {reg.data?.level || reg.data?.institution}</span>
+                        <span className="text-[10px] font-tech font-bold text-neutral-500 uppercase">{reg.data?.category} - {reg.data?.level || reg.data?.institution}</span>
                       </div>
                     </div>
                   </div>
                   {reg.paymentStatus === 'APPROVED' && (
-                    <span className="bg-brand/10 text-brand text-xs font-black uppercase px-3 py-1 rounded-full border border-brand/20 flex items-center gap-2">
-                      <ShieldCheck size={14} /> Pagado
+                    <span className="bg-cb-green-vibrant/20 text-cb-green-vibrant text-[10px] font-tech font-black uppercase px-2 py-1 border border-cb-green-vibrant/40 flex items-center gap-1">
+                      <ShieldCheck size={12} /> Pagado
                     </span>
                   )}
                   {reg.paymentStatus === 'REJECTED' && (
-                    <span className="bg-red-500/10 text-red-500 text-xs font-black uppercase px-3 py-1 rounded-full border border-red-500/20 flex items-center gap-2">
+                    <span className="bg-red-500/20 text-red-400 text-[10px] font-tech font-black uppercase px-2 py-1 border border-red-500/40 flex items-center gap-1">
                       Denegado
                     </span>
                   )}
                   {(reg.paymentStatus === 'PENDING' || !reg.paymentStatus) && (
-                    <span className="bg-neutral-100 text-neutral-500 text-xs font-black uppercase px-3 py-1 rounded-full border border-neutral-200 flex items-center gap-2">
+                    <span className="bg-cb-yellow-neon/10 text-cb-yellow-neon text-[10px] font-tech font-black uppercase px-2 py-1 border border-cb-yellow-neon/30 flex items-center gap-1">
                       Pendiente
                     </span>
                   )}
                 </div>
 
-                <div className="space-y-4">
-                  <div className="p-4 bg-neutral-50 rounded-2xl border border-neutral-100 flex items-center justify-between">
-                    <span className="text-xs font-black uppercase text-neutral-400">Comprobante</span>
+                <div className="space-y-3">
+                  <div className="p-3 bg-[#0a0a0a] border-2 border-neutral-800 flex items-center justify-between">
+                    <span className="text-[10px] font-tech font-black uppercase text-neutral-500">Comprobante</span>
                     {reg.payment_proof_filename ? (
                       <a
                         href={`${UPLOADS_URL}/${reg.payment_proof_filename}`}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="text-brand font-bold text-sm hover:underline"
+                        className="text-cb-green-vibrant font-tech font-bold text-xs hover:text-cb-yellow-neon transition-colors"
                       >
                         Ver Imagen
                       </a>
                     ) : (
-                      <span className="text-xs text-red-400 font-bold">Sin comprobante</span>
+                      <span className="text-[10px] text-red-400 font-tech font-bold">Sin comprobante</span>
                     )}
                   </div>
 
                   {/* Action Buttons */}
-                  <div className="grid grid-cols-2 gap-3">
+                  <div className="grid grid-cols-2 gap-2">
                     {reg.paymentStatus !== 'APPROVED' && (
                       <button
                         onClick={() => handleUpdatePaymentStatus(reg, 'APPROVED')}
-                        className="w-full py-4 rounded-xl font-black uppercase text-xs transition-all bg-black text-white hover:bg-neutral-800 shadow-xl shadow-black/10 flex items-center justify-center gap-2"
+                        className="w-full py-3 font-tech font-black uppercase text-[10px] tracking-wider transition-all duration-75 bg-cb-green-vibrant text-cb-black-pure border-2 border-cb-green-vibrant hover:translate-y-[-1px] flex items-center justify-center gap-1"
                       >
                         Aprobar
                       </button>
@@ -544,7 +549,7 @@ const AdminPanel = () => {
                     {reg.paymentStatus !== 'REJECTED' && (
                       <button
                         onClick={() => handleUpdatePaymentStatus(reg, 'REJECTED')}
-                        className="w-full py-4 rounded-xl font-black uppercase text-xs transition-all bg-red-50 text-red-500 hover:bg-red-100 border border-red-100 flex items-center justify-center gap-2"
+                        className="w-full py-3 font-tech font-black uppercase text-[10px] tracking-wider transition-all duration-75 bg-transparent text-red-400 border-2 border-red-500/40 hover:bg-red-500/10 flex items-center justify-center gap-1"
                       >
                         Rechazar
                       </button>
@@ -553,7 +558,7 @@ const AdminPanel = () => {
                     {reg.paymentStatus === 'APPROVED' && (
                       <button
                         onClick={() => handleUpdatePaymentStatus(reg, 'PENDING')}
-                        className="w-full py-4 rounded-xl font-black uppercase text-xs transition-all bg-neutral-100 text-neutral-500 hover:bg-neutral-200 col-span-2"
+                        className="w-full py-3 font-tech font-black uppercase text-[10px] tracking-wider transition-all duration-75 bg-transparent text-neutral-500 border-2 border-neutral-700 hover:bg-white/5 col-span-2"
                       >
                         Marcar como Pendiente
                       </button>
@@ -562,7 +567,7 @@ const AdminPanel = () => {
                     {reg.paymentStatus === 'REJECTED' && (
                       <button
                         onClick={() => handleUpdatePaymentStatus(reg, 'PENDING')}
-                        className="col-span-1 py-4 rounded-xl font-black uppercase text-xs transition-all bg-neutral-100 text-neutral-500 hover:bg-neutral-200"
+                        className="col-span-1 py-3 font-tech font-black uppercase text-[10px] tracking-wider transition-all duration-75 bg-transparent text-neutral-500 border-2 border-neutral-700 hover:bg-white/5"
                       >
                         Restaurar
                       </button>
@@ -570,66 +575,66 @@ const AdminPanel = () => {
                   </div>
                 </div>
 
-                {/* Details Dropdown/Expand could go here */}
-                <div className="pt-4 border-t border-neutral-50 grid grid-cols-2 gap-4 text-xs">
+                {/* Details */}
+                <div className="pt-3 border-t-2 border-neutral-800 grid grid-cols-2 gap-3 text-[10px]">
                   <div>
-                    <span className="text-neutral-400 font-bold block">Robot/Equipo</span>
-                    <span className="font-black">{reg.data?.robotName || reg.data?.teamName || '---'}</span>
+                    <span className="text-neutral-500 font-tech font-bold block uppercase">Robot/Equipo</span>
+                    <span className="font-tech font-black text-cb-white-tech">{reg.data?.robotName || reg.data?.teamName || '---'}</span>
                   </div>
                   <div>
-                    <span className="text-neutral-400 font-bold block">Asesor</span>
-                    <span className="font-black">{reg.data?.advisorName || '---'}</span>
+                    <span className="text-neutral-500 font-tech font-bold block uppercase">Asesor</span>
+                    <span className="font-tech font-black text-cb-white-tech">{reg.data?.advisorName || '---'}</span>
                   </div>
                 </div>
               </motion.div>
             ))}
 
             {activeTab === 'brackets' && (
-              <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="col-span-full bg-white border border-neutral-100 rounded-[3rem] p-12 shadow-xl shadow-neutral-200/40">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
-                  <div className="space-y-8">
-                    <h3 className="text-2xl font-black uppercase tracking-tight">Configuración de Llave</h3>
+              <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="col-span-full bg-[#111] border-3 border-neutral-800 p-8 shadow-[6px_6px_0_#000]">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
+                  <div className="space-y-6">
+                    <h3 className="text-xl font-tech font-black uppercase tracking-wider text-cb-yellow-neon">Configuración de Llave</h3>
 
                     <div className="space-y-4">
-                      <div className="space-y-2">
-                        <label className="text-sm font-black text-neutral-400 px-2">Nivel de Competencia</label>
-                        <select value={formData.level || ''} onChange={e => setFormData({ ...formData, level: e.target.value, category: '' })} className="w-full text-neutral-500 bg-neutral-50 border border-neutral-100 rounded-2xl p-5 appearance-none">
+                      <div className="space-y-1">
+                        <label className="text-[10px] font-tech font-black text-neutral-500 uppercase tracking-widest">Nivel de Competencia</label>
+                        <select value={formData.level || ''} onChange={e => setFormData({ ...formData, level: e.target.value, category: '' })} className="w-full text-cb-white-tech bg-[#0a0a0a] border-2 border-neutral-700 p-4 appearance-none font-tech text-sm focus:border-cb-yellow-neon outline-none transition-all duration-75">
                           <option value="">Seleccionar...</option>
                           {COMPETITION_LEVELS.map(l => <option key={l} value={l}>{l}</option>)}
                         </select>
                       </div>
 
-                      <div className="space-y-2">
-                        <label className="text-sm font-black text-neutral-400 px-2">Categoría</label>
-                        <select required disabled={!formData.level} value={formData.category || ''} className="w-full text-neutral-500 bg-neutral-50 border border-neutral-100 rounded-2xl p-5 appearance-none" onChange={e => setFormData({ ...formData, category: e.target.value })}>
+                      <div className="space-y-1">
+                        <label className="text-[10px] font-tech font-black text-neutral-500 uppercase tracking-widest">Categoría</label>
+                        <select required disabled={!formData.level} value={formData.category || ''} className="w-full text-cb-white-tech bg-[#0a0a0a] border-2 border-neutral-700 p-4 appearance-none font-tech text-sm focus:border-cb-yellow-neon outline-none transition-all duration-75 disabled:opacity-40" onChange={e => setFormData({ ...formData, category: e.target.value })}>
                           <option value="">Seleccionar...</option>
                           {formData.level && CATEGORIES_BY_LEVEL[formData.level].map(cat => <option key={cat} value={cat}>{cat}</option>)}
                         </select>
                       </div>
 
-                      <div className="space-y-2">
-                        <label className="text-sm font-black text-neutral-400 px-2">Árbitro Oficial</label>
-                        <select value={formData.refereeId || ''} onChange={e => setFormData({ ...formData, refereeId: e.target.value })} className="w-full text-neutral-500 bg-neutral-50 border border-neutral-100 rounded-2xl p-5 appearance-none">
+                      <div className="space-y-1">
+                        <label className="text-[10px] font-tech font-black text-neutral-500 uppercase tracking-widest">Árbitro Oficial</label>
+                        <select value={formData.refereeId || ''} onChange={e => setFormData({ ...formData, refereeId: e.target.value })} className="w-full text-cb-white-tech bg-[#0a0a0a] border-2 border-neutral-700 p-4 appearance-none font-tech text-sm focus:border-cb-yellow-neon outline-none transition-all duration-75">
                           <option value="">Seleccionar...</option>
                           {data.referees.map(u => <option key={u.id} value={u.id}>@{u.username}</option>)}
                         </select>
                       </div>
 
-                      <button onClick={handleGenerateBracket} className="w-full bg-black text-white py-6 rounded-2xl font-black uppercase text-md shadow-2xl shadow-black/10 hover:bg-brand transition-all">
+                      <button onClick={handleGenerateBracket} className="w-full bg-cb-yellow-neon text-cb-black-pure py-5 font-tech font-black uppercase text-sm tracking-wider border-3 border-cb-black-pure shadow-[4px_4px_0_#10B961] hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-none transition-all duration-75">
                         Generar Llave Automática
                       </button>
                     </div>
                   </div>
 
-                  <div className="space-y-8">
+                  <div className="space-y-6">
                     <div className="flex justify-between items-center">
-                      <h3 className="text-2xl font-black uppercase tracking-tight">Robot Participantes</h3>
-                      <span className="bg-neutral-50 text-xs text-neutral-500 font-black px-4 py-2 rounded-full border border-neutral-100">
+                      <h3 className="text-xl font-tech font-black uppercase tracking-wider text-cb-white-tech">Robot Participantes</h3>
+                      <span className="bg-cb-yellow-neon/10 text-cb-yellow-neon text-[10px] font-tech font-black px-3 py-1 border border-cb-yellow-neon/30">
                         {selectedRobots.length} Seleccionados
                       </span>
                     </div>
 
-                    <div className="grid grid-cols-1 gap-3 max-h-[400px] overflow-y-auto pr-4 custom-scrollbar">
+                    <div className="grid grid-cols-1 gap-2 max-h-[400px] overflow-y-auto pr-2 custom-scrollbar">
                       {data.robots
                         .filter(r => !formData.level || r.level === formData.level)
                         .filter(r => !formData.category || r.category === formData.category)
@@ -643,14 +648,14 @@ const AdminPanel = () => {
                                 setSelectedRobots([...selectedRobots, robot.id]);
                               }
                             }}
-                            className={`p-5 rounded-2xl border transition-all cursor-pointer flex justify-between items-center ${selectedRobots.includes(robot.id) ? 'bg-brand/5 border-brand/20' : 'bg-neutral-50 border-neutral-100'
+                            className={`p-4 border-2 transition-all duration-75 cursor-pointer flex justify-between items-center ${selectedRobots.includes(robot.id) ? 'bg-cb-green-vibrant/10 border-cb-green-vibrant/40' : 'bg-[#0a0a0a] border-neutral-800 hover:border-neutral-600'
                               }`}
                           >
                             <div>
-                              <p className="font-black text-sm">{robot.name}</p>
-                              <p className="text-xs font-bold text-neutral-400">{robot.Institution?.name}</p>
+                              <p className="font-tech font-black text-xs text-cb-white-tech uppercase">{robot.name}</p>
+                              <p className="text-[10px] font-tech font-bold text-neutral-500">{robot.Institution?.name}</p>
                             </div>
-                            {selectedRobots.includes(robot.id) && <div className="w-4 h-4 bg-brand rounded-full" />}
+                            {selectedRobots.includes(robot.id) && <div className="w-3 h-3 bg-cb-green-vibrant" />}
                           </div>
                         ))}
                     </div>
@@ -662,34 +667,35 @@ const AdminPanel = () => {
         </div>
 
         {showModal && (
-          <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-6">
-            <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="bg-white w-full max-w-2xl rounded-[3rem] shadow-2xl overflow-hidden border border-neutral-100">
-              <div className="p-10 border-b border-neutral-50 flex justify-between items-center">
+          <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-6">
+            <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="bg-[#111] w-full max-w-2xl shadow-[8px_8px_0_#000] overflow-hidden border-3 border-cb-yellow-neon">
+              <div className="h-2 bg-warning-tape" />
+              <div className="p-8 border-b-2 border-neutral-800 flex justify-between items-center">
                 <div>
-                  <h2 className="text-3xl font-black text-black uppercase tracking-tight">{activeTab === 'institutions' ? (isEditMode ? 'Editar' : 'Nueva') : (isEditMode ? 'Editar' : 'Nuevo')} {activeTab === 'institutions' ? 'institución' : getTabLabel(activeTab).slice(0, -1)}</h2>
-                  <p className="text-[10px] font-black text-neutral-400 uppercase tracking-widest mt-1">Completa los datos del registro</p>
+                  <h2 className="text-2xl font-tech font-black text-cb-yellow-neon uppercase tracking-wider">{activeTab === 'institutions' ? (isEditMode ? 'Editar' : 'Nueva') : (isEditMode ? 'Editar' : 'Nuevo')} {activeTab === 'institutions' ? 'institución' : getTabLabel(activeTab).slice(0, -1)}</h2>
+                  <p className="text-[10px] font-tech font-bold text-neutral-500 uppercase tracking-widest mt-1">Completa los datos del registro</p>
                 </div>
-                <button onClick={() => setShowModal(false)} className="w-12 h-12 bg-neutral-50 rounded-2xl flex items-center justify-center text-neutral-300 hover:text-black transition-all">
-                  <X size={24} />
+                <button onClick={() => setShowModal(false)} className="w-10 h-10 border-2 border-neutral-700 flex items-center justify-center text-neutral-500 hover:text-red-400 hover:border-red-500 transition-all duration-75">
+                  <X size={20} />
                 </button>
               </div>
 
-              <form onSubmit={handleSubmit} className="p-10">
+              <form onSubmit={handleSubmit} className="p-8">
                 {activeTab === 'institutions' && (
                   <div className="space-y-6">
                     <div className="space-y-2">
-                      <label className="text-[10px] font-black uppercase text-neutral-400 px-2">Nombre de la Institución</label>
-                      <input required value={formData.name || ''} placeholder="ej. Universidad Nacional" className="w-full bg-neutral-50 border border-neutral-100 rounded-2xl p-5 text-sm font-bold" onChange={e => setFormData({ ...formData, name: e.target.value })} />
+                      <label className="text-[10px] font-tech font-black uppercase text-neutral-500 tracking-widest">Nombre de la Institución</label>
+                      <input required value={formData.name || ''} placeholder="ej. Universidad Nacional" className="w-full bg-[#0a0a0a] border-2 border-neutral-700 p-4 text-sm font-tech text-cb-white-tech focus:border-cb-yellow-neon outline-none transition-all duration-75 placeholder:text-neutral-600 text-sm font-bold" onChange={e => setFormData({ ...formData, name: e.target.value })} />
                     </div>
                     <div className="grid grid-cols-2 gap-4">
                       <div className="space-y-2">
-                        <label className="text-[10px] font-black uppercase text-neutral-400 px-2">Email de Contacto</label>
-                        <input type="email" value={formData.contactEmail || ''} placeholder="ej. contacto@uni.edu" className="w-full bg-neutral-50 border border-neutral-100 rounded-2xl p-5 text-sm font-bold" onChange={e => setFormData({ ...formData, contactEmail: e.target.value })} />
+                        <label className="text-[10px] font-tech font-black uppercase text-neutral-500 tracking-widest">Email de Contacto</label>
+                        <input type="email" value={formData.contactEmail || ''} placeholder="ej. contacto@uni.edu" className="w-full bg-[#0a0a0a] border-2 border-neutral-700 p-4 text-sm font-tech text-cb-white-tech focus:border-cb-yellow-neon outline-none transition-all duration-75 placeholder:text-neutral-600 text-sm font-bold" onChange={e => setFormData({ ...formData, contactEmail: e.target.value })} />
                       </div>
                       <div className="space-y-2">
-                        <label className="text-[10px] font-black uppercase text-neutral-400 px-2">Estado de Pago ($10)</label>
-                        <div onClick={() => setFormData({ ...formData, isPaid: !formData.isPaid })} className={`w-full p-5 rounded-2xl border cursor-pointer transition-all flex items-center justify-between ${formData.isPaid ? 'bg-green-500/5 border-green-500/20 text-green-600' : 'bg-neutral-50 border-neutral-100 text-neutral-400'}`}>
-                          <span className="text-xs font-black uppercase">{formData.isPaid ? 'Pagado' : 'Pendiente'}</span>
+                        <label className="text-[10px] font-tech font-black uppercase text-neutral-500 tracking-widest">Estado de Pago ($10)</label>
+                        <div onClick={() => setFormData({ ...formData, isPaid: !formData.isPaid })} className={`w-full p-4 border-2 cursor-pointer transition-all duration-75 flex items-center justify-between ${formData.isPaid ? 'bg-cb-green-vibrant/10 border-cb-green-vibrant/40 text-cb-green-vibrant' : 'bg-[#0a0a0a] border-neutral-700 text-neutral-500'}`}>
+                          <span className="text-xs font-tech font-black uppercase">{formData.isPaid ? 'Pagado' : 'Pendiente'}</span>
                           <ShieldCheck size={18} />
                         </div>
                       </div>
@@ -701,12 +707,12 @@ const AdminPanel = () => {
                   <div className="space-y-6">
                     <div className="grid grid-cols-2 gap-4">
                       <div className="space-y-2">
-                        <label className="text-[10px] font-black uppercase text-neutral-400 px-2">Nombre del Robot</label>
-                        <input required value={formData.name || ''} placeholder="ej. Destroyer 3000" className="w-full bg-neutral-50 border border-neutral-100 rounded-2xl p-5" onChange={e => setFormData({ ...formData, name: e.target.value })} />
+                        <label className="text-[10px] font-tech font-black uppercase text-neutral-500 tracking-widest">Nombre del Robot</label>
+                        <input required value={formData.name || ''} placeholder="ej. Destroyer 3000" className="w-full bg-[#0a0a0a] border-2 border-neutral-700 p-4 text-sm font-tech text-cb-white-tech focus:border-cb-yellow-neon outline-none transition-all duration-75 placeholder:text-neutral-600" onChange={e => setFormData({ ...formData, name: e.target.value })} />
                       </div>
                       <div className="space-y-2">
-                        <label className="text-[10px] font-black uppercase text-neutral-400 px-2">Nivel de Competencia</label>
-                        <select required value={formData.level || ''} className="w-full bg-neutral-50 border border-neutral-100 rounded-2xl p-5 appearance-none text-sm" onChange={e => setFormData({ ...formData, level: e.target.value, category: '' })}>
+                        <label className="text-[10px] font-tech font-black uppercase text-neutral-500 tracking-widest">Nivel de Competencia</label>
+                        <select required value={formData.level || ''} className="w-full bg-[#0a0a0a] border-2 border-neutral-700 p-4 text-sm font-tech text-cb-white-tech focus:border-cb-yellow-neon outline-none transition-all duration-75 placeholder:text-neutral-600 appearance-none text-sm" onChange={e => setFormData({ ...formData, level: e.target.value, category: '' })}>
                           <option value="">Seleccionar...</option>
                           {COMPETITION_LEVELS.map(level => <option key={level} value={level}>{level}</option>)}
                         </select>
@@ -715,24 +721,24 @@ const AdminPanel = () => {
 
                     <div className="grid grid-cols-2 gap-4">
                       <div className="space-y-2">
-                        <label className="text-[10px] font-black uppercase text-neutral-400 px-2">Categoría</label>
-                        <select required disabled={!formData.level} value={formData.category || ''} className="w-full bg-neutral-50 border border-neutral-100 rounded-2xl p-5 appearance-none text-sm" onChange={e => setFormData({ ...formData, category: e.target.value })}>
+                        <label className="text-[10px] font-tech font-black uppercase text-neutral-500 tracking-widest">Categoría</label>
+                        <select required disabled={!formData.level} value={formData.category || ''} className="w-full bg-[#0a0a0a] border-2 border-neutral-700 p-4 text-sm font-tech text-cb-white-tech focus:border-cb-yellow-neon outline-none transition-all duration-75 placeholder:text-neutral-600 appearance-none text-sm" onChange={e => setFormData({ ...formData, category: e.target.value })}>
                           <option value="">Seleccionar...</option>
                           {formData.level && CATEGORIES_BY_LEVEL[formData.level].map(cat => <option key={cat} value={cat}>{cat}</option>)}
                         </select>
                       </div>
                       <div className="space-y-2">
-                        <label className="text-[10px] font-black uppercase text-neutral-400 px-2">Institución</label>
-                        <select required value={formData.institutionId || ''} className="w-full bg-neutral-50 border border-neutral-100 rounded-2xl p-5 appearance-none text-sm" onChange={e => setFormData({ ...formData, institutionId: e.target.value })}>
+                        <label className="text-[10px] font-tech font-black uppercase text-neutral-500 tracking-widest">Institución</label>
+                        <select required value={formData.institutionId || ''} className="w-full bg-[#0a0a0a] border-2 border-neutral-700 p-4 text-sm font-tech text-cb-white-tech focus:border-cb-yellow-neon outline-none transition-all duration-75 placeholder:text-neutral-600 appearance-none text-sm" onChange={e => setFormData({ ...formData, institutionId: e.target.value })}>
                           <option value="">Seleccionar...</option>
                           {data.institutions.map(i => <option key={i.id} value={i.id}>{i.name}</option>)}
                         </select>
                       </div>
                     </div>
 
-                    <div className="flex items-center gap-4 p-4 bg-neutral-50 rounded-2xl border border-neutral-100">
-                      <input type="checkbox" id="homologated" checked={formData.isHomologated || false} onChange={e => setFormData({ ...formData, isHomologated: e.target.checked })} className="w-5 h-5 accent-brand" />
-                      <label htmlFor="homologated" className="text-xs font-black uppercase text-neutral-500 cursor-pointer">Robot Homologado (Pasó revisión técnica)</label>
+                    <div className="flex items-center gap-4 p-4 bg-[#0a0a0a] border-2 border-neutral-700">
+                      <input type="checkbox" id="homologated" checked={formData.isHomologated || false} onChange={e => setFormData({ ...formData, isHomologated: e.target.checked })} className="w-5 h-5 accent-[#10B961]" />
+                      <label htmlFor="homologated" className="text-[10px] font-tech font-black uppercase text-neutral-400 cursor-pointer tracking-widest">Robot Homologado (Pasó revisión técnica)</label>
                     </div>
                   </div>
                 )}
@@ -740,12 +746,12 @@ const AdminPanel = () => {
                 {activeTab === 'referees' && (
                   <div className="space-y-6">
                     <div className="space-y-2">
-                      <label className="text-[10px] font-black uppercase text-neutral-400 px-2">Nombre de Usuario</label>
-                      <input required value={formData.username || ''} placeholder="Login de operador" className="w-full bg-neutral-50 border border-neutral-100 rounded-2xl p-5" onChange={e => setFormData({ ...formData, username: e.target.value })} />
+                      <label className="text-[10px] font-tech font-black uppercase text-neutral-500 tracking-widest">Nombre de Usuario</label>
+                      <input required value={formData.username || ''} placeholder="Login de operador" className="w-full bg-[#0a0a0a] border-2 border-neutral-700 p-4 text-sm font-tech text-cb-white-tech focus:border-cb-yellow-neon outline-none transition-all duration-75 placeholder:text-neutral-600" onChange={e => setFormData({ ...formData, username: e.target.value })} />
                     </div>
                     <div className="space-y-2">
-                      <label className="text-[10px] font-black uppercase text-neutral-400 px-2">Clave Secreta {isEditMode && '(Dejar en blanco para mantener actual)'}</label>
-                      <input required={!isEditMode} type="password" placeholder="Credenciales de acceso" className="w-full bg-neutral-50 border border-neutral-100 rounded-2xl p-5" onChange={e => setFormData({ ...formData, password: e.target.value })} />
+                      <label className="text-[10px] font-tech font-black uppercase text-neutral-500 tracking-widest">Clave Secreta {isEditMode && '(Dejar en blanco para mantener actual)'}</label>
+                      <input required={!isEditMode} type="password" placeholder="Credenciales de acceso" className="w-full bg-[#0a0a0a] border-2 border-neutral-700 p-4 text-sm font-tech text-cb-white-tech focus:border-cb-yellow-neon outline-none transition-all duration-75 placeholder:text-neutral-600" onChange={e => setFormData({ ...formData, password: e.target.value })} />
                     </div>
                   </div>
                 )}
@@ -754,15 +760,15 @@ const AdminPanel = () => {
                   <div className="space-y-6">
                     <div className="grid grid-cols-2 gap-4">
                       <div className="space-y-2">
-                        <label className="text-[10px] font-black uppercase text-neutral-400 px-2">Robot A (Rojo)</label>
-                        <select required value={formData.robotAId || ''} className="w-full bg-neutral-50 border border-neutral-100 rounded-2xl p-5 appearance-none text-xs" onChange={e => setFormData({ ...formData, robotAId: e.target.value })}>
+                        <label className="text-[10px] font-tech font-black uppercase text-neutral-500 tracking-widest">Robot A (Rojo)</label>
+                        <select required value={formData.robotAId || ''} className="w-full bg-[#0a0a0a] border-2 border-neutral-700 p-4 text-sm font-tech text-cb-white-tech focus:border-cb-yellow-neon outline-none transition-all duration-75 placeholder:text-neutral-600 appearance-none text-xs" onChange={e => setFormData({ ...formData, robotAId: e.target.value })}>
                           <option value="">Seleccionar...</option>
                           {data.robots.map(r => <option key={r.id} value={r.id}>{r.name}</option>)}
                         </select>
                       </div>
                       <div className="space-y-2">
-                        <label className="text-[10px] font-black uppercase text-neutral-400 px-2">Robot B (Azul)</label>
-                        <select required value={formData.robotBId || ''} className="w-full bg-neutral-50 border border-neutral-100 rounded-2xl p-5 appearance-none text-xs" onChange={e => setFormData({ ...formData, robotBId: e.target.value })}>
+                        <label className="text-[10px] font-tech font-black uppercase text-neutral-500 tracking-widest">Robot B (Azul)</label>
+                        <select required value={formData.robotBId || ''} className="w-full bg-[#0a0a0a] border-2 border-neutral-700 p-4 text-sm font-tech text-cb-white-tech focus:border-cb-yellow-neon outline-none transition-all duration-75 placeholder:text-neutral-600 appearance-none text-xs" onChange={e => setFormData({ ...formData, robotBId: e.target.value })}>
                           <option value="">Seleccionar...</option>
                           {data.robots.map(r => <option key={r.id} value={r.id}>{r.name}</option>)}
                         </select>
@@ -770,12 +776,12 @@ const AdminPanel = () => {
                     </div>
                     <div className="grid grid-cols-2 gap-4">
                       <div className="space-y-2">
-                        <label className="text-[10px] font-black uppercase text-neutral-400 px-2">Categoría / Grupo</label>
-                        <input required value={formData.category || ''} placeholder="ej. Grupo A / Juvenil" className="w-full bg-neutral-50 border border-neutral-100 rounded-2xl p-5 text-sm" onChange={e => setFormData({ ...formData, category: e.target.value })} />
+                        <label className="text-[10px] font-tech font-black uppercase text-neutral-500 tracking-widest">Categoría / Grupo</label>
+                        <input required value={formData.category || ''} placeholder="ej. Grupo A / Juvenil" className="w-full bg-[#0a0a0a] border-2 border-neutral-700 p-4 text-sm font-tech text-cb-white-tech focus:border-cb-yellow-neon outline-none transition-all duration-75 placeholder:text-neutral-600 text-sm" onChange={e => setFormData({ ...formData, category: e.target.value })} />
                       </div>
                       <div className="space-y-2">
-                        <label className="text-[10px] font-black uppercase text-neutral-400 px-2">Ronda del Torneo</label>
-                        <select required value={formData.round || 'QUARTERS'} className="w-full bg-neutral-50 border border-neutral-100 rounded-2xl p-5 appearance-none text-sm" onChange={e => setFormData({ ...formData, round: e.target.value })}>
+                        <label className="text-[10px] font-tech font-black uppercase text-neutral-500 tracking-widest">Ronda del Torneo</label>
+                        <select required value={formData.round || 'QUARTERS'} className="w-full bg-[#0a0a0a] border-2 border-neutral-700 p-4 text-sm font-tech text-cb-white-tech focus:border-cb-yellow-neon outline-none transition-all duration-75 placeholder:text-neutral-600 appearance-none text-sm" onChange={e => setFormData({ ...formData, round: e.target.value })}>
                           <option value="QUARTERS">Cuartos de Final</option>
                           <option value="SEMIS">Semifinal</option>
                           <option value="FINAL">Gran Final</option>
@@ -783,8 +789,8 @@ const AdminPanel = () => {
                       </div>
                     </div>
                     <div className="space-y-2">
-                      <label className="text-[10px] font-black uppercase text-neutral-400 px-2">Árbitro Asignado</label>
-                      <select required value={formData.refereeId || ''} className="w-full bg-neutral-50 border border-neutral-100 rounded-2xl p-5 appearance-none text-sm" onChange={e => setFormData({ ...formData, refereeId: e.target.value })}>
+                      <label className="text-[10px] font-tech font-black uppercase text-neutral-500 tracking-widest">Árbitro Asignado</label>
+                      <select required value={formData.refereeId || ''} className="w-full bg-[#0a0a0a] border-2 border-neutral-700 p-4 text-sm font-tech text-cb-white-tech focus:border-cb-yellow-neon outline-none transition-all duration-75 placeholder:text-neutral-600 appearance-none text-sm" onChange={e => setFormData({ ...formData, refereeId: e.target.value })}>
                         <option value="">Seleccionar...</option>
                         {data.referees.map(u => <option key={u.id} value={u.id}>@{u.username}</option>)}
                       </select>
@@ -795,21 +801,21 @@ const AdminPanel = () => {
                 {activeTab === 'sponsors' && (
                   <div className="space-y-6">
                     <div className="space-y-2">
-                      <label className="text-[10px] font-black uppercase text-neutral-400 px-2">Nombre del Sponsor</label>
-                      <input required value={formData.name || ''} placeholder="Nombre oficial" className="w-full bg-neutral-50 border border-neutral-100 rounded-2xl p-5" onChange={e => setFormData({ ...formData, name: e.target.value })} />
+                      <label className="text-[10px] font-tech font-black uppercase text-neutral-500 tracking-widest">Nombre del Sponsor</label>
+                      <input required value={formData.name || ''} placeholder="Nombre oficial" className="w-full bg-[#0a0a0a] border-2 border-neutral-700 p-4 text-sm font-tech text-cb-white-tech focus:border-cb-yellow-neon outline-none transition-all duration-75 placeholder:text-neutral-600" onChange={e => setFormData({ ...formData, name: e.target.value })} />
                     </div>
                     <div className="space-y-2">
-                      <label className="text-[10px] font-black uppercase text-neutral-400 px-2">Logo URL</label>
-                      <input value={formData.logoUrl || ''} placeholder="https://..." className="w-full bg-neutral-50 border border-neutral-100 rounded-2xl p-5" onChange={e => setFormData({ ...formData, logoUrl: e.target.value })} />
+                      <label className="text-[10px] font-tech font-black uppercase text-neutral-500 tracking-widest">Logo URL</label>
+                      <input value={formData.logoUrl || ''} placeholder="https://..." className="w-full bg-[#0a0a0a] border-2 border-neutral-700 p-4 text-sm font-tech text-cb-white-tech focus:border-cb-yellow-neon outline-none transition-all duration-75 placeholder:text-neutral-600" onChange={e => setFormData({ ...formData, logoUrl: e.target.value })} />
                     </div>
                     <div className="grid grid-cols-2 gap-4">
                       <div className="space-y-2">
-                        <label className="text-[10px] font-black uppercase text-neutral-400 px-2">Sitio Web</label>
-                        <input value={formData.website || ''} placeholder="www.sponsor.com" className="w-full bg-neutral-50 border border-neutral-100 rounded-2xl p-5" onChange={e => setFormData({ ...formData, website: e.target.value })} />
+                        <label className="text-[10px] font-tech font-black uppercase text-neutral-500 tracking-widest">Sitio Web</label>
+                        <input value={formData.website || ''} placeholder="www.sponsor.com" className="w-full bg-[#0a0a0a] border-2 border-neutral-700 p-4 text-sm font-tech text-cb-white-tech focus:border-cb-yellow-neon outline-none transition-all duration-75 placeholder:text-neutral-600" onChange={e => setFormData({ ...formData, website: e.target.value })} />
                       </div>
                       <div className="space-y-2">
-                        <label className="text-[10px] font-black uppercase text-neutral-400 px-2">Nivel (Tier)</label>
-                        <select required value={formData.tier || ''} className="w-full bg-neutral-50 border border-neutral-100 rounded-2xl p-5 appearance-none" onChange={e => setFormData({ ...formData, tier: e.target.value })}>
+                        <label className="text-[10px] font-tech font-black uppercase text-neutral-500 tracking-widest">Nivel (Tier)</label>
+                        <select required value={formData.tier || ''} className="w-full bg-[#0a0a0a] border-2 border-neutral-700 p-4 text-sm font-tech text-cb-white-tech focus:border-cb-yellow-neon outline-none transition-all duration-75 placeholder:text-neutral-600 appearance-none" onChange={e => setFormData({ ...formData, tier: e.target.value })}>
                           <option value="">Seleccionar...</option>
                           <option value="GOLD">GOLD</option>
                           <option value="SILVER">SILVER</option>
@@ -820,7 +826,7 @@ const AdminPanel = () => {
                   </div>
                 )}
 
-                <button type="submit" className="w-full bg-brand text-white font-black py-6 rounded-2xl shadow-xl shadow-brand/20 hover:shadow-brand/40 transition-all mt-4 text-xs uppercase tracking-[0.2em]">{isEditMode ? 'Guardar Cambios' : 'Desplegar Cambios'}</button>
+                <button type="submit" className="w-full bg-cb-yellow-neon text-cb-black-pure font-tech font-black py-5 border-3 border-cb-black-pure shadow-[4px_4px_0_#10B961] hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-none transition-all duration-75 mt-6 text-sm uppercase tracking-widest">{isEditMode ? 'Guardar Cambios' : 'Desplegar Cambios'}</button>
               </form>
             </motion.div>
           </div>

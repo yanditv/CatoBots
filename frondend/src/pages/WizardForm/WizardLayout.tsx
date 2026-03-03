@@ -106,25 +106,23 @@ export default function WizardLayout({
                     {/* Sidebar Header */}
                     <div className="p-6 pb-4 shrink-0">
                         {/* Back Link */}
-                        <Link to="/" className="inline-flex items-center gap-2 text-cb-white-tech font-tech text-xs uppercase hover:text-cb-yellow-neon transition-colors duration-75 mb-6 group">
+                        <Link to="/" className="inline-flex items-center gap-2 text-cb-white-tech font-tech text-xs uppercase hover:text-cb-yellow-neon transition-colors duration-75 mb-4 group">
                             <ChevronLeft size={14} strokeWidth={3} className="group-hover:-translate-x-1 transition-transform duration-75" />
                             RETIRADA ESTRATÉGICA
                         </Link>
 
-                        {/* Title */}
-                        <motion.h1
-                            initial={{ opacity: 0, x: -10 }}
-                            animate={{ opacity: 1, x: 0 }}
-                            className="text-3xl lg:text-4xl font-tech font-black uppercase text-cb-yellow-neon leading-none italic tracking-tighter"
-                        >
-                            {title}
-                        </motion.h1>
+                        {/* Logo */}
+                        <div className="flex justify-center mb-3">
+                            <img src="/logo-yellow.png" alt="CatoBots" className="w-36 h-auto object-contain" />
+                        </div>
+
+                        {/* Logo replaces title */}
                         {subtitle && (
                             <motion.div
                                 initial={{ opacity: 0 }}
                                 animate={{ opacity: 1 }}
                                 transition={{ delay: 0.1 }}
-                                className="mt-3 bg-cb-gray-industrial text-cb-yellow-neon px-3 py-1.5 border-2 border-cb-yellow-neon/30 font-tech text-[11px] tracking-[0.15em] uppercase inline-flex items-center gap-2"
+                                className="mt-3 bg-cb-gray-industrial text-cb-yellow-neon px-3 py-1.5 border-2 border-cb-yellow-neon/30 font-tech text-[11px] tracking-[0.15em] uppercase inline-flex items-center gap-2 w-full justify-center"
                             >
                                 <span className="w-1.5 h-1.5 bg-cb-yellow-neon animate-pulse" />
                                 {subtitle}
