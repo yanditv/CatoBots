@@ -1,5 +1,7 @@
 import { Resend } from 'resend';
 import dotenv from 'dotenv';
+import fs from 'fs';
+import path from 'path';
 
 dotenv.config();
 
@@ -13,8 +15,23 @@ console.log('RESEND_API_KEY:', process.env.RESEND_API_KEY ? '***SET***' : 'NOT S
 console.log('EMAIL_FROM:', process.env.EMAIL_FROM || 'onboarding@resend.dev');
 console.log('===========================');
 
+// --- Logo Embedding via CID ---
+// Try to load the logo from the frontend public folder
+const LOGO_PATH = path.resolve(__dirname, '../../frondend/public/logo-yellow.png');
+let logoBase64: string | null = null;
+try {
+    if (fs.existsSync(LOGO_PATH)) {
+        logoBase64 = fs.readFileSync(LOGO_PATH).toString('base64');
+        console.log('✅ Logo loaded for email embedding');
+    } else {
+        console.log('⚠️ Logo not found at:', LOGO_PATH);
+    }
+} catch (e) {
+    console.log('⚠️ Could not load logo:', e);
+}
+
+// Fallback URL if CID doesn't work
 const CATO_BOTS_LOGO_URL = 'https://catobots.com/logo.png';
-const ROBOT_ICON_URL = 'https://cdn-icons-png.flaticon.com/512/4712/4712035.png';
 
 const rulesUrls: Record<string, string> = {
     'RoboFut': "https://ucacueedu-my.sharepoint.com/personal/nathalia_peralta_ucacue_edu_ec/_layouts/15/Doc.aspx?sourcedoc=%7BABC9DD7A-3FCE-409D-ABCA-E0D90576CBBA%7D&file=Reglas_Robofut.docx&action=default&mobileredirect=true&CT=1771016156656&OR=ItemsView",
@@ -28,90 +45,234 @@ const rulesUrls: Record<string, string> = {
     'BioBot': "#"
 };
 
-const getBaseStyle = () => `
-    font-family: 'Montserrat', 'Inter', 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-    background-color: #000000;
-    color: #FFFFFF;
-    margin: 0;
-    padding: 20px;
-`;
+// --- Resend attachment for CID logo ---
+const getLogoAttachments = () => {
+    if (!logoBase64) return [];
+    return [{
+        filename: 'catobots-logo.png',
+        content: logoBase64,
+        content_type: 'image/png' as const, 
+    }];
+};
 
-const getContainerStyle = () => `
-    max-width: 600px;
-    margin: 0 auto;
-    background-color: #111111;
-    border: 4px solid #000000;
-`;
+const getLogoImgTag = (width: number = 160) => {
+    if (logoBase64) {
+        return `<img src="data:image/png;base64,${logoBase64}" alt="CATOBOTS IV" width="${width}" style="display: block; margin: 0 auto; max-width: ${width}px; height: auto;" />`;
+    }
+    return `<img src="${CATO_BOTS_LOGO_URL}" alt="CATOBOTS IV" width="${width}" style="display: block; margin: 0 auto; max-width: ${width}px; height: auto;" />`;
+};
 
+// ============================================================
+// DESIGN SYSTEM — CatoBots Grunge/eSports (Inline CSS for email)
+// ============================================================
+// Colors: Green #10B961, Yellow #FFF000, Black #000000, White #FFFFFF, Dark #111111
+// Font: Montserrat fallback stack (email-safe)
+// Style: Solid block shadows, warning tape, uppercase, aggressive typography
+
+const warningTapeStyle = `background: repeating-linear-gradient(-45deg, #FFD400, #FFD400 10px, #000000 10px, #000000 20px); height: 8px; width: 100%;`;
+
+const buildEmailHtml = (opts: {
+    headerBg: string;
+    headerTitle: string;
+    headerSubtitle: string;
+    titleColor: string;
+    bodyContent: string;
+    accentColor: string;
+}) => {
+    return `
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+</head>
+<body style="margin: 0; padding: 0; background-color: #000000; font-family: 'Montserrat', 'Inter', 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;">
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color: #000000; padding: 20px 10px;">
+        <tr>
+            <td align="center">
+                <table role="presentation" width="600" cellpadding="0" cellspacing="0" style="max-width: 600px; width: 100%; background-color: #111111; border: 4px solid #000000; box-shadow: 8px 8px 0px ${opts.accentColor};">
+                    
+                    <!-- WARNING TAPE TOP -->
+                    <tr><td style="${warningTapeStyle}"></td></tr>
+
+                    <!-- HEADER -->
+                    <tr>
+                        <td style="background-color: ${opts.headerBg}; padding: 30px 20px 25px; text-align: center; border-bottom: 6px solid #000000;">
+                            <!-- Logo -->
+                            <div style="margin-bottom: 16px;">
+                                ${getLogoImgTag(140)}
+                            </div>
+                            <!-- Title -->
+                            <h1 style="margin: 0; font-size: 26px; font-weight: 900; font-style: italic; text-transform: uppercase; letter-spacing: 2px; color: ${opts.titleColor}; text-shadow: 3px 3px 0px rgba(0,0,0,0.5); line-height: 1.2;">
+                                ${opts.headerTitle}
+                            </h1>
+                            <!-- Subtitle Badge -->
+                            <table role="presentation" cellpadding="0" cellspacing="0" style="margin: 12px auto 0;">
+                                <tr>
+                                    <td style="background-color: #000000; padding: 6px 16px; border: 2px solid ${opts.accentColor};">
+                                        <span style="color: ${opts.accentColor}; font-size: 11px; font-weight: 900; text-transform: uppercase; letter-spacing: 3px;">
+                                            ${opts.headerSubtitle}
+                                        </span>
+                                    </td>
+                                </tr>
+                            </table>
+                        </td>
+                    </tr>
+
+                    <!-- BODY CONTENT -->
+                    <tr>
+                        <td style="padding: 30px 24px; background-color: #111111;">
+                            ${opts.bodyContent}
+                        </td>
+                    </tr>
+
+                    <!-- WARNING TAPE BOTTOM -->
+                    <tr><td style="${warningTapeStyle}"></td></tr>
+
+                    <!-- FOOTER -->
+                    <tr>
+                        <td style="background-color: #000000; padding: 20px; text-align: center;">
+                            <table role="presentation" cellpadding="0" cellspacing="0" style="margin: 0 auto;">
+                                <tr>
+                                    <td style="padding-bottom: 8px; text-align: center;">
+                                        ${getLogoImgTag(60)}
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td style="text-align: center;">
+                                        <span style="color: #10B961; font-size: 10px; font-weight: 900; letter-spacing: 3px; text-transform: uppercase;">
+                                            IV EDICI&Oacute;N
+                                        </span>
+                                        <br />
+                                        <a href="https://teobu.com" target="_blank" style="color: #888888; font-size: 9px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; text-decoration: none;">
+                                            POWERED BY <span style="color: #10B961;">TEOBU S.A</span>
+                                        </a>
+                                        <br />
+                                        <span style="color: #555555; font-size: 9px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase;">
+                                            &copy; 2026 CATOBOTS &bull; UCACUE
+                                        </span>
+                                    </td>
+                                </tr>
+                            </table>
+                        </td>
+                    </tr>
+
+                </table>
+            </td>
+        </tr>
+    </table>
+</body>
+</html>`;
+};
+
+// ============================================================
+// EMAIL: Welcome / Registration Received
+// ============================================================
 export const sendWelcomeEmail = async (to: string, formData: any) => {
     console.log('\n=== sendWelcomeEmail called ===');
     console.log('To:', to);
     console.log('FormData:', JSON.stringify(formData, null, 2));
     
-    // Extract category from formData. Forms save specific subcategories based on the main category.
     const uniqueCategories: string[] = [];
     if (formData?.juniorCategory) uniqueCategories.push(formData.juniorCategory);
     if (formData?.seniorCategory) uniqueCategories.push(formData.seniorCategory);
     if (formData?.masterCategory) uniqueCategories.push(formData.masterCategory);
-    // If none of those matched but a general category string is somehow passed (like "Minisumo Autónomo")
     if (formData?.category && typeof formData.category === 'string' && !['Junior', 'Senior', 'Master'].includes(formData.category)) {
         uniqueCategories.push(formData.category);
     }
     
     console.log('Categories detected:', uniqueCategories);
 
+    // Build rules links
     const rulesLinksHtml = uniqueCategories.map(cat => {
         const url = rulesUrls[cat];
         if (url) {
-            return `<a href="${url}" style="display: inline-block; background-color: #000000; color: #FFF000; padding: 12px 20px; text-decoration: none; font-weight: 900; font-size: 14px; margin: 5px; border: 2px solid #FFF000; text-transform: uppercase; letter-spacing: 1px;">📜 REGLAS ${cat}</a>`;
+            return `
+            <tr>
+                <td style="padding: 4px 0;">
+                    <a href="${url}" style="display: block; background-color: #000000; color: #FFF000; padding: 12px 16px; text-decoration: none; font-weight: 900; font-size: 13px; border: 3px solid #FFF000; text-transform: uppercase; letter-spacing: 1px; text-align: center; box-shadow: 3px 3px 0px #10B961;">
+                        &#9889; REGLAS: ${cat.toUpperCase()}
+                    </a>
+                </td>
+            </tr>`;
         }
         return '';
     }).join('');
 
-    const htmlContent = `
-    <div style="${getBaseStyle()}">
-        <div style="${getContainerStyle()}; box-shadow: 8px 8px 0px #10B961;">
-            
-            <!-- HEADER -->
-            <div style="background-color: #10B961; padding: 40px 20px; text-align: center; border-bottom: 4px solid #000000; position: relative;">
-                <img src="${ROBOT_ICON_URL}" alt="CatoBots" style="width: 80px; height: 80px; margin-bottom: 20px; filter: drop-shadow(4px 4px 0px #000000);" />
-                <h1 style="color: #FFF000; margin: 0; font-size: 32px; font-weight: 900; font-style: italic; text-transform: uppercase; letter-spacing: 2px; text-shadow: 3px 3px 0px #000000;">¡TRANSMISIÓN RECIBIDA!</h1>
-                <p style="color: #000000; font-weight: 900; margin-top: 5px; text-transform: uppercase; letter-spacing: 3px; font-size: 14px;">SECUENCIA DE INSCRIPCIÓN</p>
-            </div>
-            
-            <!-- CONTENT -->
-            <div style="padding: 40px 30px; background-color: #111111;">
-                <p style="font-size: 16px; line-height: 1.6; color: #FFFFFF; margin-bottom: 24px; font-weight: 500; text-transform: uppercase;">
-                    ATENCIÓN COMANDANTE:<br><br>
-                    HEMOS RECIBIDO TUS DATOS DE INSCRIPCIÓN PARA LA <span style="color: #10B961; font-weight: 900;">IV EDICIÓN DE CATOBOTS</span>.
-                </p>
+    // Category info block
+    const categoryDisplay = formData?.category ? `
+        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin-bottom: 20px;">
+            <tr>
+                <td style="background-color: #000000; border-left: 6px solid #FFF000; padding: 16px 20px;">
+                    <span style="color: #666666; font-size: 10px; font-weight: 900; text-transform: uppercase; letter-spacing: 2px; display: block; margin-bottom: 4px;">
+                        DIVISI&Oacute;N ASIGNADA
+                    </span>
+                    <span style="color: #FFF000; font-size: 18px; font-weight: 900; text-transform: uppercase; letter-spacing: 2px;">
+                        ${formData.category} ${uniqueCategories.length ? '&bull; ' + uniqueCategories.join(', ') : ''}
+                    </span>
+                </td>
+            </tr>
+        </table>
+    ` : '';
 
-                ${rulesLinksHtml ? `
-                <div style="background-color: #000000; border-left: 8px solid #FFF000; padding: 25px; margin-bottom: 30px;">
-                    <h3 style="color: #FFFFFF; margin-top: 0; margin-bottom: 15px; font-size: 18px; font-weight: 900; text-transform: uppercase;">📚 NORMATIVA DE COMBATE</h3>
-                    <p style="font-size: 14px; color: #A3A3A3; margin-bottom: 20px; text-transform: uppercase; font-weight: bold;">ACCEDE A TUS MANUALES OFICIALES ANTES DE ENTRAR A LA ARENA:</p>
-                    <div style="display: flex; flex-wrap: wrap; gap: 10px;">
+    const bodyContent = `
+        <!-- Greeting -->
+        <p style="font-size: 15px; line-height: 1.7; color: #FFFFFF; margin: 0 0 20px; font-weight: 700; text-transform: uppercase;">
+            ATENCI&Oacute;N COMANDANTE,
+        </p>
+        <p style="font-size: 14px; line-height: 1.7; color: #CCCCCC; margin: 0 0 24px; font-weight: 500;">
+            Hemos recibido tus datos de inscripci&oacute;n para la 
+            <span style="color: #10B961; font-weight: 900;">IV EDICI&Oacute;N DE CATOBOTS</span>.
+            Tu expediente est&aacute; en proceso de verificaci&oacute;n.
+        </p>
+
+        ${categoryDisplay}
+
+        <!-- Status Card -->
+        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin-bottom: 24px;">
+            <tr>
+                <td style="background-color: #FFF000; border: 4px solid #000000; padding: 20px; box-shadow: 4px 4px 0px #000000;">
+                    <span style="display: block; font-size: 11px; font-weight: 900; color: #000000; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 8px; opacity: 0.6;">
+                        ESTADO DE OPERACI&Oacute;N
+                    </span>
+                    <span style="display: block; font-size: 16px; font-weight: 900; color: #000000; text-transform: uppercase; letter-spacing: 1px; line-height: 1.4;">
+                        &#9203; VERIFICANDO FONDOS
+                    </span>
+                    <span style="display: block; font-size: 12px; font-weight: 600; color: #333333; margin-top: 10px; line-height: 1.5; text-transform: uppercase;">
+                        Nuestros sistemas est&aacute;n revisando tu pago. Recibir&aacute;s otra alerta en cuanto el centro de mando apruebe o rechace tu solicitud.
+                    </span>
+                </td>
+            </tr>
+        </table>
+
+        ${rulesLinksHtml ? `
+        <!-- Rules Section -->
+        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin-bottom: 16px;">
+            <tr>
+                <td style="background-color: #000000; border-left: 6px solid #10B961; padding: 20px;">
+                    <span style="display: block; color: #FFFFFF; font-size: 14px; font-weight: 900; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 6px;">
+                        NORMATIVA DE COMBATE
+                    </span>
+                    <span style="display: block; color: #888888; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 14px;">
+                        Accede a tus manuales oficiales antes de entrar a la arena
+                    </span>
+                    <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
                         ${rulesLinksHtml}
-                    </div>
-                </div>
-                ` : ''}
-
-                <div style="background-color: #FFF000; border: 4px solid #000000; padding: 20px; box-shadow: 4px 4px 0px #10B961;">
-                    <p style="font-size: 16px; color: #000000; margin: 0; font-weight: 900; text-transform: uppercase;">
-                        ⏳ ESTADO DE OPERACIÓN: VERIFICANDO FONDOS<br><br>
-                        <span style="font-weight: 500; font-size: 14px;">NUESTROS SISTEMAS ESTÁN REVISANDO TU PAGO. RECIBIRÁS OTRA ALERTA EN CUANTO EL CENTRO DE MANDO APRUEBE O RECHACE TU SOLICITUD.</span>
-                    </p>
-                </div>
-            </div>
-
-            <!-- FOOTER -->
-            <div style="background-color: #000000; padding: 20px; text-align: center; border-top: 4px solid #000000;">
-                <p style="color: #10B961; font-size: 12px; margin: 0; font-weight: 900; letter-spacing: 2px;">© 2026 CATOBOTS | HIGH ENERGY ESPORTS</p>
-            </div>
-            
-        </div>
-    </div>
+                    </table>
+                </td>
+            </tr>
+        </table>
+        ` : ''}
     `;
+
+    const htmlContent = buildEmailHtml({
+        headerBg: '#10B961',
+        headerTitle: 'TRANSMISI&Oacute;N RECIBIDA',
+        headerSubtitle: 'SECUENCIA DE INSCRIPCI&Oacute;N ACTIVADA',
+        titleColor: '#FFF000',
+        bodyContent,
+        accentColor: '#10B961',
+    });
 
     try {
         if (!process.env.RESEND_API_KEY) {
@@ -125,7 +286,7 @@ export const sendWelcomeEmail = async (to: string, formData: any) => {
         const { data, error } = await resend.emails.send({
             from: process.env.EMAIL_FROM || 'onboarding@resend.dev',
             to,
-            subject: "¡Inscripción Recibida! - CatoBots IV",
+            subject: "⚡ INSCRIPCIÓN RECIBIDA — CatoBots IV",
             html: htmlContent,
         });
         
@@ -143,50 +304,128 @@ export const sendWelcomeEmail = async (to: string, formData: any) => {
     }
 };
 
+// ============================================================
+// EMAIL: Status Update (Approved / Rejected)
+// ============================================================
 export const sendStatusEmail = async (to: string, status: 'APPROVED' | 'REJECTED', formData?: any) => {
     const isApproved = status === 'APPROVED';
-    const statusColor = isApproved ? '#10B961' : '#DC2626'; // Vibrant Green or Deep Red
-    const titleColor = isApproved ? '#FFF000' : '#FFFFFF';
-    const title = isApproved ? '¡ACREDITACIÓN APROBADA!' : '¡SOLICITUD RECHAZADA!';
-    const bgHeader = isApproved ? '#10B961' : '#DC2626';
-    const message = isApproved
-        ? '¡EXCELENTES NOTICIAS COMANDANTE! TU PAGO HA SIDO VERIFICADO Y TU UNIDAD ESTÁ OFICIALMENTE REGISTRADA PARA EL COMBATE EN CATOBOTS IV.'
-        : 'ENCONTRAMOS UN PROBLEMA. TU PAGO NO PUDO SER VERIFICADO Y TU INSCRIPCIÓN HA SIDO RECHAZADA. COMUNÍCATE INMEDIATAMENTE CON EL CENTRO DE MANDO PARA RESOLVER ESTO.';
+    
+    const config = {
+        headerBg: isApproved ? '#10B961' : '#DC2626',
+        titleColor: '#FFF000',
+        title: isApproved ? 'ACREDITACI&Oacute;N APROBADA' : 'SOLICITUD RECHAZADA',
+        subtitle: isApproved ? 'UNIDAD LISTA PARA EL COMBATE' : 'ACCI&Oacute;N REQUERIDA',
+        accentColor: isApproved ? '#10B961' : '#DC2626',
+        statusBg: isApproved ? '#10B961' : '#DC2626',
+        statusTextColor: isApproved ? '#000000' : '#FFFFFF',
+        message: isApproved
+            ? 'Tu pago ha sido verificado y tu unidad est&aacute; oficialmente registrada para el combate en la IV Edici&oacute;n de CatoBots.'
+            : 'Tu pago no pudo ser verificado y tu inscripci&oacute;n ha sido rechazada. Comun&iacute;cate inmediatamente con el centro de mando para resolver esto.',
+    };
 
-    const htmlContent = `
-    <div style="${getBaseStyle()}">
-        <div style="${getContainerStyle()}; box-shadow: 8px 8px 0px ${statusColor};">
-            
-            <!-- HEADER -->
-            <div style="background-color: ${bgHeader}; padding: 40px 20px; text-align: center; border-bottom: 4px solid #000000;">
-                <img src="${ROBOT_ICON_URL}" alt="CatoBots" style="width: 80px; height: 80px; margin-bottom: 20px; filter: drop-shadow(4px 4px 0px #000000);" />
-                <h1 style="color: ${titleColor}; margin: 0; font-size: 30px; font-weight: 900; font-style: italic; text-transform: uppercase; letter-spacing: 2px; text-shadow: 3px 3px 0px #000000;">${title}</h1>
-                <p style="color: #000000; font-weight: 900; margin-top: 5px; text-transform: uppercase; letter-spacing: 3px; font-size: 14px;">ACTUALIZACIÓN DE ESTADO</p>
-            </div>
-            
-            <!-- CONTENT -->
-            <div style="padding: 40px 30px; background-color: #111111;">
-                <p style="font-size: 16px; line-height: 1.6; color: #FFFFFF; margin-bottom: 24px; font-weight: 500; text-transform: uppercase;">
-                    ATENCIÓN COMANDANTE:<br><br>
-                    TENEMOS NUEVA INFORMACIÓN SOBRE TU EXPEDIENTE DE INSCRIPCIÓN PARA LA <span style="color: #10B961; font-weight: 900;">IV EDICIÓN</span>.
-                    ${formData?.category ? `<br><br><span style="color: ${titleColor};">CATEGORÍA ASIGNADA: ${formData.category} ${formData.juniorCategory || formData.seniorCategory || formData.masterCategory || ''}</span>` : ''}
-                </p>
+    // Category display if available
+    const subCat = formData?.juniorCategory || formData?.seniorCategory || formData?.masterCategory || '';
+    const categoryBlock = formData?.category ? `
+        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin-bottom: 20px;">
+            <tr>
+                <td style="background-color: #000000; border-left: 6px solid ${config.accentColor}; padding: 16px 20px;">
+                    <span style="color: #666666; font-size: 10px; font-weight: 900; text-transform: uppercase; letter-spacing: 2px; display: block; margin-bottom: 4px;">
+                        DIVISI&Oacute;N ASIGNADA
+                    </span>
+                    <span style="color: ${config.accentColor}; font-size: 18px; font-weight: 900; text-transform: uppercase; letter-spacing: 2px;">
+                        ${formData.category}${subCat ? ' &bull; ' + subCat : ''}
+                    </span>
+                </td>
+            </tr>
+        </table>
+    ` : '';
 
-                <div style="background-color: ${isApproved ? '#10B961' : '#DC2626'}; border: 4px solid #000000; padding: 25px; box-shadow: 4px 4px 0px #000000;">
-                    <p style="font-size: 18px; color: ${isApproved ? '#000000' : '#FFFFFF'}; margin: 0; font-weight: 900; text-align: center; text-transform: uppercase; line-height: 1.5;">
-                        ${message}
-                    </p>
-                </div>
-            </div>
+    const bodyContent = `
+        <!-- Greeting -->
+        <p style="font-size: 15px; line-height: 1.7; color: #FFFFFF; margin: 0 0 20px; font-weight: 700; text-transform: uppercase;">
+            ATENCI&Oacute;N COMANDANTE,
+        </p>
+        <p style="font-size: 14px; line-height: 1.7; color: #CCCCCC; margin: 0 0 24px; font-weight: 500;">
+            Tenemos nueva informaci&oacute;n sobre tu expediente de inscripci&oacute;n para la
+            <span style="color: #10B961; font-weight: 900;">IV EDICI&Oacute;N DE CATOBOTS</span>.
+        </p>
 
-            <!-- FOOTER -->
-            <div style="background-color: #000000; padding: 20px; text-align: center; border-top: 4px solid #000000;">
-                <p style="color: ${statusColor}; font-size: 12px; margin: 0; font-weight: 900; letter-spacing: 2px;">© 2026 CATOBOTS | HIGH ENERGY ESPORTS</p>
-            </div>
-            
-        </div>
-    </div>
+        ${categoryBlock}
+
+        <!-- Status Card -->
+        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin-bottom: 24px;">
+            <tr>
+                <td style="background-color: ${config.statusBg}; border: 4px solid #000000; padding: 24px; box-shadow: 6px 6px 0px #000000; text-align: center;">
+                    <span style="display: block; font-size: 22px; font-weight: 900; color: ${config.statusTextColor}; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 12px; line-height: 1.2;">
+                        ${isApproved ? '&#10003;' : '&#10007;'} ${config.title}
+                    </span>
+                    <span style="display: block; font-size: 13px; font-weight: 700; color: ${config.statusTextColor}; text-transform: uppercase; line-height: 1.6; opacity: 0.9;">
+                        ${config.message}
+                    </span>
+                </td>
+            </tr>
+        </table>
+
+        ${isApproved ? `
+        <!-- Event Info (only for approved) -->
+        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin-bottom: 16px;">
+            <tr>
+                <td style="background-color: #000000; padding: 20px; border-left: 6px solid #FFF000;">
+                    <span style="display: block; color: #FFF000; font-size: 13px; font-weight: 900; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 10px;">
+                        COORDENADAS DEL EVENTO
+                    </span>
+                    <span style="display: block; color: #FFFFFF; font-size: 13px; font-weight: 700; text-transform: uppercase; line-height: 1.8;">
+                        &#9889; FECHA: 20 DE MARZO DEL 2026<br />
+                        &#9889; LUGAR: COMPLEJO DEPORTIVO BANCO CENTRAL
+                    </span>
+                </td>
+            </tr>
+        </table>
+
+        <!-- Google Maps Link -->
+        <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
+            <tr>
+                <td style="background-color: #000000; border: 3px solid #10B961; overflow: hidden;">
+                    <a href="https://maps.app.goo.gl/FjRKZn9o9d1hV2nA7" target="_blank" style="text-decoration: none; display: block;">
+                        <img src="https://maps.googleapis.com/maps/api/staticmap?center=-2.8880278,-78.9590833&zoom=16&size=600x200&maptype=roadmap&markers=color:green%7C-2.8880278,-78.9590833&style=feature:all%7Celement:geometry%7Ccolor:0x1a1a2e&style=feature:road%7Celement:geometry%7Ccolor:0x2d2d44&style=feature:water%7Celement:geometry%7Ccolor:0x0d1117&style=feature:all%7Celement:labels.text.fill%7Ccolor:0x10B961" alt="Mapa del evento" width="600" style="display: block; width: 100%; max-width: 600px; height: auto; border: 0;" />
+                    </a>
+                    <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
+                        <tr>
+                            <td style="padding: 14px 16px; text-align: center;">
+                                <a href="https://maps.app.goo.gl/FjRKZn9o9d1hV2nA7" target="_blank" style="display: inline-block; background-color: #10B961; color: #000000; padding: 10px 24px; text-decoration: none; font-weight: 900; font-size: 12px; text-transform: uppercase; letter-spacing: 2px; border: 3px solid #000000; box-shadow: 3px 3px 0px #000000;">
+                                    &#128205; ABRIR EN GOOGLE MAPS
+                                </a>
+                            </td>
+                        </tr>
+                    </table>
+                </td>
+            </tr>
+        </table>
+        ` : `
+        <!-- Contact Info (only for rejected) -->
+        <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
+            <tr>
+                <td style="background-color: #000000; padding: 20px; border-left: 6px solid #DC2626;">
+                    <span style="display: block; color: #DC2626; font-size: 13px; font-weight: 900; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 6px;">
+                        CENTRO DE MANDO
+                    </span>
+                    <span style="display: block; color: #CCCCCC; font-size: 12px; font-weight: 600; text-transform: uppercase; line-height: 1.8;">
+                        Contacta al equipo organizador para resolver este inconveniente lo antes posible.
+                    </span>
+                </td>
+            </tr>
+        </table>
+        `}
     `;
+
+    const htmlContent = buildEmailHtml({
+        headerBg: config.headerBg,
+        headerTitle: config.title,
+        headerSubtitle: config.subtitle,
+        titleColor: config.titleColor,
+        bodyContent,
+        accentColor: config.accentColor,
+    });
 
     try {
         if (!process.env.RESEND_API_KEY) {
@@ -197,7 +436,7 @@ export const sendStatusEmail = async (to: string, status: 'APPROVED' | 'REJECTED
         const { data, error } = await resend.emails.send({
             from: process.env.EMAIL_FROM || 'onboarding@resend.dev',
             to,
-            subject: `Actualización de Inscripción: ${title} - CatoBots IV`,
+            subject: `${isApproved ? '✅' : '❌'} ${isApproved ? 'APROBADA' : 'RECHAZADA'} — CatoBots IV`,
             html: htmlContent,
         });
         

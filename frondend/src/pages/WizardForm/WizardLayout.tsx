@@ -1,5 +1,5 @@
-import { motion } from "framer-motion";
-import { Check, ShieldCheck } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
+import { Check, ShieldCheck, ChevronLeft } from "lucide-react";
 import React from "react";
 import { Link } from "react-router-dom";
 
@@ -26,209 +26,281 @@ export default function WizardLayout({
     subtitle,
     showSteps = true
 }: WizardLayoutProps) {
-    // Calculate progress percentage
     const progress = ((currentStep - 1) / (totalSteps - 1)) * 100;
 
-    // Background logos data for "Step-and-Repeat" animated backdrop effect
+    // Background logos for the content area
     const backgroundLogos = [
-        // --- Massive Background Watermarks (Very faint, anchors) ---
-        { id: 101, top: "-10%", left: "-10%", size: "w-[600px] md:w-[900px]", rotate: [-10, 5, -10], scale: [1, 1.05, 1], opacity: [0.01, 0.03, 0.01], duration: 30, delay: 0 },
-        { id: 102, top: "60%", left: "60%", size: "w-[500px] md:w-[800px]", rotate: [15, -10, 15], scale: [1, 1.08, 1], opacity: [0.01, 0.04, 0.01], duration: 35, delay: 5 },
-        { id: 103, top: "30%", left: "30%", size: "w-[400px] md:w-[700px]", rotate: [-5, 15, -5], scale: [1, 1.03, 1], opacity: [0.01, 0.02, 0.01], duration: 40, delay: 2 },
-
-        // --- Step-and-Repeat Grid Layout (No overlaps, very faint visibility) ---
-        // Row 1 (y: ~5-10%)
-        { id: 1, top: "8%", left: "5%", size: "w-20 md:w-32", rotate: [10, -5, 10], scale: [1, 1.1, 1], opacity: [0.04, 0.08, 0.04], duration: 18, delay: 0 },
-        { id: 2, top: "5%", left: "35%", size: "w-16 md:w-24", rotate: [-15, 10, -15], scale: [1, 1.2, 1], opacity: [0.06, 0.12, 0.06], duration: 22, delay: 2 },
-        { id: 3, top: "10%", left: "65%", size: "w-24 md:w-40", rotate: [5, -10, 5], scale: [1, 1.15, 1], opacity: [0.05, 0.1, 0.05], duration: 25, delay: 1 },
-        { id: 4, top: "6%", left: "85%", size: "w-12 md:w-20", rotate: [-20, 20, -20], scale: [1, 1.3, 1], opacity: [0.08, 0.15, 0.08], duration: 15, delay: 4 },
-
-        // Row 2 (y: ~25-30%)
-        { id: 5, top: "30%", left: "15%", size: "w-12 md:w-16", rotate: [45, 0, 45], scale: [1, 1.2, 1], opacity: [0.07, 0.14, 0.07], duration: 20, delay: 3 },
-        { id: 6, top: "25%", left: "45%", size: "w-32 md:w-48", rotate: [-5, 5, -5], scale: [1, 1.05, 1], opacity: [0.03, 0.08, 0.03], duration: 28, delay: 1 },
-        { id: 7, top: "28%", left: "80%", size: "w-20 md:w-32", rotate: [15, -15, 15], scale: [1, 1.1, 1], opacity: [0.05, 0.1, 0.05], duration: 24, delay: 5 },
-
-        // Row 3 (y: ~50%)
-        { id: 8, top: "50%", left: "5%", size: "w-24 md:w-36", rotate: [-10, 10, -10], scale: [1, 1.15, 1], opacity: [0.04, 0.09, 0.04], duration: 26, delay: 0 },
-        { id: 9, top: "45%", left: "75%", size: "w-16 md:w-24", rotate: [20, -20, 20], scale: [1, 1.25, 1], opacity: [0.06, 0.12, 0.06], duration: 19, delay: 2 },
-
-        // Row 4 (y: ~70-75%)
-        { id: 10, top: "75%", left: "15%", size: "w-32 md:w-48", rotate: [5, -5, 5], scale: [1, 1.08, 1], opacity: [0.03, 0.07, 0.03], duration: 29, delay: 4 },
-        { id: 11, top: "70%", left: "40%", size: "w-12 md:w-20", rotate: [-25, 25, -25], scale: [1, 1.3, 1], opacity: [0.08, 0.15, 0.08], duration: 17, delay: 1 },
-        { id: 12, top: "73%", left: "65%", size: "w-20 md:w-28", rotate: [10, -15, 10], scale: [1, 1.1, 1], opacity: [0.05, 0.1, 0.05], duration: 23, delay: 6 },
-        { id: 13, top: "68%", left: "85%", size: "w-40 md:w-56", rotate: [-10, 5, -10], scale: [1, 1.05, 1], opacity: [0.03, 0.08, 0.03], duration: 32, delay: 2 },
-
-        // Row 5 (y: ~85-95%)
-        { id: 14, top: "90%", left: "8%", size: "w-16 md:w-24", rotate: [15, -10, 15], scale: [1, 1.15, 1], opacity: [0.06, 0.12, 0.06], duration: 21, delay: 5 },
-        { id: 15, top: "93%", left: "35%", size: "w-24 md:w-36", rotate: [-5, 15, -5], scale: [1, 1.1, 1], opacity: [0.04, 0.09, 0.04], duration: 25, delay: 0 },
-                        
-        { id: 16, top: "85%", left: "60%", size: "w-12 md:w-16", rotate: [30, -30, 30], scale: [1, 1.2, 1], opacity: [0.08, 0.15, 0.08], duration: 16, delay: 3 },
-        { id: 17, top: "89%", left: "90%", size: "w-20 md:w-32", rotate: [-15, 0, -15], scale: [1, 1.1, 1], opacity: [0.05, 0.1, 0.05], duration: 27, delay: 1 },
+        { id: 101, top: "-10%", left: "-5%", size: "w-[400px] md:w-[600px]", rotate: [-10, 5, -10], scale: [1, 1.05, 1], opacity: [0.01, 0.03, 0.01], duration: 30, delay: 0 },
+        { id: 102, top: "60%", left: "55%", size: "w-[350px] md:w-[500px]", rotate: [15, -10, 15], scale: [1, 1.08, 1], opacity: [0.01, 0.04, 0.01], duration: 35, delay: 5 },
+        { id: 1, top: "8%", left: "70%", size: "w-20 md:w-32", rotate: [10, -5, 10], scale: [1, 1.1, 1], opacity: [0.04, 0.08, 0.04], duration: 18, delay: 0 },
+        { id: 2, top: "40%", left: "5%", size: "w-16 md:w-24", rotate: [-15, 10, -15], scale: [1, 1.2, 1], opacity: [0.06, 0.12, 0.06], duration: 22, delay: 2 },
+        { id: 3, top: "75%", left: "80%", size: "w-24 md:w-40", rotate: [5, -10, 5], scale: [1, 1.15, 1], opacity: [0.05, 0.1, 0.05], duration: 25, delay: 1 },
+        { id: 4, top: "25%", left: "85%", size: "w-12 md:w-20", rotate: [-20, 20, -20], scale: [1, 1.3, 1], opacity: [0.08, 0.15, 0.08], duration: 15, delay: 4 },
+        { id: 5, top: "55%", left: "30%", size: "w-12 md:w-16", rotate: [45, 0, 45], scale: [1, 1.2, 1], opacity: [0.07, 0.14, 0.07], duration: 20, delay: 3 },
+        { id: 6, top: "90%", left: "15%", size: "w-16 md:w-24", rotate: [15, -10, 15], scale: [1, 1.15, 1], opacity: [0.06, 0.12, 0.06], duration: 21, delay: 5 },
     ];
 
     return (
-        <div className="min-h-screen bg-gradient-to-br from-cb-green-vibrant to-cb-green-dark bg-noise text-cb-black-pure font-sans overflow-x-hidden relative flex flex-col items-center py-10 px-4 sm:px-6 lg:px-8">
-            
-            {/* --- CREATIVE BACKGROUND ELEMENTS --- */}
-            {/* Using fixed inset-0 keeps it glued to the screen while you scroll */}
-            <div className="fixed inset-0 z-0 pointer-events-none overflow-hidden">
-                {/* Tech Grid Pattern */}
-                <div className="absolute inset-0 opacity-[0.2] bg-[url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI0MCIgaGVpZ2h0PSI0MCI+PHBhdGggZD0iTTAgMGg0MHY0MEgweiIgZmlsbD0ibm9uZSIvPjxwYXRoIGQ9Ik0wIDM5LjVoNDBWNDBIMHptMzkuNSAwdjEwaDFWMEg0MHoiIGZpbGw9IiMwMDAiLz48L3N2Zz4=')] mix-blend-overlay bg-repeat" />
+        <div className="min-h-screen bg-gradient-to-br from-cb-green-vibrant to-cb-green-dark bg-noise text-cb-black-pure font-sans overflow-x-hidden relative">
+
+            {/* ==================== MOBILE HEADER ==================== */}
+            <div className="md:hidden sticky top-0 z-50">
+                {/* Warning Tape Top Decoration */}
+                <div className="h-2 bg-warning-tape" />
                 
-                {/* Removed mix-blend-overlay to let the bright yellow shine cleanly through its standard opacity */}
-                <div className="absolute inset-0 overflow-hidden pointer-events-none">
-
-                    {/* Dynamic Step-and-Repeat background grid */}
-                    {backgroundLogos.map((logo) => (
-                        <motion.img 
-                            key={logo.id}
-                            src="/logo-yellow.png"
-                            alt=""
-                            initial={{ 
-                                scale: logo.scale[0], 
-                                rotate: logo.rotate[0], 
-                                opacity: logo.opacity[0] 
-                            }}
-                            animate={{ 
-                                scale: logo.scale,
-                                rotate: logo.rotate,
-                                opacity: logo.opacity
-                            }}
-                            transition={{ 
-                                repeat: Infinity, 
-                                duration: logo.duration, 
-                                delay: logo.delay,
-                                ease: "easeInOut" 
-                            }}
-                            className={`absolute ${logo.size} h-auto object-contain`}
-                            style={{
-                                top: logo.top,
-                                left: logo.left
-                            }}
-                        />
-                    ))}
-                </div>
-            </div>
-            {/* Nav Back Header (Minimal Aggressive) */}
-            <div className="absolute top-4 left-4 z-50">
-                <Link to="/" className="inline-flex items-center gap-2 bg-cb-black-pure text-cb-white-tech px-4 py-2 border-2 border-cb-black-pure font-tech text-xs uppercase hover:text-cb-yellow-neon shadow-block-sm hover:shadow-none hover:translate-x-[2px] hover:translate-y-[2px] transition-all">
-                    ← RETIRADA ESTRATÉGICA
-                </Link>
-            </div>
-
-            <div className="relative z-10 w-full max-w-5xl mt-8">
-                {/* Header (Text and Title) */}
-                <div className="mb-8 md:mb-12 text-center md:text-left flex flex-col md:flex-row items-center md:items-start justify-between gap-6">
-                    <div className="flex flex-col items-center md:items-start gap-1">
-                        {/* Fused Logo + "IV" Container */}
-                        <div className="flex items-center justify-center md:justify-start -ml-2">
-                            
-                            <motion.h1
-                                initial={{ opacity: 0, x: -10, y:10}}
-                                animate={{ opacity: 1, x: 20, rotate: -2}}
-                                className="text-xl mt-4 md:text-7xl lg:text-7xl font-tech font-black uppercase text-cb-yellow-neon leading-none italic tracking-tighter drop-shadow-[5px_5px_0_#000] -ml-5 z-0"
-                                style={{ WebkitTextStroke: "3px #000" }}
+                {/* Main Mobile Header */}
+                <div className="bg-cb-black-pure border-b-4 border-cb-black-pure">
+                    <div className="flex items-center justify-between px-4 py-3">
+                        <Link to="/" className="text-cb-white-tech font-tech text-xs uppercase flex items-center gap-1 hover:text-cb-yellow-neon transition-colors">
+                            <ChevronLeft size={16} strokeWidth={3} />
+                            SALIR
+                        </Link>
+                        <div className="text-center">
+                            <h1 className="text-lg font-tech font-black text-cb-yellow-neon uppercase italic tracking-tight"
+                                style={{ WebkitTextStroke: "1px #000" }}
                             >
                                 {title}
-                            </motion.h1>
+                            </h1>
                         </div>
-                        {subtitle && (
-                            <div className="mt-2 md:pl-0">
+                        <div className="w-8 h-8 bg-cb-gray-industrial flex items-center justify-center border-2 border-cb-yellow-neon">
+                            <ShieldCheck size={16} className="text-cb-yellow-neon" strokeWidth={2.5} />
+                        </div>
+                    </div>
+
+                    {/* Mobile Step Info & Progress */}
+                    {showSteps && (
+                        <div className="px-4 pb-3 space-y-2">
+                            <div className="flex items-center justify-between">
+                                <span className="font-tech text-cb-yellow-neon text-xs font-bold uppercase tracking-widest">
+                                    PASO {currentStep}/{totalSteps}
+                                </span>
+                                <span className="font-tech text-cb-white-tech text-xs font-bold uppercase">
+                                    {steps.find(s => s.id === currentStep)?.title}
+                                </span>
+                            </div>
+                            <div className="w-full bg-cb-gray-industrial h-3 border-2 border-cb-white-tech/20 relative overflow-hidden">
                                 <motion.div
-                                    initial={{ opacity: 0 }}
-                                    animate={{ opacity: 1 }}
-                                    transition={{ delay: 0.1 }}
-                                    className="inline-block bg-cb-black-pure text-cb-yellow-warning px-4 py-2 border-2 border-cb-black-pure font-tech text-sm md:text-base tracking-[0.2em] shadow-block-sm -rotate-2"
-                                >
-                                    <span className="w-2 h-2 rounded-full bg-cb-yellow-warning inline-block mr-2 animate-pulse" />
-                                    {subtitle}
-                                </motion.div>
+                                    className="h-full bg-cb-yellow-neon"
+                                    initial={{ width: 0 }}
+                                    animate={{ width: `${progress}%` }}
+                                    transition={{ duration: 0.4, ease: "easeOut" }}
+                                />
+                                {/* Scanline effect on progress */}
+                                <div className="absolute inset-0 opacity-20 pointer-events-none" style={{
+                                    backgroundImage: 'repeating-linear-gradient(90deg, transparent, transparent 4px, #000 4px, #000 5px)'
+                                }} />
+                            </div>
+                        </div>
+                    )}
+                </div>
+            </div>
+
+            {/* ==================== MAIN LAYOUT ==================== */}
+            <div className="flex min-h-screen">
+
+                {/* ==================== DESKTOP SIDEBAR ==================== */}
+                <aside className="hidden md:flex flex-col w-[280px] lg:w-[320px] bg-cb-black-pure border-r-8 border-cb-black-pure fixed top-0 left-0 h-screen sidebar-noise z-30 overflow-hidden">
+                    {/* Warning Tape Top */}
+                    <div className="h-3 bg-warning-tape shrink-0" />
+
+                    {/* Sidebar Header */}
+                    <div className="p-6 pb-4 shrink-0">
+                        {/* Back Link */}
+                        <Link to="/" className="inline-flex items-center gap-2 text-cb-white-tech font-tech text-xs uppercase hover:text-cb-yellow-neon transition-colors duration-75 mb-6 group">
+                            <ChevronLeft size={14} strokeWidth={3} className="group-hover:-translate-x-1 transition-transform duration-75" />
+                            RETIRADA ESTRATÉGICA
+                        </Link>
+
+                        {/* Title */}
+                        <motion.h1
+                            initial={{ opacity: 0, x: -10 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            className="text-3xl lg:text-4xl font-tech font-black uppercase text-cb-yellow-neon leading-none italic tracking-tighter"
+                        >
+                            {title}
+                        </motion.h1>
+                        {subtitle && (
+                            <motion.div
+                                initial={{ opacity: 0 }}
+                                animate={{ opacity: 1 }}
+                                transition={{ delay: 0.1 }}
+                                className="mt-3 bg-cb-gray-industrial text-cb-yellow-neon px-3 py-1.5 border-2 border-cb-yellow-neon/30 font-tech text-[11px] tracking-[0.15em] uppercase inline-flex items-center gap-2"
+                            >
+                                <span className="w-1.5 h-1.5 bg-cb-yellow-neon animate-pulse" />
+                                {subtitle}
+                            </motion.div>
+                        )}
+                    </div>
+
+                    {/* Divider Tape */}
+                    <div className="h-2 bg-warning-tape mx-4 shrink-0" />
+
+                    {/* Step Tracker — Vertical */}
+                    {showSteps && (
+                        <nav className="flex-1 overflow-y-auto custom-scrollbar px-5 py-6">
+                            <div className="relative">
+                                {steps.map((step, index) => {
+                                    const isCompleted = step.id < currentStep;
+                                    const isCurrent = step.id === currentStep;
+                                    const isLast = index === steps.length - 1;
+
+                                    return (
+                                        <div key={step.id} className="relative flex gap-4 items-start">
+                                            {/* Vertical Connector Line */}
+                                            {!isLast && (
+                                                <div className="absolute top-10 left-[18px] w-1 bottom-0 bg-neutral-600">
+                                                    {isCompleted && (
+                                                        <motion.div
+                                                            initial={{ height: 0 }}
+                                                            animate={{ height: "100%" }}
+                                                            transition={{ duration: 0.3 }}
+                                                            className="w-full bg-cb-yellow-neon"
+                                                        />
+                                                    )}
+                                                </div>
+                                            )}
+
+                                            {/* Node / Number Circle */}
+                                            <motion.div
+                                                animate={isCurrent ? { scale: [1, 1.08, 1] } : {}}
+                                                transition={isCurrent ? { repeat: Infinity, duration: 2, ease: "easeInOut" } : {}}
+                                                className={`relative z-10 w-9 h-9 flex items-center justify-center border-4 font-tech text-sm font-black shrink-0 transition-all duration-150
+                                                    ${isCompleted
+                                                        ? "bg-cb-yellow-neon border-cb-yellow-neon text-cb-black-pure shadow-[2px_2px_0_#FFF000]"
+                                                        : isCurrent
+                                                            ? "bg-cb-black-pure border-cb-yellow-neon text-cb-yellow-neon shadow-[3px_3px_0_#FFF000]"
+                                                            : "bg-cb-gray-industrial border-cb-white-tech/40 text-cb-white-tech/70"
+                                                    }`}
+                                            >
+                                                {isCompleted ? <Check size={18} strokeWidth={3.5} /> : step.id}
+                                            </motion.div>
+
+                                            {/* Step Label */}
+                                            <div className={`pb-6 pt-1 transition-all duration-150 ${isCurrent ? "opacity-100" : isCompleted ? "opacity-80" : "opacity-70"}`}>
+                                                <p className={`font-tech text-sm font-black uppercase tracking-wider leading-tight
+                                                    ${isCurrent ? "text-cb-yellow-neon" : isCompleted ? "text-cb-white-tech" : "text-cb-white-tech/80"}`}
+                                                >
+                                                    {step.title}
+                                                </p>
+                                                <p className={`font-sans text-[10px] font-bold uppercase tracking-wide mt-0.5
+                                                    ${isCurrent ? "text-cb-white-tech" : isCompleted ? "text-neutral-400" : "text-neutral-400"}`}
+                                                >
+                                                    {step.description}
+                                                </p>
+                                            </div>
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        </nav>
+                    )}
+
+                    {/* Sidebar Footer — Shield */}
+                    <div className="shrink-0 p-5 border-t-4 border-neutral-800">
+                        <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 bg-cb-gray-industrial flex items-center justify-center border-2 border-cb-yellow-neon/40">
+                                <ShieldCheck size={22} className="text-cb-yellow-neon" strokeWidth={2.5} />
+                            </div>
+                            <div>
+                                <p className="font-tech text-[10px] font-bold text-neutral-500 uppercase tracking-widest">IV EDICIÓN</p>
+                                <p className="font-tech text-xs font-bold text-cb-white-tech uppercase">REGISTRO OFICIAL</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Warning Tape Bottom */}
+                    <div className="h-3 bg-warning-tape shrink-0" />
+                </aside>
+
+                {/* ==================== MAIN CONTENT AREA ==================== */}
+                <main className="flex-1 relative min-h-screen md:ml-[280px] lg:ml-[320px]">
+                    {/* Background Effect Layer (confined to main area) */}
+                    <div className="fixed inset-0 z-0 pointer-events-none overflow-hidden md:left-[280px] lg:left-[320px]">
+                        {/* Tech Grid Pattern */}
+                        <div className="absolute inset-0 opacity-[0.15] bg-[url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI0MCIgaGVpZ2h0PSI0MCI+PHBhdGggZD0iTTAgMGg0MHY0MEgweiIgZmlsbD0ibm9uZSIvPjxwYXRoIGQ9Ik0wIDM5LjVoNDBWNDBIMHptMzkuNSAwdjEwaDFWMEg0MHoiIGZpbGw9IiMwMDAiLz48L3N2Zz4=')] mix-blend-overlay bg-repeat" />
+                        
+                        {/* Dynamic Step-and-Repeat background */}
+                        <div className="absolute inset-0 overflow-hidden pointer-events-none">
+                            {backgroundLogos.map((logo) => (
+                                <motion.img
+                                    key={logo.id}
+                                    src="/logo-yellow.png"
+                                    alt=""
+                                    initial={{
+                                        scale: logo.scale[0],
+                                        rotate: logo.rotate[0],
+                                        opacity: logo.opacity[0]
+                                    }}
+                                    animate={{
+                                        scale: logo.scale,
+                                        rotate: logo.rotate,
+                                        opacity: logo.opacity
+                                    }}
+                                    transition={{
+                                        repeat: Infinity,
+                                        duration: logo.duration,
+                                        delay: logo.delay,
+                                        ease: "easeInOut"
+                                    }}
+                                    className={`absolute ${logo.size} h-auto object-contain`}
+                                    style={{
+                                        top: logo.top,
+                                        left: logo.left
+                                    }}
+                                />
+                            ))}
+                        </div>
+                    </div>
+
+                    {/* Content Container */}
+                    <div className="relative z-10 w-full max-w-4xl mx-auto py-6 md:py-10 px-4 sm:px-6 lg:px-10">
+
+                        {/* Form Container */}
+                        <AnimatePresence mode="wait">
+                            <motion.div
+                                key={currentStep}
+                                initial={{ opacity: 0, y: 15 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                exit={{ opacity: 0, y: -10 }}
+                                transition={{ duration: 0.2, ease: [0.25, 0.1, 0.25, 1] }}
+                                className="w-full bg-cb-white-tech border-8 border-cb-black-pure shadow-block-lg min-h-[500px] relative p-6 md:p-10 lg:p-12"
+                            >
+                                {/* Warning Tape Decorations */}
+                                <div className="absolute top-0 left-0 w-full h-3 bg-warning-tape -translate-y-[6px]" />
+                                <div className="absolute bottom-0 left-0 w-full h-3 bg-warning-tape translate-y-[6px]" />
+
+                                {/* Corner Decorations */}
+                                <div className="absolute -top-2 -left-2 w-4 h-4 bg-cb-yellow-neon border-2 border-cb-black-pure hidden md:block" />
+                                <div className="absolute -top-2 -right-2 w-4 h-4 bg-cb-yellow-neon border-2 border-cb-black-pure hidden md:block" />
+                                <div className="absolute -bottom-2 -left-2 w-4 h-4 bg-cb-black-pure border-2 border-cb-yellow-neon hidden md:block" />
+                                <div className="absolute -bottom-2 -right-2 w-4 h-4 bg-cb-black-pure border-2 border-cb-yellow-neon hidden md:block" />
+
+                                {/* Step content */}
+                                <div className="w-full relative z-10">
+                                    {children}
+                                </div>
+                            </motion.div>
+                        </AnimatePresence>
+
+                        {/* Mobile Step Dots (bottom summary) */}
+                        {showSteps && (
+                            <div className="md:hidden flex justify-center gap-2 mt-6 mb-4">
+                                {steps.map((step) => (
+                                    <div
+                                        key={step.id}
+                                        className={`h-2 transition-all duration-150 border border-cb-black-pure
+                                            ${step.id === currentStep
+                                                ? "w-8 bg-cb-yellow-neon shadow-[2px_2px_0_#000]"
+                                                : step.id < currentStep
+                                                    ? "w-4 bg-cb-green-vibrant"
+                                                    : "w-4 bg-cb-white-tech/50"
+                                            }`}
+                                    />
+                                ))}
                             </div>
                         )}
                     </div>
-                    {/* Badge/Seal */}
-                    <div className="w-20 h-20 bg-cb-black-pure flex items-center justify-center border-4 border-cb-black-pure shadow-block-sm rotate-6">
-                        <ShieldCheck size={40} className="text-cb-yellow-neon" strokeWidth={2.5} />
-                    </div>
-                </div>
-
-                {/* Tracking / Steps Indicator (Industrial Bar) */}
-                
-                {/* Massive Form Container */}
-                <motion.div
-                    key={currentStep}
-                    initial={{ opacity: 0, x: 20, rotateX: 10 }}
-                    animate={{ opacity: 1, x: 0, rotateX: 0 }}
-                    exit={{ opacity: 0, x: -20, rotateX: -10 }}
-                    transition={{ duration: 0.3, type: "spring" }}
-                    className="w-full bg-cb-white-tech border-8 border-cb-black-pure shadow-block-lg min-h-[500px] relative mt-10 md:mt-4 p-8 md:p-12 mb-20"
-                >
-                    {/* Warning Tape Headers */}
-                    <div className="absolute top-0 left-0 w-full h-4 bg-warning-tape -translate-y-[8px]" />
-                    <div className="absolute bottom-0 left-0 w-full h-4 bg-warning-tape translate-y-[8px]" />
-                    
-                    {/* Main Children rendering for the Step */}
-                    <div className="w-full relative z-10">
-                        {children}
-                    </div>
-                </motion.div>
-                {showSteps && (
-                    <div className="mb-14 px-2">
-                        {/* Mobile Progress Bar (Tape) */}
-                        <div className="md:hidden w-full bg-cb-black-pure h-4 border-2 border-cb-black-pure mb-6 relative overflow-hidden">
-                            <motion.div
-                                className="h-full bg-cb-yellow-neon"
-                                initial={{ width: 0 }}
-                                animate={{ width: `${progress}%` }}
-                                transition={{ duration: 0.5, ease: "easeOut" }}
-                            />
-                        </div>
-
-                        {/* Desktop Steps Grid */}
-                        <div className="hidden md:flex justify-between items-center relative py-6">
-                            {/* Connecting Line (Massive Black Bar) */}
-                            <div className="absolute top-1/2 left-[5%] right-[5%] h-2 bg-cb-black-pure -z-10 transform -translate-y-1/2" />
-                            
-                            {/* Loading Bar (Yellow Overlay) */}
-                            <motion.div
-                                className="absolute top-1/2 left-[5%] h-2 bg-cb-yellow-neon -z-10 transform -translate-y-1/2 origin-left shadow-[0_0_10px_rgba(255,240,0,0.8)]"
-                                initial={{ scaleX: 0 }}
-                                animate={{ scaleX: Math.max(0, (currentStep - 1) / (totalSteps - 1)) }}
-                                transition={{ duration: 0.5, ease: "circOut" }}
-                                style={{ width: "90%" }}
-                            />
-
-                            {steps.map((step) => {
-                                const isCompleted = step.id < currentStep;
-                                const isCurrent = step.id === currentStep;
-
-                                return (
-                                    <div key={step.id} className="flex flex-col items-center gap-2 relative group w-1/6">
-                                        <motion.div
-                                            className={`w-12 h-12 flex items-center justify-center border-4 font-tech text-xl transition-all duration-300 z-10 shadow-block-sm
-                                                ${isCompleted
-                                                    ? "bg-cb-yellow-neon border-cb-black-pure text-cb-black-pure"
-                                                    : isCurrent
-                                                        ? "bg-cb-black-pure border-cb-yellow-neon text-cb-yellow-neon -translate-y-2 shadow-[4px_10px_0_#000]"
-                                                        : "bg-cb-white-tech border-cb-black-pure text-cb-black-pure grayscale"
-                                                }`}
-                                        >
-                                            {isCompleted ? <Check size={28} strokeWidth={3} /> : step.id}
-                                        </motion.div>
-                                        
-                                        {/* Status Text (Below Icon) */}
-                                        <div className={`absolute top-16 text-center w-max max-w-[120px] transition-colors ${isCurrent ? "font-black" : "font-bold"}`}>
-                                            <span className={`block text-xs uppercase tracking-widest leading-tight ${isCurrent ? "text-cb-black-pure drop-shadow-[1px_1px_0_#FFF]" : isCompleted ? "text-cb-black-pure" : "text-cb-black-pure/50"}`}>
-                                                {step.title}
-                                            </span>
-                                        </div>
-                                    </div>
-                                );
-                            })}
-                        </div>
-                    </div>
-                )}
-    
+                </main>
             </div>
         </div>
     );

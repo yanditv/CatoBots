@@ -51,7 +51,7 @@ const Login = () => {
         {/* Header */}
         <div className="flex flex-col items-center mb-6">
           <div className="w-32 h-32 flex items-center justify-center mb-4">
-            <img src="/logo-yellow.png" alt="Logo" className="w-full h-full object-contain drop-shadow-[4px_4px_0_#000]" />
+            <img src="/logo-yellow.png" alt="Logo" className="w-full h-full object-contain" />
           </div>
           <div className="flex items-center gap-2">
             <Terminal className="text-cb-yellow-neon" size={20} />

@@ -135,7 +135,7 @@ export default function LandingPage() {
                     </div>
 
                     <h1 className="flex justify-center mb-6 md:mb-8 relative">
-                        <img src="/logo-yellow.png" alt="CatoBots Logo" className="h-32 md:h-48 lg:h-[28rem] w-auto drop-shadow-[8px_8px_0_rgba(0,0,0,1)]" />
+                        <img src="/logo-yellow.png" alt="CatoBots Logo" className="h-32 md:h-48 lg:h-[28rem] w-auto" />
                     </h1>
                     
                     <div className="text-xl md:text-3xl lg:text-5xl font-tech uppercase text-cb-black-pure mb-6 md:mb-10 tracking-wider font-extrabold leading-none" style={{ textShadow: "4px 4px 0 #FFF" }}>
