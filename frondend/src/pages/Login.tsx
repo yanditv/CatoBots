@@ -36,14 +36,32 @@ const Login = () => {
   };
 
   return (
-    <div className="min-h-screen bg-cb-green-vibrant bg-noise flex items-center justify-center p-4">
+    <div className="min-h-screen flex items-center justify-center p-4 relative overflow-hidden bg-cb-green-vibrant">
+      {/* Radial yellow burst from center */}
+      <div className="absolute inset-0" style={{
+        background: 'radial-gradient(ellipse at center, rgba(255,240,0,0.35) 0%, rgba(255,240,0,0.1) 30%, transparent 65%)'
+      }} />
+
+      {/* Robot silhouettes using the logo */}
+      <img src="/logo-yellow.png" alt="" className="absolute -left-24 top-1/2 -translate-y-1/2 w-[500px] h-auto opacity-15 pointer-events-none" style={{ filter: 'brightness(0.3) saturate(2)' }} />
+      <img src="/logo-yellow.png" alt="" className="absolute -right-24 top-1/2 -translate-y-1/2 w-[500px] h-auto opacity-15 pointer-events-none scale-x-[-1]" style={{ filter: 'brightness(0.3) saturate(2)' }} />
+
+      {/* Tech grid overlay */}
+      <div className="absolute inset-0 opacity-10 pointer-events-none" style={{
+        backgroundImage: `repeating-linear-gradient(0deg, transparent, transparent 39px, rgba(0,0,0,0.3) 39px, rgba(0,0,0,0.3) 40px),
+                          repeating-linear-gradient(90deg, transparent, transparent 39px, rgba(0,0,0,0.3) 39px, rgba(0,0,0,0.3) 40px)`
+      }} />
+
+      {/* Noise texture */}
+      <div className="absolute inset-0 bg-noise opacity-30 pointer-events-none" />
+
       {/* Decorativo cinta de peligro */}
-      <div className="absolute top-20 -left-4 w-[110%] h-6 bg-warning-tape -rotate-1 border-y-2 border-cb-black-pure z-0 shadow-block-sm" />
+      <div className="absolute top-20 -left-4 w-[110%] h-6 bg-warning-tape -rotate-1 border-y-2 border-cb-black-pure z-10 shadow-block-sm" />
 
       <motion.div
         initial={{ scale: 0.9, opacity: 0, y: 20 }}
         animate={{ scale: 1, opacity: 1, y: 0 }}
-        className="w-full max-w-md bg-cb-white-tech border-4 border-cb-black-pure p-8 shadow-block-lg relative"
+        className="w-full max-w-md bg-cb-white-tech border-4 border-cb-black-pure p-8 shadow-block-lg relative z-20"
       >
         {/* Warning tape */}
         <div className="absolute top-0 right-0 w-full h-3 bg-warning-tape -translate-y-full" />

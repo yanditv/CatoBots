@@ -68,8 +68,14 @@ export default function LandingPage() {
             <header className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${scrolled ? "bg-cb-black-pure border-b-4 border-cb-yellow-neon shadow-block-sm py-3" : "bg-transparent py-5"}`}>
                 <div className="max-w-7xl mx-auto px-4 md:px-8 flex justify-between items-center">
                     <div className="flex items-center gap-3">
-                        <img src="/logo-white.png" alt="CatoBots" className={`h-8 md:h-10 transition-transform ${scrolled ? "scale-90" : "scale-100"}`} />
-                        <span className={`font-tech text-lg md:text-xl mt-2 md:mt-3 italic tracking-widest hidden sm:block ${scrolled ? "text-cb-white-tech" : "text-cb-black-pure"}`}>IV EDICIÓN</span>
+                        <img src={scrolled ? "/logo-white.png" : "/logo-yellow.png"} alt="CatoBots" className={`transition-all duration-300 ${scrolled ? "h-8 md:h-10" : "h-10 md:h-14"}`} />
+                        <div className={`flex mt-3 items-center gap-2 px-3 py-1.5 border-3 border-cb-black-pure font-tech text-sm md:text-base font-black italic tracking-widest uppercase transition-all duration-300 ${
+                            scrolled 
+                                ? "bg-cb-yellow-neon text-cb-black-pure shadow-[2px_2px_0_#10B961]" 
+                                : "bg-cb-black-pure text-cb-yellow-neon shadow-[3px_3px_0_#FFF]"
+                        }`}>
+                            IV EDICIÓN
+                        </div>
                     </div>
                     
                     {/* Desktop Navigation */}
