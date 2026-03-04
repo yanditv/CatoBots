@@ -428,6 +428,53 @@ app.put('/api/registrations/:id', authenticateJWT, isAdmin, async (req, res) => 
 
   const updatedRegistration = await Registration.findByPk(req.params.id);
 
+  if (updatedRegistration && paymentStatus === 'APPROVED') {
+    const data = updatedRegistration.data;
+    if (data) {
+      try {
+        const institutionName = data.institution || 'INDEPENDIENTE';
+        const contactEmail = data.email || updatedRegistration.google_email;
+        const membersArr = data.members ? data.members.split(',').map((m: string) => m.trim()).filter((m: string) => m.length > 0) : [];
+
+        // 1. Find or Create Institution
+        const [institution] = await Institution.findOrCreate({
+          where: { name: institutionName },
+          defaults: {
+            contactEmail: contactEmail,
+            isPaid: true,
+            members: membersArr,
+          }
+        });
+
+        // 2. Determine Robot Category and Level
+        const categoryLevel = (data.category || 'JUNIOR').toUpperCase();
+        let specificCategory = data.category || 'Minisumo Autónomo';
+
+        if (categoryLevel === 'SENIOR' && data.seniorCategory) specificCategory = data.seniorCategory;
+        if (categoryLevel === 'JUNIOR' && data.juniorCategory) specificCategory = data.juniorCategory;
+        if (categoryLevel === 'MASTER' && data.masterCategory) specificCategory = data.masterCategory;
+
+        const robotName = data.robotName || data.teamName || 'ROBOT S/N';
+
+        // 3. Find or Create Robot
+        await Robot.findOrCreate({
+          where: {
+            name: robotName,
+            institutionId: institution.id,
+            category: specificCategory,
+            level: categoryLevel
+          },
+          defaults: {
+            isHomologated: false,
+          }
+        });
+        console.log(`[Auto-Create] Robot ${robotName} registered for Institution ${institutionName}`);
+      } catch (err) {
+        console.error('[Auto-Create] Error creating Robot/Institution:', err);
+      }
+    }
+  }
+
   if (updatedRegistration && (paymentStatus === 'APPROVED' || paymentStatus === 'REJECTED')) {
     const targetEmail = updatedRegistration.data?.email || updatedRegistration.google_email;
     await sendStatusEmail(targetEmail, paymentStatus, updatedRegistration.data);

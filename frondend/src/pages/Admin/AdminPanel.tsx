@@ -668,9 +668,10 @@ const AdminPanel = () => {
                 { key: 'category', header: 'Categoría', render: (r) => (
                   <span className="text-xs text-neutral-400 font-tech font-bold">{r.data?.category || '---'}</span>
                 )},
-                { key: 'level', header: 'Nivel', render: (r) => (
-                  <span className="text-[10px] font-tech font-bold text-cb-yellow-neon px-2 py-0.5 bg-cb-yellow-neon/10 border border-cb-yellow-neon/30">{r.data?.level || r.data?.institution || '---'}</span>
-                )},
+                { key: 'level', header: 'Nivel', render: (r) => {
+                  const subCategory = r.data?.juniorCategory || r.data?.seniorCategory || r.data?.masterCategory || r.data?.level || '---';
+                  return <span className="text-[10px] font-tech font-bold text-cb-yellow-neon px-2 py-0.5 bg-cb-yellow-neon/10 border border-cb-yellow-neon/30">{subCategory}</span>;
+                }},
                 { key: 'paymentStatus', header: 'Estado', render: (r) => {
                   if (r.paymentStatus === 'APPROVED') return <span className="bg-cb-green-vibrant/20 text-cb-green-vibrant text-[10px] font-tech font-black uppercase px-2 py-0.5 border border-cb-green-vibrant/40 inline-flex items-center gap-1"><ShieldCheck size={12} /> Pagado</span>;
                   if (r.paymentStatus === 'REJECTED') return <span className="bg-red-500/20 text-red-400 text-[10px] font-tech font-black uppercase px-2 py-0.5 border border-red-500/40">Denegado</span>;
