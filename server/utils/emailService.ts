@@ -16,10 +16,8 @@ console.log('EMAIL_FROM:', process.env.EMAIL_FROM || 'onboarding@resend.dev');
 console.log('===========================');
 
 // --- Logo ---
-// Since local CID attachments fail in production deployment, we strictly rely on an absolute URL
-const CATO_BOTS_LOGO_URL = process.env.PUBLIC_URL 
-    ? `${process.env.PUBLIC_URL}/logo-yellow.png` 
-    : 'https://catobots.com/logo-yellow.png';
+// Localhost URLs do not work in emails. Use the remote logo URL defined in .env
+const CATO_BOTS_LOGO_URL = process.env.CATO_BOTS_LOGO_URL || 'https://raw.githubusercontent.com/yanditv/CatoBots/main/frondend/public/logo-yellow.png';
 
 import { Category } from '../models/Category';
 import { EventConfig } from '../models/EventConfig';
