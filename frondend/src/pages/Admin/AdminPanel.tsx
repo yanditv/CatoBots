@@ -298,7 +298,7 @@ const AdminPanel = () => {
           <TabButton id="sponsors" icon={Star} label="Sponsors" />
           <TabButton id="payments" icon={CreditCard} label="Pagos" />
           <TabButton id="brackets" icon={Share2} label="Generador" />
-          <button onClick={() => navigate('/keys')} className="flex items-center gap-4 px-5 py-3.5 text-neutral-400 font-tech font-black hover:bg-white/5 hover:text-cb-yellow-neon transition-all duration-75 text-sm uppercase tracking-wider border-2 border-transparent hover:border-cb-yellow-neon/30">
+          <button onClick={() => window.open('/keys', '_blank')} className="flex items-center gap-4 px-5 py-3.5 text-neutral-400 font-tech font-black hover:bg-white/5 hover:text-cb-yellow-neon transition-all duration-75 text-sm uppercase tracking-wider border-2 border-transparent hover:border-cb-yellow-neon/30">
             <Share2 size={18} /> Llaves del Torneo
           </button>
         </nav>
