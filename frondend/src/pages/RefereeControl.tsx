@@ -66,10 +66,10 @@ const ActionButton = ({
   <button 
     disabled={disabled}
     onClick={onClick}
-    className={`${color} ${textColor} w-full ${size} rounded-none border-3 border-cb-black-pure font-tech font-black uppercase text-xs md:text-sm flex flex-col items-center justify-center gap-2 active:scale-95 transition-all duration-150 hover:translate-y-1 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:translate-y-0`}
+    className={`${color} ${textColor} w-full ${size} rounded-none border-3 border-cb-black-pure font-tech font-black uppercase text-xs md:text-sm flex flex-col items-center justify-center gap-1 md:gap-2 active:scale-95 transition-all duration-150 hover:-translate-y-1 hover:shadow-[4px_4px_0_#000] disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:translate-y-0 disabled:hover:shadow-none`}
   >
-    <Icon size={22} strokeWidth={2.5} />
-    {label}
+    <Icon size={24} strokeWidth={2.5} className="mb-1" />
+    <span className="leading-tight text-center px-1">{label}</span>
   </button>
 );
 
@@ -346,55 +346,61 @@ const RefereeControl = ({ matches, onControl }: RefereeControlProps) => {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-4 flex-1">
         {/* Side A Control */}
         <div className="flex flex-col gap-2 md:gap-3">
-          <div className="p-4 md:p-6 bg-cb-white-tech border-4 border-cb-black-pure text-center shadow-block-sm relative overflow-hidden">
+          <div className="flex-1 p-3 md:p-6 bg-cb-white-tech border-4 border-cb-black-pure text-center shadow-block-sm relative overflow-hidden flex flex-col justify-center items-center">
             <div className="absolute top-0 left-0 w-full h-2 bg-cb-yellow-neon" />
-            <h2 className="text-xs md:text-sm font-tech font-black text-cb-black-pure uppercase truncate px-2">{selectedMatch.robotA?.name || 'Pendiente'}</h2>
-            <p className="text-[10px] md:text-xs font-tech font-bold text-neutral-600 uppercase truncate px-2 mt-1">
+            <h2 className="text-sm md:text-xl font-tech font-black text-cb-black-pure uppercase truncate px-2 w-full">{selectedMatch.robotA?.name || 'Pendiente'}</h2>
+            <p className="text-[10px] md:text-xs font-tech font-bold text-neutral-600 uppercase truncate px-2 mt-1 w-full">
               {selectedMatch.robotA?.institution || 'Sin institución'}
             </p>
-            <div className="text-5xl md:text-7xl font-tech font-black my-3 md:my-4 text-cb-black-pure">{selectedMatch.scoreA}</div>
+            <div className="text-6xl md:text-8xl font-tech font-black my-2 md:my-4 text-cb-black-pure drop-shadow-[2px_2px_0_#000]">{selectedMatch.scoreA}</div>
           </div>
-          <ActionButton 
-            icon={Plus} 
-            label="Punto" 
-            size="py-8 md:py-10"
-            color="bg-cb-black-pure"
-            textColor="text-cb-yellow-neon"
-            onClick={() => onControl(selectedMatch.id, 'ADD_SCORE_A')}
-          />
-          <ActionButton 
-            icon={ShieldAlert} 
-            label="Falta" 
-            color="bg-red-600"
-            textColor="text-white"
-            onClick={() => onControl(selectedMatch.id, 'ADD_PENALTY_A')}
-          />
+          <div className="grid grid-cols-2 gap-2 h-20 md:h-28">
+            <ActionButton 
+              icon={Plus} 
+              label="Punto" 
+              size="h-full"
+              color="bg-cb-black-pure"
+              textColor="text-cb-yellow-neon"
+              onClick={() => onControl(selectedMatch.id, 'ADD_SCORE_A')}
+            />
+            <ActionButton 
+              icon={ShieldAlert} 
+              label="Falta" 
+              size="h-full"
+              color="bg-red-600"
+              textColor="text-white"
+              onClick={() => onControl(selectedMatch.id, 'ADD_PENALTY_A')}
+            />
+          </div>
         </div>
 
         {/* Side B Control */}
         <div className="flex flex-col gap-2 md:gap-3">
-          <div className="p-4 md:p-6 bg-cb-gray-industrial border-4 border-cb-black-pure text-center shadow-block-sm relative overflow-hidden">
-            <h2 className="text-xs md:text-sm font-tech font-black text-cb-white-tech uppercase truncate px-2">{selectedMatch.robotB?.name || 'Pendiente'}</h2>
-            <p className="text-[10px] md:text-xs font-tech font-bold text-neutral-400 uppercase truncate px-2 mt-1">
+          <div className="flex-1 p-3 md:p-6 bg-cb-gray-industrial border-4 border-cb-black-pure text-center shadow-block-sm relative overflow-hidden flex flex-col justify-center items-center">
+            <h2 className="text-sm md:text-xl font-tech font-black text-cb-white-tech uppercase truncate px-2 w-full">{selectedMatch.robotB?.name || 'Pendiente'}</h2>
+            <p className="text-[10px] md:text-xs font-tech font-bold text-neutral-400 uppercase truncate px-2 mt-1 w-full">
               {selectedMatch.robotB?.institution || 'Sin institución'}
             </p>
-            <div className="text-5xl md:text-7xl font-tech font-black my-3 md:my-4 text-cb-white-tech">{selectedMatch.scoreB}</div>
+            <div className="text-6xl md:text-8xl font-tech font-black my-2 md:my-4 text-cb-white-tech drop-shadow-[2px_2px_0_#FFF]">{selectedMatch.scoreB}</div>
           </div>
-          <ActionButton 
-            icon={Plus} 
-            label="Punto" 
-            size="py-8 md:py-10"
-            color="bg-cb-white-tech"
-            textColor="text-cb-black-pure"
-            onClick={() => onControl(selectedMatch.id, 'ADD_SCORE_B')}
-          />
-          <ActionButton 
-            icon={ShieldAlert} 
-            label="Falta" 
-            color="bg-red-600"
-            textColor="text-white"
-            onClick={() => onControl(selectedMatch.id, 'ADD_PENALTY_B')}
-          />
+          <div className="grid grid-cols-2 gap-2 h-20 md:h-28">
+            <ActionButton 
+              icon={Plus} 
+              label="Punto" 
+              size="h-full"
+              color="bg-cb-white-tech"
+              textColor="text-cb-black-pure"
+              onClick={() => onControl(selectedMatch.id, 'ADD_SCORE_B')}
+            />
+            <ActionButton 
+              icon={ShieldAlert} 
+              label="Falta" 
+              size="h-full"
+              color="bg-red-600"
+              textColor="text-white"
+              onClick={() => onControl(selectedMatch.id, 'ADD_PENALTY_B')}
+            />
+          </div>
         </div>
       </div>
 
@@ -412,16 +418,25 @@ const RefereeControl = ({ matches, onControl }: RefereeControlProps) => {
           </button>
         ) : (
           <div className="flex flex-col gap-2 md:gap-3">
-            <div className="bg-cb-yellow-neon text-cb-black-pure p-5 md:p-6 border-4 border-cb-black-pure text-center font-tech font-black uppercase shadow-block-sm flex flex-col items-center">
+            <div className="bg-cb-yellow-neon text-cb-black-pure p-4 md:p-6 border-4 border-cb-black-pure text-center font-tech font-black uppercase shadow-block-sm flex flex-col items-center">
               <Trophy size={28} className="mb-2" strokeWidth={2.5} />
               ¡Encuentro Terminado!
             </div>
-            <button 
-              onClick={() => onControl(selectedMatch.id, 'UNFINISH')}
-              className="w-full bg-cb-black-pure text-cb-white-tech py-4 border-3 border-cb-black-pure font-tech font-black uppercase hover:bg-red-600 transition-colors"
-            >
-              Anular Finalización
-            </button>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-2 md:gap-3">
+              <button 
+                onClick={() => onControl(selectedMatch.id, 'REVEAL_WINNER')}
+                className="w-full bg-blue-600 text-white py-4 border-3 border-cb-black-pure font-tech font-black uppercase hover:bg-blue-700 transition-colors flex items-center justify-center gap-2 active:scale-95 shadow-[4px_4px_0_#000] hover:shadow-none hover:translate-y-1 hover:translate-x-1"
+              >
+                <Play size={20} strokeWidth={2.5} />
+                Revelar Ganador (Dashboard)
+              </button>
+              <button 
+                onClick={() => onControl(selectedMatch.id, 'UNFINISH')}
+                className="w-full bg-cb-black-pure text-cb-white-tech py-4 border-3 border-cb-black-pure font-tech font-black uppercase hover:bg-red-600 transition-colors active:scale-95"
+              >
+                Anular Finalización
+              </button>
+            </div>
           </div>
         )}
       </div>

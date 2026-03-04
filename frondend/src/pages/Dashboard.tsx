@@ -197,7 +197,7 @@ const MatchCard = ({ match, isPinned, canPin = true, onPin }: MatchCardProps) =>
   );
 };
 
-const Dashboard = ({ matches }: { matches: MatchState[] }) => {
+const Dashboard = ({ matches, revealWinnerEvent, onClearReveal }: { matches: MatchState[], revealWinnerEvent?: { matchId: string } | null, onClearReveal?: () => void }) => {
   const [viewMode, setViewMode] = useState<'zoom' | 'mosaico'>('zoom');
   const [focusedMatchId, setFocusedMatchId] = useState<string | null>(null);
   const [manualFocusId, setManualFocusId] = useState<string | null>(null);
@@ -205,6 +205,34 @@ const Dashboard = ({ matches }: { matches: MatchState[] }) => {
   const startSequenceRef = useRef<Record<string, number>>({});
   const knownActiveIdsRef = useRef<Set<string>>(new Set());
   const nextSequenceRef = useRef(1);
+
+  // Reveal Winner Overlay State
+  const [countdown, setCountdown] = useState<number | null>(null);
+  const [revealedMatch, setRevealedMatch] = useState<MatchState | null>(null);
+
+  useEffect(() => {
+    if (revealWinnerEvent && revealWinnerEvent.matchId) {
+      const matchToReveal = matches.find(m => m.id === revealWinnerEvent.matchId);
+      if (matchToReveal) {
+        setRevealedMatch(matchToReveal);
+        setCountdown(5); // 5 seconds
+      }
+    }
+  }, [revealWinnerEvent, matches]);
+
+  useEffect(() => {
+    if (countdown !== null && countdown > 0) {
+      const timer = setTimeout(() => setCountdown(countdown - 1), 1000);
+      return () => clearTimeout(timer);
+    } else if (countdown === 0 && revealedMatch) {
+      const timer = setTimeout(() => {
+        setCountdown(null);
+        setRevealedMatch(null);
+        if (onClearReveal) onClearReveal();
+      }, 7000); // Show winner for 7 seconds
+      return () => clearTimeout(timer);
+    }
+  }, [countdown, revealedMatch, onClearReveal]);
   
   useEffect(() => {
     api.get('/api/sponsors')
@@ -459,6 +487,62 @@ const Dashboard = ({ matches }: { matches: MatchState[] }) => {
           </div>
         )}
       </footer>
+
+      {/* Reveal Winner Overlay */}
+      <AnimatePresence>
+        {revealedMatch && countdown !== null && (
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-center justify-center bg-cb-black-pure/90 backdrop-blur-sm"
+          >
+            <div className="text-center p-8 w-full max-w-4xl relative">
+              
+              {countdown > 0 ? (
+                <>
+                  <h2 className="text-4xl md:text-6xl font-tech font-black text-cb-white-tech mb-8 uppercase drop-shadow-[4px_4px_0_#FFF]">Revelando Ganador...</h2>
+                  <motion.div 
+                    key={countdown}
+                    initial={{ scale: 2, opacity: 0 }}
+                    animate={{ scale: 1, opacity: 1 }}
+                    exit={{ scale: 0.5, opacity: 0 }}
+                    transition={{ duration: 0.5 }}
+                    className="text-[15rem] md:text-[20rem] font-tech font-black text-cb-yellow-neon tabular-nums leading-none drop-shadow-[0_0_50px_rgba(255,240,0,0.6)]"
+                  >
+                    {countdown}
+                  </motion.div>
+                </>
+              ) : (
+                <motion.div 
+                  initial={{ scale: 0.5, opacity: 0, y: 50 }}
+                  animate={{ scale: 1, opacity: 1, y: 0 }}
+                  transition={{ type: "spring", bounce: 0.6 }}
+                  className="bg-cb-yellow-neon p-8 md:p-16 border-8 border-cb-white-tech shadow-[0_0_80px_rgba(255,240,0,0.9)] relative overflow-hidden"
+                >
+                  <div className="absolute top-0 right-0 w-64 h-64 bg-white/20 blur-[100px] -mr-32 -mt-32 rounded-full pointer-events-none" />
+                  <Trophy size={80} className="mx-auto text-cb-black-pure mb-6 animate-pulse" strokeWidth={2.5} />
+                  <p className="text-2xl md:text-4xl font-tech font-bold text-cb-black-pure uppercase mb-2">¡VICTORIA PARA!</p>
+                  <h3 className="text-6xl md:text-8xl font-tech font-black text-cb-black-pure mb-4 uppercase break-words leading-tight">
+                    {revealedMatch.winnerId === revealedMatch.robotA?.id 
+                      ? revealedMatch.robotA?.name 
+                      : (revealedMatch.winnerId === revealedMatch.robotB?.id 
+                          ? revealedMatch.robotB?.name 
+                          : 'Empate')}
+                  </h3>
+                  <p className="text-2xl md:text-3xl font-tech font-bold text-cb-black-pure/80 uppercase">
+                    {revealedMatch.winnerId === revealedMatch.robotA?.id 
+                      ? revealedMatch.robotA?.institution
+                      : (revealedMatch.winnerId === revealedMatch.robotB?.id 
+                          ? revealedMatch.robotB?.institution 
+                          : '-')}
+                  </p>
+                </motion.div>
+              )}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 };

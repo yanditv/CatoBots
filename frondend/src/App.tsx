@@ -48,6 +48,7 @@ const ProtectedRoute = ({ children, role }: { children: React.ReactNode, role?: 
 
 function AppContent() {
   const [matches, setMatches] = useState<MatchState[]>([]);
+  const [revealWinnerEvent, setRevealWinnerEvent] = useState<{ matchId: string } | null>(null);
 
   useEffect(() => {
     socket = io(SOCKET_URL, {
@@ -56,6 +57,10 @@ function AppContent() {
 
     socket.on('all_matches', (allMatches: MatchState[]) => {
       setMatches(allMatches);
+    });
+
+    socket.on('trigger_reveal_winner', (payload: any) => {
+      setRevealWinnerEvent(payload);
     });
 
     return () => {
@@ -77,7 +82,7 @@ function AppContent() {
         <Route path="/registro" element={<WizardForm />} />
 
         {/* Public Scoreboard */}
-        <Route path="/dashboard" element={<Dashboard matches={matches} />} />
+        <Route path="/dashboard" element={<Dashboard matches={matches} revealWinnerEvent={revealWinnerEvent} onClearReveal={() => setRevealWinnerEvent(null)} />} />
         <Route path="/keys" element={<Brackets />} />
 
         {/* Auth */}

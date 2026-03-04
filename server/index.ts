@@ -508,6 +508,9 @@ io.on('connection', (socket) => {
           }
         }
         break;
+      case 'REVEAL_WINNER':
+        io.emit('trigger_reveal_winner', { matchId: match.id });
+        break;
       case 'UNFINISH':
         match.isFinished = false;
         match.winnerId = null as any;

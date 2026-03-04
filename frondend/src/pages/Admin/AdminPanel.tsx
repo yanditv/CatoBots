@@ -15,7 +15,8 @@ import {
   Edit2,
   Star,
   CreditCard,
-  Share2
+  Share2,
+  Download
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
@@ -252,6 +253,94 @@ const AdminPanel = () => {
     }
   };
 
+  const handleExport = () => {
+    let exportData: any[] = [];
+    let headers: string[] = [];
+    let filename = `${activeTab}_export_${new Date().toISOString().split('T')[0]}.csv`;
+
+    if (activeTab === 'institutions') {
+      headers = ['ID', 'Nombre', 'Email', 'Miembros', 'Pagado'];
+      exportData = data.institutions.map(i => [
+        i.id,
+        `"${i.name}"`,
+        `"${i.contactEmail || ''}"`,
+        `"${(i.members || []).join(', ')}"`,
+        i.isPaid ? 'Si' : 'No'
+      ]);
+    } else if (activeTab === 'robots') {
+      headers = ['ID', 'Nombre', 'Nivel', 'Categoría', 'Homologado', 'Institución'];
+      exportData = data.robots.map(r => [
+        r.id,
+        `"${r.name}"`,
+        r.level,
+        `"${r.category}"`,
+        r.isHomologated ? 'Si' : 'No',
+        `"${r.Institution?.name || ''}"`
+      ]);
+    } else if (activeTab === 'referees') {
+      headers = ['ID', 'Usuario', 'Rol'];
+      exportData = data.referees.map(r => [
+        r.id,
+        `"${r.username}"`,
+        r.role
+      ]);
+    } else if (activeTab === 'matches') {
+      headers = ['ID', 'Categoría', 'Ronda', 'Robot A', 'Robot B', 'Score A', 'Score B', 'Árbitro', 'Dashboard'];
+      exportData = data.matches.map(m => [
+        m.id,
+        `"${m.category}"`,
+        m.round,
+        `"${m.robotA?.name || ''}"`,
+        `"${m.robotB?.name || ''}"`,
+        m.scoreA,
+        m.scoreB,
+        `"${m.referee?.username || ''}"`,
+        m.showInDashboard ? 'Si' : 'No'
+      ]);
+    } else if (activeTab === 'sponsors') {
+      headers = ['ID', 'Nombre', 'Nivel', 'Sitio Web'];
+      exportData = data.sponsors.map(s => [
+        s.id,
+        `"${s.name}"`,
+        `"${s.tier}"`,
+        `"${s.website || ''}"`
+      ]);
+    } else if (activeTab === 'payments') {
+      headers = ['ID', 'Email', 'Categoría', 'Nivel', 'Robot/Equipo', 'Asesor', 'Tel. Asesor', 'Institución', 'Estado Pago', 'Miembros'];
+      exportData = data.registrations.map(r => [
+        r.id,
+        `"${r.google_email}"`,
+        `"${r.data?.category || ''}"`,
+        `"${r.data?.level || ''}"`,
+        `"${r.data?.robotName || r.data?.teamName || ''}"`,
+        `"${r.data?.advisorName || ''}"`,
+        `"${r.data?.advisorPhone || ''}"`,
+        `"${r.data?.institution || ''}"`,
+        r.paymentStatus,
+        `"${r.data?.members || ''}"`
+      ]);
+    }
+
+    if (exportData.length === 0) {
+      alert('No hay datos para exportar en esta vista.');
+      return;
+    }
+
+    const csvContent = [
+      headers.join(','),
+      ...exportData.map(row => row.join(','))
+    ].join('\n');
+
+    // BOM for correct UTF-8 display in Excel
+    const blob = new Blob(['\uFEFF' + csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
   const TabButton = ({ id, icon: Icon, label }: any) => (
     <button
       onClick={() => { setActiveTab(id); setSearchQuery(''); }}
@@ -335,6 +424,16 @@ const AdminPanel = () => {
                   className="w-full bg-[#1a1a1a] border-2 border-neutral-700 pl-12 pr-4 py-3.5 text-sm font-tech font-bold text-cb-white-tech outline-none focus:border-cb-yellow-neon transition-all duration-75 placeholder:text-neutral-600"
                 />
               </div>
+            )}
+
+            {activeTab !== 'brackets' && (
+              <button
+                onClick={handleExport}
+                className="bg-neutral-800 text-cb-white-tech hover:bg-neutral-700 px-4 py-3.5 font-tech font-black text-sm uppercase flex items-center gap-2 transition-all duration-75 border-3 border-neutral-700 hover:border-neutral-500 shadow-[4px_4px_0_#000] whitespace-nowrap"
+                title="Exportar a CSV compatible con Excel"
+              >
+                <Download size={18} /> Exportar
+              </button>
             )}
 
             {activeTab !== 'payments' && activeTab !== 'brackets' && (
