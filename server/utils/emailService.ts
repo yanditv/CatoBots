@@ -360,9 +360,13 @@ export const sendStatusEmail = async (to: string, status: 'APPROVED' | 'REJECTED
         <!-- Google Maps Link -->
         <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
             <tr>
-                <td style="background-color: #000000; border: 3px solid #10B961; overflow: hidden;">
-                    <a href="https://maps.app.goo.gl/FjRKZn9o9d1hV2nA7" target="_blank" style="text-decoration: none; display: block;">
-                        <img src="https://maps.googleapis.com/maps/api/staticmap?center=-2.8880278,-78.9590833&zoom=16&size=600x200&maptype=roadmap&markers=color:green%7C-2.8880278,-78.9590833&style=feature:all%7Celement:geometry%7Ccolor:0x1a1a2e&style=feature:road%7Celement:geometry%7Ccolor:0x2d2d44&style=feature:water%7Celement:geometry%7Ccolor:0x0d1117&style=feature:all%7Celement:labels.text.fill%7Ccolor:0x10B961" alt="Mapa del evento" width="600" style="display: block; width: 100%; max-width: 600px; height: auto; border: 0;" />
+                <td style="background-color: #000000; border: 3px solid #10B961; overflow: hidden; text-align: center; padding: 10px;">
+                    <a href="https://maps.app.goo.gl/FjRKZn9o9d1hV2nA7" target="_blank" style="text-decoration: none; display: inline-block;">
+                        <!-- Using a generic map placeholder since direct Google Static Maps require an API key and are often blocked in emails -->
+                        <div style="background-color: #1a1a2e; border: 1px solid #2d2d44; padding: 20px; text-align: center;">
+                           <span style="color: #10B961; font-size: 30px; display: block; margin-bottom: 10px;">🗺️</span>
+                           <span style="color: #888888; font-size: 12px; font-weight: 700; text-transform: uppercase;">VER MAPA TÁCTICO EN GOOGLE MAPS</span>
+                        </div>
                     </a>
                     <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
                         <tr>
