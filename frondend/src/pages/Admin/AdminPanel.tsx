@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import {
   Building2,
   Bot,
@@ -15,12 +15,12 @@ import {
   Edit2,
   Star,
   CreditCard,
-  FileText,
   Share2
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { api, UPLOADS_URL } from '../../config/api';
+import DataTable from '../../components/DataTable';
 interface Institution {
   id: string;
   name: string;
@@ -325,7 +325,7 @@ const AdminPanel = () => {
           </div>
 
           <div className="flex items-center gap-3 w-full sm:w-auto mt-4 sm:mt-0">
-            {activeTab !== 'payments' && activeTab !== 'brackets' && (
+            {activeTab !== 'brackets' && (
               <div className="relative flex-1 sm:w-64">
                 <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-neutral-500" size={18} />
                 <input
@@ -348,246 +348,295 @@ const AdminPanel = () => {
           </div>
         </header>
 
-        <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
-          <AnimatePresence mode="wait">
-            {activeTab === 'institutions' && data.institutions.filter(i => i.name.toLowerCase().includes(searchQuery.toLowerCase())).map((inst) => (
-              <motion.div key={inst.id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="bg-[#111] border-3 border-neutral-800 p-6 flex justify-between items-center shadow-[4px_4px_0_#000] hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-none transition-all duration-75">
-                <div className="flex items-center gap-6 min-w-0 flex-1">
-                  <div className="w-14 h-14 bg-cb-green-vibrant/10 flex items-center justify-center text-cb-green-vibrant border-2 border-cb-green-vibrant/30 flex-shrink-0"><Building2 size={28} /></div>
-                  <div className="min-w-0 flex-1">
-                    <div className="flex items-center gap-3">
-                      <h3 className="text-lg font-tech font-black text-cb-white-tech uppercase tracking-wider">{inst.name}</h3>
-                      {inst.isPaid ? (
-                        <span className="bg-cb-green-vibrant/20 text-cb-green-vibrant text-[10px] font-tech font-black uppercase px-2 py-0.5 border border-cb-green-vibrant/40">PAGADO</span>
-                      ) : (
-                        <span className="bg-red-500/20 text-red-400 text-[10px] font-tech font-black uppercase px-2 py-0.5 border border-red-500/40">PENDIENTE</span>
-                      )}
-                    </div>
-                    <div className="flex items-center gap-4 mt-2">
-                      <div className="flex gap-2">
-                        {inst.members?.map((m: string, i: number) => (
-                          <span key={i} className="text-[10px] font-tech font-bold text-neutral-400 px-3 py-1 bg-black/50 border border-neutral-700">{m}</span>
-                        ))}
-                      </div>
-                      {inst.contactEmail && <span className="text-[10px] text-neutral-500 font-tech font-bold">{inst.contactEmail}</span>}
-                    </div>
-                  </div>
-                </div>
-                <div className="flex gap-2">
-                  <button onClick={() => handleEdit(inst)} className="text-neutral-500 hover:text-cb-yellow-neon hover:bg-cb-yellow-neon/10 transition-all duration-75 p-3 border border-neutral-700 hover:border-cb-yellow-neon"><Edit2 size={18} /></button>
-                  <button onClick={() => handleDelete(inst.id)} className="text-neutral-500 hover:text-red-400 hover:bg-red-500/10 transition-all duration-75 p-3 border border-neutral-700 hover:border-red-500"><Trash2 size={18} /></button>
-                </div>
-              </motion.div>
-            ))}
+        {/* ========= TABLE VIEWS ========= */}
+        <div className="bg-[#111] border-3 border-neutral-800 shadow-[4px_4px_0_#000] overflow-hidden">
 
-            {activeTab === 'robots' && data.robots.filter(r => r.name.toLowerCase().includes(searchQuery.toLowerCase())).map((robot) => (
-              <motion.div key={robot.id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="bg-[#111] border-3 border-neutral-800 p-6 flex justify-between items-center shadow-[4px_4px_0_#000] hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-none transition-all duration-75">
-                <div className="flex items-center gap-6 min-w-0 flex-1">
-                  <div className="w-14 h-14 bg-cb-yellow-neon/10 flex items-center justify-center text-cb-yellow-neon border-2 border-cb-yellow-neon/30 flex-shrink-0"><Bot size={28} /></div>
-                  <div className="min-w-0 flex-1">
-                    <div className="flex items-center gap-3">
-                      <h3 className="text-lg font-tech font-black text-cb-white-tech uppercase tracking-wider">{robot.name}</h3>
-                      {robot.isHomologated && (
-                        <span className="bg-cb-green-vibrant/20 text-cb-green-vibrant text-[10px] font-tech font-black uppercase px-2 py-0.5 border border-cb-green-vibrant/40">Homologado</span>
-                      )}
-                    </div>
-                    <div className="flex flex-wrap items-center gap-3 mt-2">
-                      <p className="text-[10px] font-tech font-bold text-cb-yellow-neon px-2 py-0.5 bg-cb-yellow-neon/10 border border-cb-yellow-neon/30">{robot.level}</p>
-                      <p className="text-[10px] font-tech font-bold text-neutral-400 px-2 py-0.5 bg-black/50 border border-neutral-700">{robot.category}</p>
-                      <p className="text-[10px] text-neutral-500 font-tech font-bold">@{robot.Institution?.name}</p>
-                    </div>
-                  </div>
-                </div>
-                <div className="flex gap-2 ml-4">
-                  <button onClick={() => handleEdit(robot)} className="text-neutral-500 hover:text-cb-yellow-neon hover:bg-cb-yellow-neon/10 transition-all duration-75 p-3 border border-neutral-700 hover:border-cb-yellow-neon"><Edit2 size={18} /></button>
-                  <button onClick={() => handleDelete(robot.id)} className="text-neutral-500 hover:text-red-400 hover:bg-red-500/10 transition-all duration-75 p-3 border border-neutral-700 hover:border-red-500"><Trash2 size={18} /></button>
-                </div>
-              </motion.div>
-            ))}
-
-            {activeTab === 'referees' && data.referees.filter(u => u.username.toLowerCase().includes(searchQuery.toLowerCase())).map((u) => (
-              <motion.div key={u.id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="bg-[#111] border-3 border-neutral-800 p-6 flex justify-between items-center shadow-[4px_4px_0_#000] hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-none transition-all duration-75">
-                <div className="flex items-center gap-5">
-                  <div className="w-14 h-14 bg-cb-green-vibrant/10 flex items-center justify-center text-cb-green-vibrant border-2 border-cb-green-vibrant/30 flex-shrink-0"><Users size={28} /></div>
-                  <div className="flex flex-wrap items-center gap-3">
-                    <h3 className="text-lg font-tech font-black text-cb-white-tech uppercase">@{u.username}</h3>
-                    <p className="text-[10px] font-tech font-bold text-cb-yellow-neon px-2 py-0.5 bg-cb-yellow-neon/10 border border-cb-yellow-neon/30">{u.role}</p>
-                  </div>
-                </div>
-                <div className="flex gap-2">
-                  <button onClick={() => handleEdit(u)} className="text-neutral-500 hover:text-cb-yellow-neon hover:bg-cb-yellow-neon/10 transition-all duration-75 p-3 border border-neutral-700 hover:border-cb-yellow-neon"><Edit2 size={18} /></button>
-                  <button onClick={() => handleDelete(u.id)} className="text-neutral-500 hover:text-red-400 hover:bg-red-500/10 transition-all duration-75 p-3 border border-neutral-700 hover:border-red-500"><Trash2 size={18} /></button>
-                </div>
-              </motion.div>
-            ))}
-
-            {activeTab === 'matches' && data.matches.filter(m => m.robotA?.name.toLowerCase().includes(searchQuery.toLowerCase()) || m.robotB?.name.toLowerCase().includes(searchQuery.toLowerCase())).map((m) => (
-              <motion.div key={m.id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="bg-[#111] border-3 border-neutral-800 p-6 flex flex-col gap-5 shadow-[4px_4px_0_#000] relative overflow-hidden group">
-                <div className="absolute top-0 left-0 w-full h-1 bg-cb-green-vibrant/30 transition-all duration-75 group-hover:bg-cb-green-vibrant" />
-                <div className="flex justify-between items-start">
-                  <div className="flex flex-col gap-0.5">
-                    <span className="text-sm font-tech font-black text-cb-yellow-neon uppercase">{m.category}</span>
-                    <span className="text-[10px] font-tech font-bold text-neutral-500 uppercase">{m.round}</span>
-                  </div>
-                  <div className="flex gap-2">
-                    <button
-                      onClick={() => handleToggleDashboard(m)}
-                      className={`transition-all duration-75 p-3 border ${m.showInDashboard ? 'bg-cb-green-vibrant text-cb-black-pure border-cb-green-vibrant' : 'bg-transparent text-neutral-600 border-neutral-700 hover:border-cb-green-vibrant hover:text-cb-green-vibrant'}`}
-                      title="Mostrar en Dashboard"
-                    >
-                      <LayoutDashboard size={18} />
-                    </button>
-                    <button onClick={() => handleEdit(m)} className="text-neutral-500 hover:text-cb-yellow-neon hover:bg-cb-yellow-neon/10 transition-all duration-75 p-3 border border-neutral-700 hover:border-cb-yellow-neon"><Edit2 size={18} /></button>
-                    <button onClick={() => handleDelete(m.id)} className="text-neutral-500 hover:text-red-400 hover:bg-red-500/10 transition-all duration-75 p-3 border border-neutral-700 hover:border-red-500"><Trash2 size={18} /></button>
-                  </div>
-                </div>
-                <div className="flex items-center justify-between gap-4">
-                  <div className="flex-1 text-center">
-                    <p className="text-sm font-tech font-black text-cb-white-tech leading-tight mb-1 uppercase">{m.robotA?.name || '---'}</p>
-                    <p className="text-[10px] font-tech font-bold text-neutral-500 uppercase truncate">{m.robotA?.Institution?.name}</p>
-                  </div>
-                  <div className="flex flex-col items-center">
-                    <div className="bg-cb-black-pure px-4 py-2 border-2 border-cb-yellow-neon font-tech font-black text-lg text-cb-yellow-neon">
-                      {m.scoreA} - {m.scoreB}
-                    </div>
-                  </div>
-                  <div className="flex-1 text-center">
-                    <p className="text-sm font-tech font-black text-cb-white-tech leading-tight mb-1 uppercase">{m.robotB?.name || '---'}</p>
-                    <p className="text-[10px] font-tech font-bold text-neutral-500 uppercase truncate">{m.robotB?.Institution?.name}</p>
-                  </div>
-                </div>
-                <div className="flex items-center gap-3 pt-4 border-t-2 border-neutral-800">
-                  <div className="w-8 h-8 bg-cb-green-vibrant/10 flex items-center justify-center text-cb-green-vibrant border border-cb-green-vibrant/30 flex-shrink-0"><Users size={16} /></div>
-                  <div className="flex flex-col">
-                    <span className="text-[10px] font-tech font-bold text-neutral-500 uppercase">Árbitro</span>
-                    <span className="text-xs font-tech font-black text-neutral-300">@{m.referee?.username || 'Sin asignar'}</span>
-                  </div>
-                </div>
-              </motion.div>
-            ))}
-
-            {activeTab === 'sponsors' && data.sponsors.filter(s => s.name.toLowerCase().includes(searchQuery.toLowerCase())).map((sponsor) => (
-              <motion.div key={sponsor.id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="bg-[#111] border-3 border-neutral-800 p-6 flex justify-between items-center shadow-[4px_4px_0_#000] hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-none transition-all duration-75">
-                <div className="flex items-center gap-5">
-                  <div className="w-16 h-16 bg-[#1a1a1a] flex items-center justify-center p-3 border-2 border-neutral-700">
-                    {sponsor.logoUrl ? <img src={sponsor.logoUrl} alt={sponsor.name} className="w-full h-full object-contain" /> : <Star size={28} className="text-neutral-600" />}
-                  </div>
-                  <div>
-                    <h3 className="text-lg font-tech font-black text-cb-white-tech uppercase tracking-wider">{sponsor.name}</h3>
-                    <div className="flex items-center gap-2 mt-1">
-                      <p className="text-[10px] font-tech font-bold text-cb-yellow-neon px-2 py-0.5 bg-cb-yellow-neon/10 border border-cb-yellow-neon/30">{sponsor.tier}</p>
-                      <span className="text-[10px] text-neutral-500 font-tech font-bold">{sponsor.website}</span>
-                    </div>
-                  </div>
-                </div>
-                <div className="flex gap-2">
-                  <button onClick={() => handleEdit(sponsor)} className="text-neutral-500 hover:text-cb-yellow-neon hover:bg-cb-yellow-neon/10 transition-all duration-75 p-3 border border-neutral-700 hover:border-cb-yellow-neon"><Star size={18} /></button>
-                  <button onClick={() => handleDelete(sponsor.id)} className="text-neutral-500 hover:text-red-400 hover:bg-red-500/10 transition-all duration-75 p-3 border border-neutral-700 hover:border-red-500"><Trash2 size={18} /></button>
-                </div>
-              </motion.div>
-            ))}
-
-            {activeTab === 'payments' && data.registrations.map((reg) => (
-              <motion.div key={reg.id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="bg-[#111] border-3 border-neutral-800 p-6 flex flex-col gap-5 shadow-[4px_4px_0_#000] col-span-1">
-                <div className="flex justify-between items-start">
-                  <div className="flex items-center gap-4">
-                    <div className="w-12 h-12 bg-[#1a1a1a] flex items-center justify-center text-neutral-500 border-2 border-neutral-700 flex-shrink-0">
-                      <FileText size={20} />
-                    </div>
-                    <div>
-                      <h3 className="text-sm font-tech font-black text-cb-white-tech break-all uppercase">{reg.google_email}</h3>
-                      <div className="flex items-center gap-2 mt-1">
-                        <span className="text-[10px] font-tech font-bold text-neutral-500 uppercase">{reg.data?.category} - {reg.data?.level || reg.data?.institution}</span>
-                      </div>
-                    </div>
-                  </div>
-                  {reg.paymentStatus === 'APPROVED' && (
-                    <span className="bg-cb-green-vibrant/20 text-cb-green-vibrant text-[10px] font-tech font-black uppercase px-2 py-1 border border-cb-green-vibrant/40 flex items-center gap-1">
-                      <ShieldCheck size={12} /> Pagado
-                    </span>
-                  )}
-                  {reg.paymentStatus === 'REJECTED' && (
-                    <span className="bg-red-500/20 text-red-400 text-[10px] font-tech font-black uppercase px-2 py-1 border border-red-500/40 flex items-center gap-1">
-                      Denegado
-                    </span>
-                  )}
-                  {(reg.paymentStatus === 'PENDING' || !reg.paymentStatus) && (
-                    <span className="bg-cb-yellow-neon/10 text-cb-yellow-neon text-[10px] font-tech font-black uppercase px-2 py-1 border border-cb-yellow-neon/30 flex items-center gap-1">
-                      Pendiente
-                    </span>
-                  )}
-                </div>
-
+          {/* INSTITUTIONS TABLE */}
+          {activeTab === 'institutions' && (
+            <DataTable
+              data={data.institutions.filter(i => i.name.toLowerCase().includes(searchQuery.toLowerCase()))}
+              keyField="id"
+              columns={[
+                { key: 'name', header: 'Institución', render: (i) => (
+                  <span className="font-tech font-black uppercase tracking-wider">{i.name}</span>
+                )},
+                { key: 'contactEmail', header: 'Email', render: (i) => (
+                  <span className="text-neutral-400 text-xs">{i.contactEmail || '---'}</span>
+                )},
+                { key: 'isPaid', header: 'Estado', render: (i) => i.isPaid
+                  ? <span className="bg-cb-green-vibrant/20 text-cb-green-vibrant text-[10px] font-tech font-black uppercase px-2 py-0.5 border border-cb-green-vibrant/40">PAGADO</span>
+                  : <span className="bg-red-500/20 text-red-400 text-[10px] font-tech font-black uppercase px-2 py-0.5 border border-red-500/40">PENDIENTE</span>
+                },
+              ]}
+              actions={(inst) => (
+                <>
+                  <button onClick={() => handleEdit(inst)} className="text-neutral-500 hover:text-cb-yellow-neon hover:bg-cb-yellow-neon/10 transition-all duration-75 p-2 border border-neutral-700 hover:border-cb-yellow-neon"><Edit2 size={15} /></button>
+                  <button onClick={() => handleDelete(inst.id)} className="text-neutral-500 hover:text-red-400 hover:bg-red-500/10 transition-all duration-75 p-2 border border-neutral-700 hover:border-red-500"><Trash2 size={15} /></button>
+                </>
+              )}
+              expandedContent={(inst) => (
                 <div className="space-y-3">
-                  <div className="p-3 bg-[#0a0a0a] border-2 border-neutral-800 flex items-center justify-between">
-                    <span className="text-[10px] font-tech font-black uppercase text-neutral-500">Comprobante</span>
-                    {reg.payment_proof_filename ? (
-                      <a
-                        href={`${UPLOADS_URL}/${reg.payment_proof_filename}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-cb-green-vibrant font-tech font-bold text-xs hover:text-cb-yellow-neon transition-colors"
-                      >
-                        Ver Imagen
-                      </a>
-                    ) : (
-                      <span className="text-[10px] text-red-400 font-tech font-bold">Sin comprobante</span>
-                    )}
-                  </div>
-
-                  {/* Action Buttons */}
-                  <div className="grid grid-cols-2 gap-2">
-                    {reg.paymentStatus !== 'APPROVED' && (
-                      <button
-                        onClick={() => handleUpdatePaymentStatus(reg, 'APPROVED')}
-                        className="w-full py-3 font-tech font-black uppercase text-[10px] tracking-wider transition-all duration-75 bg-cb-green-vibrant text-cb-black-pure border-2 border-cb-green-vibrant hover:translate-y-[-1px] flex items-center justify-center gap-1"
-                      >
-                        Aprobar
-                      </button>
-                    )}
-
-                    {reg.paymentStatus !== 'REJECTED' && (
-                      <button
-                        onClick={() => handleUpdatePaymentStatus(reg, 'REJECTED')}
-                        className="w-full py-3 font-tech font-black uppercase text-[10px] tracking-wider transition-all duration-75 bg-transparent text-red-400 border-2 border-red-500/40 hover:bg-red-500/10 flex items-center justify-center gap-1"
-                      >
-                        Rechazar
-                      </button>
-                    )}
-
-                    {reg.paymentStatus === 'APPROVED' && (
-                      <button
-                        onClick={() => handleUpdatePaymentStatus(reg, 'PENDING')}
-                        className="w-full py-3 font-tech font-black uppercase text-[10px] tracking-wider transition-all duration-75 bg-transparent text-neutral-500 border-2 border-neutral-700 hover:bg-white/5 col-span-2"
-                      >
-                        Marcar como Pendiente
-                      </button>
-                    )}
-
-                    {reg.paymentStatus === 'REJECTED' && (
-                      <button
-                        onClick={() => handleUpdatePaymentStatus(reg, 'PENDING')}
-                        className="col-span-1 py-3 font-tech font-black uppercase text-[10px] tracking-wider transition-all duration-75 bg-transparent text-neutral-500 border-2 border-neutral-700 hover:bg-white/5"
-                      >
-                        Restaurar
-                      </button>
-                    )}
+                  <p className="text-[10px] font-tech font-black uppercase tracking-widest text-cb-green-vibrant">Miembros del Equipo</p>
+                  <div className="flex flex-wrap gap-2">
+                    {inst.members?.length > 0 ? inst.members.map((m: string, i: number) => (
+                      <span key={i} className="text-xs font-tech font-bold text-cb-white-tech px-3 py-1.5 bg-black/50 border border-neutral-700">{m}</span>
+                    )) : <span className="text-xs text-neutral-500 font-tech">Sin miembros registrados</span>}
                   </div>
                 </div>
+              )}
+              emptyMessage="Sin instituciones registradas"
+            />
+          )}
 
-                {/* Details */}
-                <div className="pt-3 border-t-2 border-neutral-800 grid grid-cols-2 gap-3 text-[10px]">
-                  <div>
-                    <span className="text-neutral-500 font-tech font-bold block uppercase">Robot/Equipo</span>
-                    <span className="font-tech font-black text-cb-white-tech">{reg.data?.robotName || reg.data?.teamName || '---'}</span>
+          {/* ROBOTS TABLE */}
+          {activeTab === 'robots' && (
+            <DataTable
+              data={data.robots.filter(r => r.name.toLowerCase().includes(searchQuery.toLowerCase()))}
+              keyField="id"
+              columns={[
+                { key: 'name', header: 'Robot', render: (r) => (
+                  <div className="flex items-center gap-2">
+                    <span className="font-tech font-black uppercase tracking-wider">{r.name}</span>
+                    {r.isHomologated && <span className="bg-cb-green-vibrant/20 text-cb-green-vibrant text-[9px] font-tech font-black uppercase px-1.5 py-0.5 border border-cb-green-vibrant/40">OK</span>}
                   </div>
+                )},
+                { key: 'level', header: 'Nivel', render: (r) => (
+                  <span className="text-[10px] font-tech font-bold text-cb-yellow-neon px-2 py-0.5 bg-cb-yellow-neon/10 border border-cb-yellow-neon/30">{r.level}</span>
+                )},
+                { key: 'category', header: 'Categoría', render: (r) => (
+                  <span className="text-xs text-neutral-400 font-tech font-bold">{r.category}</span>
+                )},
+                { key: 'institution', header: 'Institución', render: (r) => (
+                  <span className="text-xs text-neutral-500 font-tech font-bold">{r.Institution?.name || '---'}</span>
+                )},
+              ]}
+              actions={(robot) => (
+                <>
+                  <button onClick={() => handleEdit(robot)} className="text-neutral-500 hover:text-cb-yellow-neon hover:bg-cb-yellow-neon/10 transition-all duration-75 p-2 border border-neutral-700 hover:border-cb-yellow-neon"><Edit2 size={15} /></button>
+                  <button onClick={() => handleDelete(robot.id)} className="text-neutral-500 hover:text-red-400 hover:bg-red-500/10 transition-all duration-75 p-2 border border-neutral-700 hover:border-red-500"><Trash2 size={15} /></button>
+                </>
+              )}
+              emptyMessage="Sin robots registrados"
+            />
+          )}
+
+          {/* REFEREES TABLE */}
+          {activeTab === 'referees' && (
+            <DataTable
+              data={data.referees.filter(u => u.username.toLowerCase().includes(searchQuery.toLowerCase()))}
+              keyField="id"
+              columns={[
+                { key: 'username', header: 'Usuario', render: (u) => (
+                  <span className="font-tech font-black uppercase tracking-wider">@{u.username}</span>
+                )},
+                { key: 'role', header: 'Rol', render: (u) => (
+                  <span className="text-[10px] font-tech font-bold text-cb-yellow-neon px-2 py-0.5 bg-cb-yellow-neon/10 border border-cb-yellow-neon/30">{u.role}</span>
+                )},
+              ]}
+              actions={(u) => (
+                <>
+                  <button onClick={() => handleEdit(u)} className="text-neutral-500 hover:text-cb-yellow-neon hover:bg-cb-yellow-neon/10 transition-all duration-75 p-2 border border-neutral-700 hover:border-cb-yellow-neon"><Edit2 size={15} /></button>
+                  <button onClick={() => handleDelete(u.id)} className="text-neutral-500 hover:text-red-400 hover:bg-red-500/10 transition-all duration-75 p-2 border border-neutral-700 hover:border-red-500"><Trash2 size={15} /></button>
+                </>
+              )}
+              emptyMessage="Sin árbitros registrados"
+            />
+          )}
+
+          {/* MATCHES TABLE */}
+          {activeTab === 'matches' && (
+            <DataTable
+              data={data.matches.filter(m => m.robotA?.name.toLowerCase().includes(searchQuery.toLowerCase()) || m.robotB?.name.toLowerCase().includes(searchQuery.toLowerCase()))}
+              keyField="id"
+              columns={[
+                { key: 'category', header: 'Categoría', render: (m) => (
                   <div>
-                    <span className="text-neutral-500 font-tech font-bold block uppercase">Asesor</span>
-                    <span className="font-tech font-black text-cb-white-tech">{reg.data?.advisorName || '---'}</span>
+                    <span className="font-tech font-black text-cb-yellow-neon uppercase text-xs">{m.category}</span>
+                    <p className="text-[10px] font-tech text-neutral-500 uppercase">{m.round}</p>
                   </div>
-                </div>
-              </motion.div>
-            ))}
+                )},
+                { key: 'robotA', header: 'Robot A', render: (m) => (
+                  <div>
+                    <span className="font-tech font-black uppercase text-xs">{m.robotA?.name || '---'}</span>
+                    <p className="text-[10px] text-neutral-500 font-tech">{m.robotA?.Institution?.name}</p>
+                  </div>
+                )},
+                { key: 'score', header: 'Score', render: (m) => (
+                  <span className="bg-cb-black-pure px-3 py-1 border-2 border-cb-yellow-neon font-tech font-black text-sm text-cb-yellow-neon">{m.scoreA} - {m.scoreB}</span>
+                ), className: 'text-center'},
+                { key: 'robotB', header: 'Robot B', render: (m) => (
+                  <div>
+                    <span className="font-tech font-black uppercase text-xs">{m.robotB?.name || '---'}</span>
+                    <p className="text-[10px] text-neutral-500 font-tech">{m.robotB?.Institution?.name}</p>
+                  </div>
+                )},
+                { key: 'referee', header: 'Árbitro', render: (m) => (
+                  <span className="text-xs text-neutral-400 font-tech font-bold">@{m.referee?.username || '---'}</span>
+                )},
+              ]}
+              actions={(m) => (
+                <>
+                  <button
+                    onClick={() => handleToggleDashboard(m)}
+                    className={`transition-all duration-75 p-2 border ${m.showInDashboard ? 'bg-cb-green-vibrant text-cb-black-pure border-cb-green-vibrant' : 'text-neutral-600 border-neutral-700 hover:border-cb-green-vibrant hover:text-cb-green-vibrant'}`}
+                    title="Mostrar en Dashboard"
+                  >
+                    <LayoutDashboard size={15} />
+                  </button>
+                  <button onClick={() => handleEdit(m)} className="text-neutral-500 hover:text-cb-yellow-neon hover:bg-cb-yellow-neon/10 transition-all duration-75 p-2 border border-neutral-700 hover:border-cb-yellow-neon"><Edit2 size={15} /></button>
+                  <button onClick={() => handleDelete(m.id)} className="text-neutral-500 hover:text-red-400 hover:bg-red-500/10 transition-all duration-75 p-2 border border-neutral-700 hover:border-red-500"><Trash2 size={15} /></button>
+                </>
+              )}
+              emptyMessage="Sin encuentros registrados"
+            />
+          )}
+
+          {/* SPONSORS TABLE */}
+          {activeTab === 'sponsors' && (
+            <DataTable
+              data={data.sponsors.filter(s => s.name.toLowerCase().includes(searchQuery.toLowerCase()))}
+              keyField="id"
+              columns={[
+                { key: 'name', header: 'Sponsor', render: (s) => (
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 bg-[#1a1a1a] flex items-center justify-center p-2 border border-neutral-700 flex-shrink-0">
+                      {s.logoUrl ? <img src={s.logoUrl} alt={s.name} className="w-full h-full object-contain" /> : <Star size={18} className="text-neutral-600" />}
+                    </div>
+                    <span className="font-tech font-black uppercase tracking-wider">{s.name}</span>
+                  </div>
+                )},
+                { key: 'tier', header: 'Nivel', render: (s) => (
+                  <span className="text-[10px] font-tech font-bold text-cb-yellow-neon px-2 py-0.5 bg-cb-yellow-neon/10 border border-cb-yellow-neon/30">{s.tier}</span>
+                )},
+                { key: 'website', header: 'Sitio Web', render: (s) => (
+                  <span className="text-xs text-neutral-500 font-tech font-bold">{s.website || '---'}</span>
+                )},
+              ]}
+              actions={(sponsor) => (
+                <>
+                  <button onClick={() => handleEdit(sponsor)} className="text-neutral-500 hover:text-cb-yellow-neon hover:bg-cb-yellow-neon/10 transition-all duration-75 p-2 border border-neutral-700 hover:border-cb-yellow-neon"><Edit2 size={15} /></button>
+                  <button onClick={() => handleDelete(sponsor.id)} className="text-neutral-500 hover:text-red-400 hover:bg-red-500/10 transition-all duration-75 p-2 border border-neutral-700 hover:border-red-500"><Trash2 size={15} /></button>
+                </>
+              )}
+              emptyMessage="Sin sponsors registrados"
+            />
+          )}
+
+          {/* PAYMENTS TABLE */}
+          {activeTab === 'payments' && (
+            <DataTable
+              data={data.registrations.filter(r => {
+                if (!searchQuery) return true;
+                const q = searchQuery.toLowerCase();
+                return (
+                  r.google_email?.toLowerCase().includes(q) ||
+                  r.data?.category?.toLowerCase().includes(q) ||
+                  r.data?.robotName?.toLowerCase().includes(q) ||
+                  r.data?.teamName?.toLowerCase().includes(q) ||
+                  r.data?.advisorName?.toLowerCase().includes(q) ||
+                  r.data?.institution?.toLowerCase().includes(q) ||
+                  r.data?.level?.toLowerCase().includes(q)
+                );
+              })}
+              keyField="id"
+              columns={[
+                { key: 'google_email', header: 'Email', render: (r) => (
+                  <span className="font-tech font-black text-xs uppercase break-all">{r.google_email}</span>
+                )},
+                { key: 'category', header: 'Categoría', render: (r) => (
+                  <span className="text-xs text-neutral-400 font-tech font-bold">{r.data?.category || '---'}</span>
+                )},
+                { key: 'level', header: 'Nivel', render: (r) => (
+                  <span className="text-[10px] font-tech font-bold text-cb-yellow-neon px-2 py-0.5 bg-cb-yellow-neon/10 border border-cb-yellow-neon/30">{r.data?.level || r.data?.institution || '---'}</span>
+                )},
+                { key: 'paymentStatus', header: 'Estado', render: (r) => {
+                  if (r.paymentStatus === 'APPROVED') return <span className="bg-cb-green-vibrant/20 text-cb-green-vibrant text-[10px] font-tech font-black uppercase px-2 py-0.5 border border-cb-green-vibrant/40 inline-flex items-center gap-1"><ShieldCheck size={12} /> Pagado</span>;
+                  if (r.paymentStatus === 'REJECTED') return <span className="bg-red-500/20 text-red-400 text-[10px] font-tech font-black uppercase px-2 py-0.5 border border-red-500/40">Denegado</span>;
+                  return <span className="bg-cb-yellow-neon/10 text-cb-yellow-neon text-[10px] font-tech font-black uppercase px-2 py-0.5 border border-cb-yellow-neon/30">Pendiente</span>;
+                }},
+                { key: 'proof', header: 'Comprobante', render: (r) => r.payment_proof_filename
+                  ? <a href={`${UPLOADS_URL}/${r.payment_proof_filename}`} target="_blank" rel="noopener noreferrer" className="text-cb-green-vibrant font-tech font-bold text-xs hover:text-cb-yellow-neon transition-colors">Ver</a>
+                  : <span className="text-[10px] text-red-400 font-tech font-bold">Sin archivo</span>
+                },
+              ]}
+              expandedContent={(reg) => {
+                // WhatsApp number normalization
+                const formatWhatsApp = (phone: string | undefined) => {
+                  if (!phone) return null;
+                  const cleaned = phone.replace(/\D/g, '');
+                  if (cleaned.startsWith('0')) return '593' + cleaned.slice(1);
+                  if (cleaned.length === 9) return '593' + cleaned;
+                  return cleaned;
+                };
+                const waNumber = formatWhatsApp(reg.data?.advisorPhone);
+
+                return (
+                  <div className="space-y-4">
+                    {/* Participant details */}
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                      <div>
+                        <span className="text-[10px] text-neutral-500 font-tech font-bold block uppercase">Robot/Equipo</span>
+                        <span className="font-tech font-black text-cb-white-tech text-sm">{reg.data?.robotName || reg.data?.teamName || '---'}</span>
+                      </div>
+                      <div>
+                        <span className="text-[10px] text-neutral-500 font-tech font-bold block uppercase">Asesor</span>
+                        <span className="font-tech font-black text-cb-white-tech text-sm">{reg.data?.advisorName || '---'}</span>
+                      </div>
+                      <div>
+                        <span className="text-[10px] text-neutral-500 font-tech font-bold block uppercase">Tel. Asesor</span>
+                        <div className="flex items-center gap-2">
+                          <span className="font-tech font-black text-cb-white-tech text-sm">{reg.data?.advisorPhone || '---'}</span>
+                          {waNumber && (
+                            <a
+                              href={`https://wa.me/${waNumber}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="inline-flex items-center gap-1 px-2 py-0.5 bg-[#25D366]/15 text-[#25D366] text-[10px] font-tech font-black uppercase border border-[#25D366]/30 hover:bg-[#25D366]/25 transition-all duration-75"
+                            >
+                              <svg viewBox="0 0 24 24" fill="currentColor" className="w-3 h-3"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12 0C5.373 0 0 5.373 0 12c0 2.625.846 5.059 2.284 7.034L.789 23.492l4.634-1.215A11.95 11.95 0 0012 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 21.75c-2.09 0-4.037-.656-5.64-1.773l-.404-.264-2.75.721.735-2.686-.29-.423A9.72 9.72 0 012.25 12c0-5.385 4.365-9.75 9.75-9.75s9.75 4.365 9.75 9.75-4.365 9.75-9.75 9.75z"/></svg>
+                              WhatsApp
+                            </a>
+                          )}
+                        </div>
+                      </div>
+                      <div>
+                        <span className="text-[10px] text-neutral-500 font-tech font-bold block uppercase">Institución</span>
+                        <span className="font-tech font-black text-cb-white-tech text-sm">{reg.data?.institution || '---'}</span>
+                      </div>
+                    </div>
+
+                    {/* Members */}
+                    {reg.data?.members && (
+                      <div>
+                        <span className="text-[10px] text-neutral-500 font-tech font-bold block uppercase mb-1">Miembros</span>
+                        <span className="font-tech font-bold text-cb-white-tech text-xs">{reg.data.members}</span>
+                      </div>
+                    )}
+
+                    {/* Payment Actions */}
+                    <div className="flex gap-2 pt-3 border-t-2 border-neutral-800">
+                      {reg.paymentStatus !== 'APPROVED' && (
+                        <button onClick={() => handleUpdatePaymentStatus(reg, 'APPROVED')} className="py-2 px-4 font-tech font-black uppercase text-[10px] tracking-wider transition-all duration-75 bg-cb-green-vibrant text-cb-black-pure border-2 border-cb-green-vibrant hover:translate-y-[-1px]">
+                          Aprobar Pago
+                        </button>
+                      )}
+                      {reg.paymentStatus !== 'REJECTED' && (
+                        <button onClick={() => handleUpdatePaymentStatus(reg, 'REJECTED')} className="py-2 px-4 font-tech font-black uppercase text-[10px] tracking-wider transition-all duration-75 bg-transparent text-red-400 border-2 border-red-500/40 hover:bg-red-500/10">
+                          Rechazar
+                        </button>
+                      )}
+                      {(reg.paymentStatus === 'APPROVED' || reg.paymentStatus === 'REJECTED') && (
+                        <button onClick={() => handleUpdatePaymentStatus(reg, 'PENDING')} className="py-2 px-4 font-tech font-black uppercase text-[10px] tracking-wider transition-all duration-75 bg-transparent text-neutral-500 border-2 border-neutral-700 hover:bg-white/5">
+                          Restaurar a Pendiente
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                );
+              }}
+              emptyMessage="Sin registros de pago"
+            />
+          )}
 
             {activeTab === 'brackets' && (
               <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="col-span-full bg-[#111] border-3 border-neutral-800 p-8 shadow-[6px_6px_0_#000]">
@@ -663,8 +712,7 @@ const AdminPanel = () => {
                 </div>
               </motion.div>
             )}
-          </AnimatePresence>
-        </div>
+          </div>
 
         {showModal && (
           <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-6">
