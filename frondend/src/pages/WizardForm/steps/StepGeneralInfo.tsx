@@ -38,7 +38,7 @@ export default function StepGeneralInfo({ handleNext, handleBack, eventConfig }:
                     </div>
                     <h3 className="font-tech font-black text-cb-black-pure text-lg uppercase">Información Importante</h3>
                 </div>
-                <div className="text-cb-black-pure font-sans text-sm md:text-base leading-relaxed whitespace-pre-line">
+                <div className="text-cb-black-pure font-sans text-sm md:text-base leading-relaxed whitespace-pre-wrap">
                     {instructions}
                 </div>
             </div>

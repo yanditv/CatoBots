@@ -212,7 +212,7 @@ export const sendWelcomeEmail = async (to: string, formData: any) => {
     const bodyContent = `
         <!-- Greeting -->
         <p style="font-size: 15px; line-height: 1.7; color: #FFFFFF; margin: 0 0 20px; font-weight: 700; text-transform: uppercase;">
-            ATENCI&Oacute;N COMANDANTE,
+            HOLA, EQUIPO:
         </p>
         <p style="font-size: 14px; line-height: 1.7; color: #CCCCCC; margin: 0 0 24px; font-weight: 500;">
             Hemos recibido tus datos de inscripci&oacute;n para la 
@@ -286,8 +286,8 @@ export const sendWelcomeEmail = async (to: string, formData: any) => {
 
     const htmlContent = buildEmailHtml({
         headerBg: '#10B961',
-        headerTitle: 'TRANSMISI&Oacute;N RECIBIDA',
-        headerSubtitle: 'SECUENCIA DE INSCRIPCI&Oacute;N ACTIVADA',
+        headerTitle: 'INSCRIPCI&Oacute;N RECIBIDA',
+        headerSubtitle: 'PROCESANDO SOLICITUD',
         titleColor: '#FFF000',
         bodyContent,
         accentColor: '#10B961',
@@ -332,8 +332,8 @@ export const sendStatusEmail = async (to: string, status: 'APPROVED' | 'REJECTED
     const config = {
         headerBg: isApproved ? '#10B961' : '#DC2626',
         titleColor: '#FFF000',
-        title: isApproved ? 'ACREDITACI&Oacute;N APROBADA' : 'SOLICITUD RECHAZADA',
-        subtitle: isApproved ? 'UNIDAD LISTA PARA EL COMBATE' : 'ACCI&Oacute;N REQUERIDA',
+        title: isApproved ? 'INSCRIPCI&Oacute;N APROBADA' : 'REVISI&Oacute;N DE SOLICITUD',
+        subtitle: isApproved ? 'EQUIPO REGISTRADO CON &Eacute;XITO' : 'ATENCI&Oacute;N REQUERIDA',
         accentColor: isApproved ? '#10B961' : '#DC2626',
         statusBg: isApproved ? '#10B961' : '#DC2626',
         statusTextColor: isApproved ? '#000000' : '#FFFFFF',
@@ -362,7 +362,7 @@ export const sendStatusEmail = async (to: string, status: 'APPROVED' | 'REJECTED
     const bodyContent = `
         <!-- Greeting -->
         <p style="font-size: 15px; line-height: 1.7; color: #FFFFFF; margin: 0 0 20px; font-weight: 700; text-transform: uppercase;">
-            ATENCI&Oacute;N COMANDANTE,
+            HOLA, EQUIPO:
         </p>
         <p style="font-size: 14px; line-height: 1.7; color: #CCCCCC; margin: 0 0 24px; font-weight: 500;">
             Tenemos nueva informaci&oacute;n sobre tu expediente de inscripci&oacute;n para la
