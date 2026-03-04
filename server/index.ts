@@ -313,6 +313,12 @@ app.post('/api/brackets/generate', authenticateJWT, isAdmin, async (req, res) =>
   }
 });
 
+// --- Generic Upload Route ---
+app.post('/api/upload', authenticateJWT, isAdmin, upload.single('file'), (req, res) => {
+  if (!req.file) return res.status(400).send({ message: 'No file uploaded' });
+  res.json({ filename: req.file.filename });
+});
+
 // --- Registration Routes (Public/Drafts) ---
 
 app.post('/api/registrations/sync', async (req, res) => {

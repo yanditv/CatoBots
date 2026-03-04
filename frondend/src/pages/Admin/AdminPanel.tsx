@@ -253,6 +253,29 @@ const AdminPanel = () => {
     }
   };
 
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const form = new FormData();
+    form.append('file', file);
+
+    try {
+      const res = await api.upload('/api/upload', form, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (res.ok) {
+        const body = await res.json();
+        setFormData((prev: any) => ({ ...prev, logoUrl: `${UPLOADS_URL}/${body.filename}` }));
+      } else {
+        alert('Error al subir imagen');
+      }
+    } catch (err) {
+      console.error('Error uploading file:', err);
+      alert('Error de conexión al subir imagen');
+    }
+  };
+
   const handleExport = () => {
     let exportData: any[] = [];
     let headers: string[] = [];
@@ -952,8 +975,18 @@ const AdminPanel = () => {
                       <input required value={formData.name || ''} placeholder="Nombre oficial" className="w-full bg-[#0a0a0a] border-2 border-neutral-700 p-4 text-sm font-tech text-cb-white-tech focus:border-cb-yellow-neon outline-none transition-all duration-75 placeholder:text-neutral-600" onChange={e => setFormData({ ...formData, name: e.target.value })} />
                     </div>
                     <div className="space-y-2">
-                      <label className="text-[10px] font-tech font-black uppercase text-neutral-500 tracking-widest">Logo URL</label>
-                      <input value={formData.logoUrl || ''} placeholder="https://..." className="w-full bg-[#0a0a0a] border-2 border-neutral-700 p-4 text-sm font-tech text-cb-white-tech focus:border-cb-yellow-neon outline-none transition-all duration-75 placeholder:text-neutral-600" onChange={e => setFormData({ ...formData, logoUrl: e.target.value })} />
+                      <label className="text-[10px] font-tech font-black uppercase text-neutral-500 tracking-widest">Logo</label>
+                      <div className="flex gap-4 items-center">
+                        <div className="flex-1">
+                          <input value={formData.logoUrl || ''} placeholder="URL o subir archivo..." className="w-full bg-[#0a0a0a] border-2 border-neutral-700 p-4 text-sm font-tech text-cb-white-tech focus:border-cb-yellow-neon outline-none transition-all duration-75 placeholder:text-neutral-600" onChange={e => setFormData({ ...formData, logoUrl: e.target.value })} />
+                        </div>
+                        <div className="relative w-48">
+                          <input type="file" accept="image/*" onChange={handleFileUpload} className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10" />
+                          <div className="bg-[#1a1a1a] border-2 border-neutral-700 p-4 flex items-center justify-center text-cb-yellow-neon hover:border-cb-yellow-neon transition-all duration-75 cursor-pointer">
+                            <span className="text-[10px] font-tech font-black uppercase tracking-widest">Subir Imagen</span>
+                          </div>
+                        </div>
+                      </div>
                     </div>
                     <div className="grid grid-cols-2 gap-4">
                       <div className="space-y-2">

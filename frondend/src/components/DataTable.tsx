@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, Fragment } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ChevronDown, ChevronUp, ChevronLeft, ChevronRight } from 'lucide-react';
 
@@ -83,16 +83,13 @@ export default function DataTable<T extends Record<string, any>>({
               const isExpanded = expandedId === id;
 
               return (
-                <motion.tr
-                  key={id}
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  transition={{ delay: index * 0.02 }}
-                  className="contents"
-                  layout
-                >
+                <Fragment key={id}>
                   {/* Main Row */}
-                  <tr
+                  <motion.tr
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    transition={{ delay: index * 0.02 }}
+                    layout
                     className={`border-b border-neutral-800 hover:bg-white/[0.02] transition-colors duration-75 group ${isExpanded ? 'bg-white/[0.03]' : ''}`}
                   >
                     {expandedContent && (
@@ -119,7 +116,7 @@ export default function DataTable<T extends Record<string, any>>({
                         </div>
                       </td>
                     )}
-                  </tr>
+                  </motion.tr>
 
                   {/* Expanded Detail Row */}
                   {expandedContent && (
@@ -143,7 +140,7 @@ export default function DataTable<T extends Record<string, any>>({
                       )}
                     </AnimatePresence>
                   )}
-                </motion.tr>
+                </Fragment>
               );
             })
           )}
