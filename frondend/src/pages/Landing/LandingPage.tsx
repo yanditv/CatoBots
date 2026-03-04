@@ -2,16 +2,22 @@ import { motion } from "framer-motion";
 import { ShieldCheck, Zap, Bot, Swords, Terminal, FileCode2, CalendarDays, MapPin, LogIn, Menu, X } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useState, useEffect } from "react";
+import { api } from "../../config/api";
 
 export default function LandingPage() {
     const [scrolled, setScrolled] = useState(false);
     const [accepted, setAccepted] = useState(false);
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+    const [eventConfig, setEventConfig] = useState<Record<string, string>>({});
 
     useEffect(() => {
         const handleScroll = () => setScrolled(window.scrollY > 100);
         window.addEventListener("scroll", handleScroll);
         return () => window.removeEventListener("scroll", handleScroll);
+    }, []);
+
+    useEffect(() => {
+        api.get('/api/event-config').then(res => res.json()).then(data => setEventConfig(data)).catch(err => console.error('Failed to fetch event config', err));
     }, []);
 
     const steps = [
@@ -151,11 +157,11 @@ export default function LandingPage() {
 
                     <div className="flex flex-col md:flex-row items-center gap-3 md:gap-6 text-xs md:text-sm font-tech font-bold">
                         <div className="flex items-center gap-2 md:gap-3 bg-cb-black-pure text-cb-white-tech px-4 md:px-6 py-3 md:py-4 border-4 border-cb-black-pure shadow-block-yellow rotate-1">
-                            <CalendarDays className="text-cb-yellow-neon w-5 md:w-6" /> <span className="whitespace-nowrap">20 de Marzo 2026</span>
+                            <CalendarDays className="text-cb-yellow-neon w-5 md:w-6" /> <span className="whitespace-nowrap">{eventConfig.eventDate || '---'}</span>
                         </div>
-                        <a href="https://maps.app.goo.gl/FjRKZn9o9d1hV2nA7" target="_blank" rel="noreferrer" className="flex items-center gap-2 md:gap-3 bg-cb-white-tech text-cb-black-pure px-4 md:px-6 py-3 md:py-4 border-4 border-cb-black-pure shadow-block-md rotate-[-1deg] hover:bg-cb-yellow-neon hover:text-cb-black-pure transition-colors cursor-pointer group">
+                        <a href={eventConfig.eventMapsUrl || '#'} target="_blank" rel="noreferrer" className="flex items-center gap-2 md:gap-3 bg-cb-white-tech text-cb-black-pure px-4 md:px-6 py-3 md:py-4 border-4 border-cb-black-pure shadow-block-md rotate-[-1deg] hover:bg-cb-yellow-neon hover:text-cb-black-pure transition-colors cursor-pointer group">
                             <MapPin size={20} className="md:w-6 md:h-6 group-hover:text-cb-black-pure transition-colors" /> 
-                            <span className="text-xs md:text-sm">Complejo Deportivo Banco Central</span>
+                            <span className="text-xs md:text-sm">{eventConfig.eventVenue || '---'}</span>
                         </a>
                     </div>
                 </motion.div>
@@ -228,7 +234,7 @@ export default function LandingPage() {
                             <h2 className="text-2xl md:text-4xl font-tech text-cb-yellow-neon mb-3 md:mb-4 uppercase drop-shadow-[2px_2px_0_#FFF]">INFO DE PAGO</h2>
                             <p className="text-cb-white-tech font-bold mb-4 md:mb-8 font-sans text-sm md:text-base">
                                 Habilita tu participación transfiriendo a nuestras coordenadas.
-                                COSTO: <span className="text-cb-yellow-neon bg-cb-black-pure px-2 py-1">$10.00</span> por equipo.
+                                COSTO: <span className="text-cb-yellow-neon bg-cb-black-pure px-2 py-1">${eventConfig.registrationCost || '10'}.00</span> por equipo.
                             </p>
 
                             <div className="space-y-3 md:space-y-6">
@@ -238,7 +244,7 @@ export default function LandingPage() {
                                     </div>
                                     <div>
                                         <p className="text-cb-black-pure text-xs font-black uppercase tracking-widest font-tech mb-0.5">Entidad Financiera</p>
-                                        <p className="text-cb-green-dark font-tech font-bold text-base md:text-xl uppercase">Cooperativa Biblián</p>
+                                        <p className="text-cb-green-dark font-tech font-bold text-base md:text-xl uppercase">{eventConfig.bankName || '---'}</p>
                                     </div>
                                 </div>
                                 
@@ -247,17 +253,17 @@ export default function LandingPage() {
                                         <Bot className="text-cb-yellow-neon w-4 h-4 md:w-5 md:h-5" />
                                     </div>
                                     <div className="w-full text-cb-black-pure">
-                                        <p className="text-cb-black-pure text-xs font-black uppercase tracking-widest font-tech mb-0.5">Número de Cuenta Ahorros</p>
-                                        <p className="font-tech tracking-wider text-lg md:text-2xl mb-1 text-black font-black">0212011159836</p>
+                                        <p className="text-cb-black-pure text-xs font-black uppercase tracking-widest font-tech mb-0.5">Número de Cuenta {eventConfig.accountType || 'Ahorros'}</p>
+                                        <p className="font-tech tracking-wider text-lg md:text-2xl mb-1 text-black font-black">{eventConfig.accountNumber || '---'}</p>
                                         
                                         <div className="grid grid-cols-2 gap-2 md:gap-3 text-xs md:text-sm pt-2 border-t-2 border-cb-black-pure">
                                             <div>
                                                 <p className="text-xs uppercase font-black font-sans">Beneficiario:</p>
-                                                <p className="font-bold text-xs">Segundo Pauta</p>
+                                                <p className="font-bold text-xs">{eventConfig.accountHolder || '---'}</p>
                                             </div>
                                             <div>
                                                 <p className="text-xs uppercase font-black font-sans">ID:</p>
-                                                <p className="font-bold text-xs">0101995843</p>
+                                                <p className="font-bold text-xs">{eventConfig.accountHolderId || '---'}</p>
                                             </div>
                                         </div>
                                     </div>
@@ -268,7 +274,7 @@ export default function LandingPage() {
                         <div className="relative group hidden md:block">
                             <div className="absolute inset-0 bg-cb-black-pure translate-x-4 translate-y-4" />
                             <img
-                                src="/src/assets/pago.png"
+                                src={eventConfig.paymentImageUrl || "/src/assets/pago.png"}
                                 alt="Información de Pago"
                                 className="relative z-10 border-4 border-cb-black-pure grayscale hover:grayscale-0 transition-all duration-300"
                             />
@@ -312,12 +318,27 @@ export default function LandingPage() {
                         INICIALIZAR REGISTRO <Terminal size={20} className="md:w-6 md:h-6" strokeWidth={3} />
                     </Link>
 
-                    <div className="mt-8 md:mt-14 flex flex-col md:flex-row justify-center gap-3 md:gap-10 text-xs font-tech font-bold uppercase underline decoration-2 underline-offset-4 text-cb-black-pure">
-                        <a href="#" className="hover:text-cb-yellow-warning hover:bg-cb-black-pure px-2 py-1 transition-colors flex items-center justify-center gap-2">
-                            <FileCode2 size={14} className="md:w-4 md:h-4" strokeWidth={3} /> REGLAMENTO OFICIAL
-                        </a>
-                        <a href="#" className="hover:text-cb-yellow-warning hover:bg-cb-black-pure px-2 py-1 transition-colors">TÉRMINOS DEL EVENTO</a>
-                        <a href="#" className="hover:text-cb-white-tech hover:bg-cb-black-pure px-2 py-1 transition-colors">SOPORTE</a>
+                    <div className="mt-8 md:mt-14 flex flex-col md:flex-row justify-center gap-3 md:gap-6 text-xs font-tech font-bold uppercase underline decoration-2 underline-offset-4 text-cb-black-pure flex-wrap">
+                        {eventConfig.rulesGeneralUrl && (
+                            <a href={eventConfig.rulesGeneralUrl} target="_blank" rel="noreferrer" className="hover:text-cb-yellow-warning hover:bg-cb-black-pure px-2 py-1 transition-colors flex items-center justify-center gap-2">
+                                <FileCode2 size={14} className="md:w-4 md:h-4" strokeWidth={3} /> REGLAMENTO OFICIAL
+                            </a>
+                        )}
+                        {eventConfig.contactPhone && (
+                            <>
+                                <a href={`tel:${eventConfig.contactPhone}`} className="hover:text-cb-yellow-warning hover:bg-cb-black-pure px-2 py-1 transition-colors flex items-center justify-center gap-2">
+                                    📞 {eventConfig.contactPhone}
+                                </a>
+                                <a href={`https://wa.me/${eventConfig.contactPhone.replace(/\D/g, '').replace(/^0/, '593')}`} target="_blank" rel="noreferrer" className="hover:text-cb-yellow-warning hover:bg-cb-black-pure px-2 py-1 transition-colors flex items-center justify-center gap-2">
+                                    💬 WHATSAPP
+                                </a>
+                            </>
+                        )}
+                        {eventConfig.contactEmail && (
+                            <a href={`mailto:${eventConfig.contactEmail}`} className="hover:text-cb-yellow-warning hover:bg-cb-black-pure px-2 py-1 transition-colors flex items-center justify-center gap-2">
+                                ✉️ {eventConfig.contactEmail}
+                            </a>
+                        )}
                     </div>
                 </div>
             </section>

@@ -4,7 +4,12 @@ interface RulesProps {
     category: string;
     subCategory?: string;
     onClose: () => void;
+    categories: any[];
 }
+
+const iconMap: Record<string, React.ElementType> = {
+    Bot, Map, Hammer, Activity, Gamepad2, Code, Trophy, Leaf
+};
 
 interface RuleLink {
     title: string;
@@ -27,36 +32,27 @@ const RuleCard: React.FC<RuleLink> = ({ title, icon: Icon, url }) => (
     </a>
 );
 
-const Rules: React.FC<RulesProps> = ({ category, subCategory, onClose }) => {
-    let rulesContent;
+const Rules: React.FC<RulesProps> = ({ category, subCategory, onClose, categories }) => {
+    // Filter categories for the current level
+    const levelCategories = categories.filter((c: any) => c.levels?.includes(category));
 
-    const urls = {
-        robofut: "https://ucacueedu-my.sharepoint.com/personal/nathalia_peralta_ucacue_edu_ec/_layouts/15/Doc.aspx?sourcedoc=%7BABC9DD7A-3FCE-409D-ABCA-E0D90576CBBA%7D&file=Reglas_Robofut.docx&action=default&mobileredirect=true&CT=1771016156656&OR=ItemsView",
-        minisumo: "https://ucacueedu-my.sharepoint.com/personal/nathalia_peralta_ucacue_edu_ec/_layouts/15/onedrive.aspx?id=%2Fpersonal%2Fnathalia%5Fperalta%5Fucacue%5Fedu%5Fec%2FDocuments%2F1%2E%20Unidad%20Academica%20de%20Informatica%2C%20ciencias%20de%20la%20computaci%C3%B3n%20e%20innovacion%20tecnologica%2FGestion%20de%20proyectos%2FCatoBots%2FIII%20Edicion%2FReglamentos&ga=1",
-        laberinto: "https://ucacueedu-my.sharepoint.com/:w:/r/personal/nathalia_peralta_ucacue_edu_ec/_layouts/15/Doc.aspx?sourcedoc=%7B8B8E0F68-2D21-4C00-979A-7195CBF59F2A%7D&file=ReglamentoLaberinto_v1.docx&action=default&mobileredirect=true",
-        battlebots: "https://ucacueedu-my.sharepoint.com/:w:/r/personal/nathalia_peralta_ucacue_edu_ec/_layouts/15/Doc.aspx?sourcedoc=%7B84E15B97-6EE4-4462-B0F5-CAD12491D94F%7D&file=BattleBots.docx&action=default&mobileredirect=true",
-        seguidor: "https://ucacueedu-my.sharepoint.com/:w:/r/personal/nathalia_peralta_ucacue_edu_ec/_layouts/15/Doc.aspx?sourcedoc=%7BCAE4B9A8-D383-41E6-9AB8-2DF7FCBE172C%7D&file=ReglamentoSeguidordeLinea.docx&action=default&mobileredirect=true",
-        sumo_rc: "https://ucacueedu-my.sharepoint.com/:w:/r/personal/nathalia_peralta_ucacue_edu_ec/_layouts/15/Doc.aspx?sourcedoc=%7BE504FB42-63DE-4F59-81F4-39B0B7B477DD%7D&file=ReglamentoSumoRC.docx&action=default&mobileredirect=true",
-        scratch: "https://ucacueedu-my.sharepoint.com/:w:/r/personal/nathalia_peralta_ucacue_edu_ec/_layouts/15/Doc.aspx?sourcedoc=%7B964F0D59-F202-4681-BFAD-FA11CCEDEC2C%7D&file=Scratch%20%26%20Play%20-%20Code%20Masters%20Arena.docx&action=default&mobileredirect=true"
-    };
+    // Build rule links from the dynamic categories
+    const ruleLinks: RuleLink[] = levelCategories
+        .filter((c: any) => c.rulesUrl)
+        .map((c: any) => ({
+            title: c.name,
+            icon: iconMap[c.icon] || Gamepad2,
+            url: c.rulesUrl,
+        }));
 
-    const renderGrid = (items: RuleLink[]) => {
-        const normalize = (s: string) => s.toLowerCase();
-        const filtered = subCategory 
-            ? items.filter(i => 
-                normalize(i.title).includes(normalize(subCategory)) || 
-                normalize(subCategory).includes(normalize(i.title))
-              )
-            : items;
-            
-        return (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-6">
-                {filtered.map((item, idx) => (
-                    <RuleCard key={idx} {...item} />
-                ))}
-            </div>
-        );
-    };
+    // Filter by subCategory if one is selected
+    const normalize = (s: string) => s.toLowerCase();
+    const filteredRules = subCategory
+        ? ruleLinks.filter(r =>
+            normalize(r.title).includes(normalize(subCategory)) ||
+            normalize(subCategory).includes(normalize(r.title))
+          )
+        : ruleLinks;
 
     const CategoryBadge = ({ categoryText }: { categoryText: string }) => (
         <div className="bg-black border-l-8 border-[#FFF000] p-4 relative overflow-hidden group">
@@ -68,62 +64,29 @@ const Rules: React.FC<RulesProps> = ({ category, subCategory, onClose }) => {
         </div>
     );
 
-    switch (category) {
-        case 'Junior':
-            rulesContent = (
-                <div className="space-y-4">
-                    <CategoryBadge categoryText="JUNIOR" />
-                    {renderGrid([
-                        { title: "Robofut", icon: Trophy, url: urls.robofut },
-                        { title: "Minisumo Autónomo", icon: Bot, url: urls.minisumo },
-                        { title: "Laberinto", icon: Map, url: urls.laberinto },
-                        { title: "BattleBots 1lb", icon: Hammer, url: urls.battlebots },
-                        { title: "Seguidor de Línea", icon: Activity, url: urls.seguidor },
-                        { title: "Sumo RC", icon: Gamepad2, url: urls.sumo_rc },
-                        { title: "Scratch & Play", icon: Code, url: urls.scratch },
-                    ])}
+    let rulesContent;
+
+    if (filteredRules.length > 0 || ruleLinks.length > 0) {
+        const displayRules = filteredRules.length > 0 ? filteredRules : ruleLinks;
+        rulesContent = (
+            <div className="space-y-4">
+                <CategoryBadge categoryText={category.toUpperCase()} />
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-6">
+                    {displayRules.map((item, idx) => (
+                        <RuleCard key={idx} {...item} />
+                    ))}
                 </div>
-            );
-            break;
-        case 'Senior':
-            rulesContent = (
-                <div className="space-y-4">
-                    <CategoryBadge categoryText="SENIOR" />
-                    {renderGrid([
-                        { title: "Robofut", icon: Trophy, url: urls.robofut },
-                        { title: "Minisumo Autónomo", icon: Bot, url: urls.minisumo },
-                        { title: "Laberinto", icon: Map, url: urls.laberinto },
-                        { title: "BattleBots 1lb", icon: Hammer, url: urls.battlebots },
-                        { title: "Seguidor de Línea", icon: Activity, url: urls.seguidor },
-                        { title: "Sumo RC", icon: Gamepad2, url: urls.sumo_rc },
-                        { title: "Scratch & Play", icon: Code, url: urls.scratch },
-                        { title: "BioBot", icon: Leaf, url: "#" }
-                    ])}
-                </div>
-            );
-            break;
-        case 'Master':
-            rulesContent = (
-                <div className="space-y-4">
-                    <CategoryBadge categoryText="MASTER" />
-                    {renderGrid([
-                        { title: "Minisumo Autónomo", icon: Bot, url: urls.minisumo },
-                        { title: "Seguidor de Línea", icon: Activity, url: urls.seguidor },
-                        { title: "Robofut", icon: Trophy, url: urls.robofut },
-                        { title: "BattleBots 1lb", icon: Hammer, url: urls.battlebots },
-                    ])}
-                </div>
-            );
-            break;
-        default:
-            rulesContent = (
-                <div className="py-12 bg-black border-4 border-[#FFF000] text-center shadow-[6px_6px_0px_#000] relative overflow-hidden">
-                    <div className="absolute inset-0 opacity-20 pointer-events-none" style={{ backgroundImage: 'repeating-linear-gradient(45deg, #10B961 0, #10B961 10px, transparent 10px, transparent 20px)' }}></div>
-                    <p className="text-[#FFF000] text-2xl font-black uppercase tracking-widest relative z-10 drop-shadow-[2px_2px_0px_#10B961]">
-                        SELECCIONA UNA CATEGORÍA
-                    </p>
-                </div>
-            );
+            </div>
+        );
+    } else {
+        rulesContent = (
+            <div className="py-12 bg-black border-4 border-[#FFF000] text-center shadow-[6px_6px_0px_#000] relative overflow-hidden">
+                <div className="absolute inset-0 opacity-20 pointer-events-none" style={{ backgroundImage: 'repeating-linear-gradient(45deg, #10B961 0, #10B961 10px, transparent 10px, transparent 20px)' }}></div>
+                <p className="text-[#FFF000] text-2xl font-black uppercase tracking-widest relative z-10 drop-shadow-[2px_2px_0px_#10B961]">
+                    SELECCIONA UNA CATEGORÍA
+                </p>
+            </div>
+        );
     }
 
     return (

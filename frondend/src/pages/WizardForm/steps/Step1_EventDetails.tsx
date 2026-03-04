@@ -12,9 +12,10 @@ interface Step1Props {
     handleGoogleLogin: () => void;
     handleNext: () => void;
     handleBack?: () => void;
+    eventConfig: Record<string, string>;
 }
 
-export default function Step1_EventDetails({ data, updateData, googleUser, handleGoogleLogin, handleNext, handleBack }: Step1Props) {
+export default function Step1_EventDetails({ data, updateData, googleUser, handleGoogleLogin, handleNext, handleBack, eventConfig }: Step1Props) {
     const isEmailValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(data.email);
     const isValid = data.email && isEmailValid && data.institution && data.institution.trim().length > 3;
 
@@ -24,13 +25,13 @@ export default function Step1_EventDetails({ data, updateData, googleUser, handl
                 <h2 className="text-3xl font-tech font-black text-cb-black-pure mb-4 uppercase drop-shadow-[2px_2px_0_rgba(255,240,0,1)]">Información del Evento</h2>
                 <div className="flex flex-col gap-3 font-tech text-cb-black-pure text-lg">
                     <p className="flex items-center gap-3 justify-center md:justify-start">
-                        <span className="font-extrabold bg-cb-black-pure text-cb-yellow-neon px-2 py-1 uppercase text-sm shadow-block-sm">TIEMPO:</span> 20 DE MARZO DEL 2026
+                        <span className="font-extrabold bg-cb-black-pure text-cb-yellow-neon px-2 py-1 uppercase text-sm shadow-block-sm">TIEMPO:</span> {eventConfig.eventDate || '---'}
                     </p>
                     <p className="flex items-center gap-3 justify-center md:justify-start">
-                        <span className="font-extrabold bg-cb-black-pure text-cb-yellow-neon px-2 py-1 uppercase text-sm shadow-block-sm">TERRENO:</span> COMPLEJO DEPORTIVO BANCO CENTRAL
+                        <span className="font-extrabold bg-cb-black-pure text-cb-yellow-neon px-2 py-1 uppercase text-sm shadow-block-sm">TERRENO:</span> {eventConfig.eventVenue || '---'}
                     </p>
                     <a
-                        href="https://maps.app.goo.gl/FjRKZn9o9d1hV2nA7"
+                        href={eventConfig.eventMapsUrl || '#'}
                         target="_blank"
                         rel="noreferrer"
                         className="text-cb-black-pure hover:bg-cb-yellow-neon px-2 py-1 transition-colors flex items-center gap-2 justify-center md:justify-start w-fit mx-auto md:mx-0 font-bold underline decoration-4 underline-offset-4"
@@ -60,7 +61,7 @@ export default function Step1_EventDetails({ data, updateData, googleUser, handl
                 {/* Institution Section */}
                 <div className="bg-cb-gray-industrial p-6 border-4 border-cb-black-pure shadow-block-sm relative group">
                     <label className="block text-sm font-tech font-black uppercase tracking-widest text-cb-white-tech mb-4 flex items-center gap-3">
-                        <Building size={20} className="text-cb-yellow-neon" /> FACCIÓN / INSTITUCIÓN
+                        <Building size={20} className="text-cb-yellow-neon" /> INSTITUCIÓN
                     </label>
                     <input
                         type="text"

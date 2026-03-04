@@ -1,5 +1,10 @@
 import { motion } from "framer-motion";
-import { Baby, Bot, GraduationCap, Check } from "lucide-react";
+import { Baby, Bot, GraduationCap, Check, Trophy, Map, Hammer, Activity, Gamepad2, Code, Leaf } from "lucide-react";
+import { useMemo } from "react";
+
+const iconMap: Record<string, React.ElementType> = {
+    Baby, Bot, GraduationCap, Trophy, Map, Hammer, Activity, Gamepad2, Code, Leaf, Check
+};
 
 interface Step2Props {
     data: {
@@ -9,29 +14,20 @@ interface Step2Props {
     handleNext: () => void;
     handleBack: () => void;
     showBackButton?: boolean;
+    categories: any[];
+    levels: any[];
 }
 
-export default function Step2_Category({ data, updateData, handleNext, handleBack, showBackButton = true }: Step2Props) {
-    const categories = [
-        {
-            id: "Junior",
-            title: "JUNIOR",
-            description: "OPERADORES EN FORMACIÓN (Básico)",
-            icon: Baby,
-        },
-        {
-            id: "Senior",
-            title: "SENIOR",
-            description: "COMBATIENTES INTERMEDIOS (Bachillerato)",
-            icon: Bot,
-        },
-        {
-            id: "Master",
-            title: "MASTER",
-            description: "INGENIERÍA PESADA (Universidades/Clubes)",
-            icon: GraduationCap,
-        }
-    ];
+export default function Step2_Category({ data, updateData, handleNext, handleBack, showBackButton = true, levels: levelsData }: Step2Props) {
+    // Use levels from API directly
+    const levels = useMemo(() => {
+        return levelsData.map((l: any) => ({
+            id: l.name,
+            title: l.name.toUpperCase(),
+            description: l.description || l.name,
+            icon: iconMap[l.icon] || Bot,
+        }));
+    }, [levelsData]);
 
     return (
         <div className="space-y-8">
@@ -41,7 +37,7 @@ export default function Step2_Category({ data, updateData, handleNext, handleBac
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                {categories.map((cat) => (
+                {levels.map((cat) => (
                     <motion.button
                         key={cat.id}
                         whileHover={{ scale: 1.02, y: -4 }}
@@ -67,7 +63,7 @@ export default function Step2_Category({ data, updateData, handleNext, handleBac
                         `}>
                             {cat.title}
                         </h3>
-                        <p className={`text-sm font-tech font-bold leading-tight transition-colors uppercase tracking-wide
+                        <p className={`whitespace-pre-line text-sm font-tech font-bold leading-tight transition-colors uppercase tracking-wide break-words
                             ${data.category === cat.id ? "text-cb-black-pure/80" : "text-neutral-400 group-hover:text-cb-white-tech"}
                         `}>
                             {cat.description}

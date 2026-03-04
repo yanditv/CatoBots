@@ -1,6 +1,10 @@
 import { motion } from "framer-motion";
-import { Gamepad2, FileText, CheckCircle, Check } from "lucide-react";
+import { Gamepad2, FileText, CheckCircle, Check, Bot, Map, Hammer, Activity, Code, Trophy, Leaf } from "lucide-react";
 import { useState, useMemo } from "react";
+
+const iconMap: Record<string, React.ElementType> = {
+    Bot, Map, Hammer, Activity, Gamepad2, Code, Trophy, Leaf, Check, FileText, CheckCircle
+};
 
 interface Step3Props {
     data: {
@@ -13,48 +17,46 @@ interface Step3Props {
     handleNext: () => void;
     handleBack: () => void;
     setShowRules: (show: boolean) => void;
+    categories: any[];
 }
 
-export default function Step3_SubCategory({ data, updateData, handleNext, handleBack, setShowRules }: Step3Props) {
+export default function Step3_SubCategory({ data, updateData, handleNext, handleBack, setShowRules, categories }: Step3Props) {
     const [rulesAccepted, setRulesAccepted] = useState(false);
 
     // Derived state for current category configuration
     const config = useMemo(() => {
+        const filteredCategories = categories.filter((c: any) => c.levels?.includes(data.category));
+        const options = filteredCategories.map((c: any) => c.name);
+
+        let key: 'juniorCategory' | 'seniorCategory' | 'masterCategory';
+        let currentValue: string;
+
         if (data.category === "Junior") {
-            return {
-                options: [
-                    "RoboFut", "Minisumo Autónomo", "Laberinto", "BattleBots 1lb",
-                    "Seguidor de Línea", "Sumo RC", "Scratch & Play: Code Masters Arena"
-                ],
-                key: "juniorCategory" as const,
-                currentValue: data.juniorCategory
-            };
+            key = "juniorCategory";
+            currentValue = data.juniorCategory;
         } else if (data.category === "Senior") {
-            return {
-                options: [
-                    "RoboFut", "Minisumo Autónomo", "Laberinto", "BattleBots 1lb",
-                    "Seguidor de Línea", "Sumo RC", "Scratch & Play: Code Masters Arena", "BioBot"
-                ],
-                key: "seniorCategory" as const,
-                currentValue: data.seniorCategory
-            };
+            key = "seniorCategory";
+            currentValue = data.seniorCategory;
         } else {
-            // Master or default
-            return {
-                options: [
-                    "Minisumo Autónomo", "Seguidor de Línea", "RoboFut Master", "BattleBots 1lb"
-                ],
-                key: "masterCategory" as const,
-                currentValue: data.masterCategory
-            };
+            key = "masterCategory";
+            currentValue = data.masterCategory;
         }
-    }, [data.category, data.juniorCategory, data.seniorCategory, data.masterCategory]);
+
+        return { options, key, currentValue, filteredCategories };
+    }, [data.category, data.juniorCategory, data.seniorCategory, data.masterCategory, categories]);
 
     const handleSelection = (option: string) => {
         updateData({ [config.key]: option });
     };
 
     const isNextEnabled = !!config.currentValue && rulesAccepted;
+
+    // Get the icon for a category option
+    const getIcon = (optionName: string) => {
+        const cat = config.filteredCategories.find((c: any) => c.name === optionName);
+        if (cat && iconMap[cat.icon]) return iconMap[cat.icon];
+        return Gamepad2;
+    };
 
     return (
         <div className="space-y-8">
@@ -66,34 +68,37 @@ export default function Step3_SubCategory({ data, updateData, handleNext, handle
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-h-[400px] overflow-y-auto pr-2 custom-scrollbar">
-                {config.options.map((option) => (
-                    <motion.button
-                        key={option}
-                        whileHover={{ scale: 1.02 }}
-                        whileTap={{ scale: 0.98 }}
-                        onClick={() => handleSelection(option)}
-                        className={`
-                            p-4 text-left border-4 transition-all flex items-center gap-4 rounded-none group
-                            ${config.currentValue === option
-                                ? "border-cb-black-pure bg-cb-yellow-neon shadow-[6px_6px_0_#000]"
-                                : "border-cb-black-pure bg-cb-gray-industrial hover:bg-cb-black-pure shadow-block-sm"}
-                        `}
-                    >
-                        <div className={`p-3 border-4 transition-colors ${config.currentValue === option ? "bg-cb-black-pure border-cb-black-pure text-cb-yellow-neon" : "bg-cb-white-tech border-cb-black-pure text-cb-black-pure group-hover:bg-cb-yellow-neon"}`}>
-                            <Gamepad2 size={24} strokeWidth={2.5} />
-                        </div>
-                        
-                        <span className={`font-tech font-bold text-lg uppercase transition-colors ${config.currentValue === option ? "text-cb-black-pure" : "text-neutral-400 group-hover:text-cb-white-tech"}`}>
-                            {option}
-                        </span>
-
-                        {config.currentValue === option && (
-                            <div className="ml-auto w-8 h-8 bg-cb-black-pure rounded-full flex items-center justify-center border-2 border-cb-black-pure">
-                                <CheckCircle size={20} className="text-cb-yellow-neon" strokeWidth={3} />
+                {config.options.map((option: string) => {
+                    const IconComponent = getIcon(option);
+                    return (
+                        <motion.button
+                            key={option}
+                            whileHover={{ scale: 1.02 }}
+                            whileTap={{ scale: 0.98 }}
+                            onClick={() => handleSelection(option)}
+                            className={`
+                                p-4 text-left border-4 transition-all flex items-center gap-4 rounded-none group
+                                ${config.currentValue === option
+                                    ? "border-cb-black-pure bg-cb-yellow-neon shadow-[6px_6px_0_#000]"
+                                    : "border-cb-black-pure bg-cb-gray-industrial hover:bg-cb-black-pure shadow-block-sm"}
+                            `}
+                        >
+                            <div className={`p-3 border-4 transition-colors ${config.currentValue === option ? "bg-cb-black-pure border-cb-black-pure text-cb-yellow-neon" : "bg-cb-white-tech border-cb-black-pure text-cb-black-pure group-hover:bg-cb-yellow-neon"}`}>
+                                <IconComponent size={24} strokeWidth={2.5} />
                             </div>
-                        )}
-                    </motion.button>
-                ))}
+                            
+                            <span className={`font-tech font-bold text-lg uppercase transition-colors ${config.currentValue === option ? "text-cb-black-pure" : "text-neutral-400 group-hover:text-cb-white-tech"}`}>
+                                {option}
+                            </span>
+
+                            {config.currentValue === option && (
+                                <div className="ml-auto w-8 h-8 bg-cb-black-pure rounded-full flex items-center justify-center border-2 border-cb-black-pure">
+                                    <CheckCircle size={20} className="text-cb-yellow-neon" strokeWidth={3} />
+                                </div>
+                            )}
+                        </motion.button>
+                    );
+                })}
             </div>
 
             <div className="flex flex-col items-center md:items-start gap-6 border-t-4 border-cb-black-pure pt-8 mt-8">
@@ -105,7 +110,7 @@ export default function Step3_SubCategory({ data, updateData, handleNext, handle
                 >
                     <FileText size={24} strokeWidth={2.5} />
                     <span>
-                        {config.currentValue ? `DESCARGAR DATOS: ${config.currentValue}` : `DESCARGAR DATOS: ${data.category}`}
+                        {config.currentValue ? `LEER REGLAMENTO: ${config.currentValue}` : `LEER REGLAMENTO: ${data.category}`}
                     </span>
                 </motion.button>
 
@@ -124,7 +129,7 @@ export default function Step3_SubCategory({ data, updateData, handleNext, handle
                         </div>
                     </div>
                     <span className={`font-tech font-bold uppercase transition-colors ${rulesAccepted ? "text-cb-yellow-neon" : "text-neutral-400 group-hover:text-cb-white-tech"}`}>
-                        CERTIFICO LECTURA DE CONTRATO (REGLAMENTO)
+                        HE LEIDO EL REGLAMENTO DE LA COMPETENCIA
                     </span>
                 </label>
             </div>

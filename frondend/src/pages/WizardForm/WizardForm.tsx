@@ -10,6 +10,7 @@ import Step3_SubCategory from "./steps/Step3_SubCategory";
 import Step4_Details from "./steps/Step4_Details";
 import Step5_Payment from "./steps/Step5_Payment";
 import Step6_Summary from "./steps/Step6_Summary";
+import StepGeneralInfo from "./steps/StepGeneralInfo";
 import Rules from "../Form/Regulations/rules";
 import AlertModal from "./AlertModal";
 import { Loader2 } from "lucide-react";
@@ -21,6 +22,9 @@ export default function WizardForm() {
     const [currentStep, setCurrentStep] = useState(1);
     const [showRules, setShowRules] = useState(false);
     const [alertConfig, setAlertConfig] = useState<{title: string, message: string, type: 'success' | 'warning' | 'error', onClose?: () => void} | null>(null);
+    const [categories, setCategories] = useState<any[]>([]);
+    const [levels, setLevels] = useState<any[]>([]);
+    const [eventConfig, setEventConfig] = useState<Record<string, string>>({});
 
     const [formData, setFormData] = useState({
         email: "",
@@ -97,6 +101,13 @@ export default function WizardForm() {
             setIsLoading(false);
         }
     }, [googleUser]);
+
+    // Fetch dynamic categories, levels, and event config
+    useEffect(() => {
+        api.get('/api/categories').then(res => res.json()).then(data => setCategories(data)).catch(err => console.error('Failed to fetch categories', err));
+        api.get('/api/levels').then(res => res.json()).then(data => setLevels(data)).catch(err => console.error('Failed to fetch levels', err));
+        api.get('/api/event-config').then(res => res.json()).then(data => setEventConfig(data)).catch(err => console.error('Failed to fetch event config', err));
+    }, []);
 
     const saveDraft = async (stepToSave: number) => {
         const email = formData.email || googleUser?.email;
@@ -195,18 +206,19 @@ export default function WizardForm() {
 
     const steps = [
         { id: 1, title: "Requisito", description: "Verificación de Pago" },
-        { id: 2, title: "Datos", description: "Institución y Contacto" },
-        { id: 3, title: "Categoría", description: "Nivel de competencia" },
-        { id: 4, title: "Competencia", description: "Selección específica" },
-        { id: 5, title: "Detalles", description: "Equipo y asesor" },
-        { id: 6, title: "Pago", description: "Comprobante" },
-        { id: 7, title: "Confirmar", description: "Revisión final" },
+        { id: 2, title: "Información", description: "Reglamentos y Contacto" },
+        { id: 3, title: "Datos", description: "Institución y Contacto" },
+        { id: 4, title: "Categoría", description: "Nivel de competencia" },
+        { id: 5, title: "Competencia", description: "Selección específica" },
+        { id: 6, title: "Detalles", description: "Equipo y asesor" },
+        { id: 7, title: "Pago", description: "Comprobante" },
+        { id: 8, title: "Confirmar", description: "Revisión final" },
     ];
 
     return (
         <WizardLayout
             currentStep={currentStep}
-            totalSteps={7}
+            totalSteps={8}
             steps={steps}
             title="CatoBots IV"
             subtitle="Formulario de Inscripción Oficial"
@@ -216,41 +228,53 @@ export default function WizardForm() {
                     data={formData}
                     updateData={updateData}
                     handleNext={handleNext}
+                    eventConfig={eventConfig}
                 />
             )}
 
             {currentStep === 2 && (
+                <StepGeneralInfo
+                    handleNext={handleNext}
+                    handleBack={handleBack}
+                    eventConfig={eventConfig}
+                />
+            )}
+
+            {currentStep === 3 && (
                 <Step1_EventDetails
                     data={formData}
                     updateData={updateData}
                     googleUser={googleUser}
                     handleGoogleLogin={() => handleGoogleLogin()}
                     handleNext={handleNext}
-                    // No handleBack for first step
+                    eventConfig={eventConfig}
                 />
             )}
 
-            {currentStep === 3 && (
+            {currentStep === 4 && (
                 <Step2_Category
                     data={formData}
                     updateData={updateData}
                     handleNext={handleNext}
                     handleBack={handleBack}
                     showBackButton={true}
+                    categories={categories}
+                    levels={levels}
                 />
             )}
 
-            {currentStep === 4 && (
+            {currentStep === 5 && (
                 <Step3_SubCategory
                     data={formData}
                     updateData={updateData}
                     handleNext={handleNext}
                     handleBack={handleBack}
                     setShowRules={setShowRules}
+                    categories={categories}
                 />
             )}
 
-            {currentStep === 5 && (
+            {currentStep === 6 && (
                 <Step4_Details
                     data={formData}
                     categoryType={getCategoryType()}
@@ -260,16 +284,17 @@ export default function WizardForm() {
                 />
             )}
 
-            {currentStep === 6 && (
+            {currentStep === 7 && (
                 <Step5_Payment
                     data={formData}
                     updateData={updateData}
                     handleNext={handleNext}
                     handleBack={handleBack}
+                    eventConfig={eventConfig}
                 />
             )}
 
-            {currentStep === 7 && (
+            {currentStep === 8 && (
                 <Step6_Summary
                     data={formData}
                     categoryType={getCategoryType()}
@@ -283,7 +308,8 @@ export default function WizardForm() {
                 <Rules 
                     category={formData.category} 
                     subCategory={formData.category === "Junior" ? formData.juniorCategory : formData.category === "Senior" ? formData.seniorCategory : formData.masterCategory}
-                    onClose={() => setShowRules(false)} 
+                    onClose={() => setShowRules(false)}
+                    categories={categories}
                 />
             )}
 

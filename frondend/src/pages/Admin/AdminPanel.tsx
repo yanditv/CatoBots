@@ -16,7 +16,11 @@ import {
   Star,
   CreditCard,
   Share2,
-  Download
+  Download,
+  Layers,
+  GraduationCap,
+  Settings,
+  Upload
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
@@ -79,72 +83,184 @@ interface Registration {
   createdAt: string;
 }
 
-const COMPETITION_LEVELS = ['JUNIOR', 'SENIOR', 'MASTER'] as const;
+// These are now derived dynamically from fetched categories
 
-const CATEGORIES_BY_LEVEL: Record<string, string[]> = {
-  JUNIOR: [
-    'RoboFut',
-    'Minisumo Autónomo',
-    'Laberinto',
-    'BattleBots 1lb',
-    'Seguidor de Línea',
-    'Sumo RC',
-    'Scratch & Play: Code Masters Arena'
-  ],
-  SENIOR: [
-    'RoboFut',
-    'Minisumo Autónomo',
-    'Laberinto',
-    'BattleBots 1lb',
-    'Seguidor de Línea',
-    'Sumo RC',
-    'Scratch & Play: Code Masters Arena',
-    'BioBot'
-  ],
-  MASTER: [
-    'Minisumo Autónomo',
-    'Seguidor de Línea',
-    'RoboFut Master',
-    'BattleBots 1lb'
-  ]
+// Event Config Panel Component
+const EventConfigPanel = ({ token }: { token: string | null }) => {
+  const [config, setConfig] = useState<Record<string, string>>({});
+  const [saving, setSaving] = useState(false);
+  const [saved, setSaved] = useState(false);
+
+  useEffect(() => {
+    const authHeader = { 'Authorization': `Bearer ${token}` };
+    api.get('/api/event-config', { headers: authHeader }).then(r => r.json()).then(d => setConfig(d));
+  }, [token]);
+
+  const handleSave = async () => {
+    setSaving(true);
+    try {
+      const authHeader = { 'Authorization': `Bearer ${token}` };
+      const res = await api.put('/api/event-config', config, { headers: authHeader });
+      setConfig(await res.json());
+      setSaved(true);
+      setTimeout(() => setSaved(false), 2000);
+    } catch (err) { console.error(err); }
+    setSaving(false);
+  };
+
+  const update = (key: string, value: string) => setConfig(prev => ({ ...prev, [key]: value }));
+
+  const handleUpload = async (file: File, configKey: string) => {
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('configKey', configKey);
+    try {
+      const res = await fetch('/api/event-assets/upload', {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${token}` },
+        body: formData,
+      });
+      const data = await res.json();
+      if (data.url) {
+        update(configKey, data.url);
+        setSaved(true);
+        setTimeout(() => setSaved(false), 2000);
+      }
+    } catch (err) { console.error('Upload error:', err); }
+  };
+
+  const inputCls = "w-full bg-[#0a0a0a] border-2 border-neutral-700 p-3 text-sm font-tech text-cb-white-tech focus:border-cb-yellow-neon outline-none transition-all duration-75 placeholder:text-neutral-600";
+  const labelCls = "text-[10px] font-tech font-black uppercase text-neutral-500 tracking-widest";
+
+  return (
+    <div className="bg-neutral-900 border-2 border-neutral-700 p-6 md:p-8 space-y-2">
+      {/* ⚡ Información del Evento */}
+      <div className="border-b-2 border-neutral-700 pb-2 mb-4"><h3 className="text-xs font-tech font-black uppercase text-cb-yellow-neon tracking-widest">⚡ Información del Evento</h3></div>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="space-y-1"><label className={labelCls}>Nombre del Evento</label><input value={config.eventName || ''} onChange={e => update('eventName', e.target.value)} className={inputCls} /></div>
+        <div className="space-y-1"><label className={labelCls}>Fecha del Evento</label><input value={config.eventDate || ''} onChange={e => update('eventDate', e.target.value)} className={inputCls} /></div>
+      </div>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-3">
+        <div className="space-y-1"><label className={labelCls}>Dirección / Lugar</label><input value={config.eventVenue || ''} onChange={e => update('eventVenue', e.target.value)} className={inputCls} /></div>
+        <div className="space-y-1"><label className={labelCls}>URL Google Maps</label><input value={config.eventMapsUrl || ''} onChange={e => update('eventMapsUrl', e.target.value)} className={inputCls} /></div>
+      </div>
+
+      {/* 📞 Contactos */}
+      <div className="border-b-2 border-neutral-700 pb-2 mb-4 mt-6"><h3 className="text-xs font-tech font-black uppercase text-cb-yellow-neon tracking-widest">📞 Contactos</h3></div>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="space-y-1"><label className={labelCls}>Teléfono de Contacto</label><input value={config.contactPhone || ''} onChange={e => update('contactPhone', e.target.value)} className={inputCls} /></div>
+        <div className="space-y-1"><label className={labelCls}>Correo de Contacto</label><input type="email" value={config.contactEmail || ''} onChange={e => update('contactEmail', e.target.value)} className={inputCls} /></div>
+      </div>
+
+      {/* 💳 Información de Pago */}
+      <div className="border-b-2 border-neutral-700 pb-2 mb-4 mt-6"><h3 className="text-xs font-tech font-black uppercase text-cb-yellow-neon tracking-widest">💳 Información de Pago</h3></div>
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="space-y-1"><label className={labelCls}>Costo de Inscripción ($)</label><input type="number" value={config.registrationCost || ''} onChange={e => update('registrationCost', e.target.value)} className={inputCls} /></div>
+        <div className="space-y-1"><label className={labelCls}>Entidad Financiera</label><input value={config.bankName || ''} onChange={e => update('bankName', e.target.value)} className={inputCls} /></div>
+        <div className="space-y-1"><label className={labelCls}>Tipo de Cuenta</label><input value={config.accountType || ''} onChange={e => update('accountType', e.target.value)} className={inputCls} /></div>
+      </div>
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-3">
+        <div className="space-y-1"><label className={labelCls}>Número de Cuenta</label><input value={config.accountNumber || ''} onChange={e => update('accountNumber', e.target.value)} className={inputCls} /></div>
+        <div className="space-y-1"><label className={labelCls}>Beneficiario</label><input value={config.accountHolder || ''} onChange={e => update('accountHolder', e.target.value)} className={inputCls} /></div>
+        <div className="space-y-1"><label className={labelCls}>Cédula del Beneficiario</label><input value={config.accountHolderId || ''} onChange={e => update('accountHolderId', e.target.value)} className={inputCls} /></div>
+      </div>
+
+      {/* 📋 Indicaciones Generales */}
+      <div className="border-b-2 border-neutral-700 pb-2 mb-4 mt-6"><h3 className="text-xs font-tech font-black uppercase text-cb-yellow-neon tracking-widest">📋 Indicaciones Generales</h3></div>
+      <div className="space-y-1">
+        <label className={labelCls}>Indicaciones Generales</label>
+        <textarea value={config.generalInstructions || ''} onChange={e => update('generalInstructions', e.target.value)} rows={8} className={`${inputCls} resize-y`} />
+      </div>
+
+      {/* 🖼️ Imágenes y Branding */}
+      <div className="border-b-2 border-neutral-700 pb-2 mb-4 mt-6"><h3 className="text-xs font-tech font-black uppercase text-cb-yellow-neon tracking-widest">🖼️ Imágenes y Branding</h3></div>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        {/* Logo */}
+        <div className="space-y-2">
+          <label className={labelCls}>Logo del Evento</label>
+          <div className="flex items-center gap-4">
+            {config.logoUrl && <div className="w-20 h-20 bg-neutral-800 border-2 border-neutral-700 flex items-center justify-center overflow-hidden shrink-0"><img src={config.logoUrl} alt="Logo" className="max-w-full max-h-full object-contain" /></div>}
+            <div className="flex-1">
+              <input value={config.logoUrl || ''} onChange={e => update('logoUrl', e.target.value)} className={`${inputCls} mb-2`} placeholder="URL o subir archivo..." />
+              <label className="inline-flex items-center gap-2 bg-neutral-800 border-2 border-neutral-600 hover:border-cb-yellow-neon px-4 py-2 cursor-pointer transition-all text-xs font-tech font-bold text-neutral-400 hover:text-cb-yellow-neon uppercase tracking-wider">
+                <Upload size={14} /> Subir Archivo
+                <input type="file" accept="image/*" className="hidden" onChange={e => { if (e.target.files?.[0]) handleUpload(e.target.files[0], 'logoUrl'); }} />
+              </label>
+            </div>
+          </div>
+        </div>
+        {/* Captura Cuenta Bancaria */}
+        <div className="space-y-2">
+          <label className={labelCls}>Captura de la Cuenta Bancaria</label>
+          <div className="flex items-center gap-4">
+            {config.paymentImageUrl && <div className="w-20 h-20 bg-neutral-800 border-2 border-neutral-700 flex items-center justify-center overflow-hidden shrink-0"><img src={config.paymentImageUrl} alt="Pago" className="max-w-full max-h-full object-contain" /></div>}
+            <div className="flex-1">
+              <input value={config.paymentImageUrl || ''} onChange={e => update('paymentImageUrl', e.target.value)} className={`${inputCls} mb-2`} placeholder="URL o subir archivo..." />
+              <label className="inline-flex items-center gap-2 bg-neutral-800 border-2 border-neutral-600 hover:border-cb-yellow-neon px-4 py-2 cursor-pointer transition-all text-xs font-tech font-bold text-neutral-400 hover:text-cb-yellow-neon uppercase tracking-wider">
+                <Upload size={14} /> Subir Archivo
+                <input type="file" accept="image/*" className="hidden" onChange={e => { if (e.target.files?.[0]) handleUpload(e.target.files[0], 'paymentImageUrl'); }} />
+              </label>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-3">
+        <div className="space-y-1"><label className={labelCls}>Enlace Reglamento General</label><input value={config.rulesGeneralUrl || ''} onChange={e => update('rulesGeneralUrl', e.target.value)} className={inputCls} /></div>
+        <div className="space-y-1"><label className={labelCls}>Máx. Robots por Categoría</label><input type="number" value={config.maxRobotsPerCategory || ''} onChange={e => update('maxRobotsPerCategory', e.target.value)} className={inputCls} /></div>
+      </div>
+
+      <div className="pt-6 border-t-2 border-neutral-700 mt-6 flex items-center gap-4">
+        <button onClick={handleSave} disabled={saving} className="bg-cb-yellow-neon text-cb-black-pure font-tech font-black py-4 px-8 border-3 border-cb-black-pure shadow-[4px_4px_0_#10B961] hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-none transition-all duration-75 text-sm uppercase tracking-widest disabled:opacity-50">
+          {saving ? 'GUARDANDO...' : 'GUARDAR CONFIGURACIÓN'}
+        </button>
+        {saved && <span className="text-cb-green-vibrant font-tech font-black text-sm uppercase animate-pulse">✓ GUARDADO</span>}
+      </div>
+    </div>
+  );
 };
-
 const AdminPanel = () => {
   const { logout, token } = useAuth();
   const navigate = useNavigate();
-  const [activeTab, setActiveTab] = useState<'institutions' | 'robots' | 'referees' | 'matches' | 'sponsors' | 'brackets' | 'payments'>('institutions');
+  const [activeTab, setActiveTab] = useState<'institutions' | 'robots' | 'referees' | 'matches' | 'sponsors' | 'brackets' | 'payments' | 'categories' | 'levels' | 'evento'>('institutions');
   const [showModal, setShowModal] = useState(false);
   const [isEditMode, setIsEditMode] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [formData, setFormData] = useState<any>({});
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedRobots, setSelectedRobots] = useState<string[]>([]);
+  const [processingPayments, setProcessingPayments] = useState<Set<string>>(new Set());
   const [data, setData] = useState<{
     institutions: Institution[],
     robots: Robot[],
     referees: User[],
     matches: Match[],
     sponsors: Sponsor[],
-    registrations: Registration[]
+    registrations: Registration[],
+    categories: any[],
+    levels: any[]
   }>({
     institutions: [],
     robots: [],
     referees: [],
     matches: [],
     sponsors: [],
-    registrations: []
+    registrations: [],
+    categories: [],
+    levels: []
   });
 
   const fetchData = async () => {
     try {
       const authHeader = { 'Authorization': `Bearer ${token}` };
-      const [inst, robots, users, matches, sponsors, regs] = await Promise.all([
+      const [inst, robots, users, matches, sponsors, regs, cats, lvls] = await Promise.all([
         api.get('/api/institutions', { headers: authHeader }).then(res => res.json()),
         api.get('/api/robots', { headers: authHeader }).then(res => res.json()),
         api.get('/api/users', { headers: authHeader }).then(res => res.json()),
         api.get('/api/matches', { headers: authHeader }).then(res => res.json()),
         api.get('/api/sponsors', { headers: authHeader }).then(res => res.json()),
-        api.get('/api/registrations', { headers: authHeader }).then(res => res.json())
+        api.get('/api/registrations', { headers: authHeader }).then(res => res.json()),
+        api.get('/api/categories/all', { headers: authHeader }).then(res => res.json()),
+        api.get('/api/levels/all', { headers: authHeader }).then(res => res.json())
       ]);
       setData({
         institutions: inst,
@@ -152,7 +268,9 @@ const AdminPanel = () => {
         referees: users.filter((u: any) => u.role === 'REFEREE'),
         matches: matches,
         sponsors: sponsors,
-        registrations: regs || []
+        registrations: regs || [],
+        categories: cats || [],
+        levels: lvls || []
       });
     } catch (err) {
       console.error('Error fetching admin data:', err);
@@ -221,11 +339,22 @@ const AdminPanel = () => {
   };
 
   const handleUpdatePaymentStatus = async (reg: Registration, status: 'APPROVED' | 'REJECTED' | 'PENDING') => {
+    // Prevent double submissions
+    if (processingPayments.has(reg.id)) return;
+    
+    setProcessingPayments(prev => new Set(prev).add(reg.id));
+    
     try {
       const resp = await api.put(`/api/registrations/${reg.id}`, { paymentStatus: status }, { headers: { 'Authorization': `Bearer ${token}` } });
       if (resp.ok) fetchData();
     } catch (err) {
       console.error('Error updating payment status:', err);
+    } finally {
+      setProcessingPayments(prev => {
+        const next = new Set(prev);
+        next.delete(reg.id);
+        return next;
+      });
     }
   };
 
@@ -345,6 +474,27 @@ const AdminPanel = () => {
         `"${r.data?.members || ''}"`
         ];
       });
+    } else if (activeTab === 'categories') {
+      headers = ['ID', 'Nombre', 'Niveles', 'Icono', 'URL Reglas', 'Orden', 'Activa'];
+      exportData = data.categories.map(c => [
+        c.id,
+        `"${c.name}"`,
+        `"${(c.levels || []).join(', ')}"`,
+        `"${c.icon || ''}"`,
+        `"${c.rulesUrl || ''}"`,
+        c.order,
+        c.isActive ? 'Sí' : 'No'
+      ]);
+    } else if (activeTab === 'levels') {
+      headers = ['ID', 'Nombre', 'Descripción', 'Icono', 'Orden', 'Activo'];
+      exportData = data.levels.map(l => [
+        l.id,
+        `"${l.name}"`,
+        `"${l.description || ''}"`,
+        `"${l.icon || ''}"`,
+        l.order,
+        l.isActive ? 'Sí' : 'No'
+      ]);
     }
 
     if (exportData.length === 0) {
@@ -380,6 +530,16 @@ const AdminPanel = () => {
     </button>
   );
 
+  // Derive levels and categories dynamically
+  const COMPETITION_LEVELS = [...new Set(data.categories.flatMap((c: any) => c.levels || []))];
+  const CATEGORIES_BY_LEVEL: Record<string, string[]> = {};
+  data.categories.forEach((c: any) => {
+    (c.levels || []).forEach((lvl: string) => {
+      if (!CATEGORIES_BY_LEVEL[lvl]) CATEGORIES_BY_LEVEL[lvl] = [];
+      if (!CATEGORIES_BY_LEVEL[lvl].includes(c.name)) CATEGORIES_BY_LEVEL[lvl].push(c.name);
+    });
+  });
+
   const getTabLabel = (id: string) => {
     switch (id) {
       case 'institutions': return 'Instituciones';
@@ -388,6 +548,9 @@ const AdminPanel = () => {
       case 'matches': return 'Encuentros';
       case 'sponsors': return 'Sponsors';
       case 'payments': return 'Pagos';
+      case 'categories': return 'Categorías';
+      case 'levels': return 'Niveles';
+      case 'evento': return 'Evento';
       default: return id;
     }
   };
@@ -412,6 +575,9 @@ const AdminPanel = () => {
           <TabButton id="matches" icon={Target} label="Encuentros" />
           <TabButton id="sponsors" icon={Star} label="Sponsors" />
           <TabButton id="payments" icon={CreditCard} label="Pagos" />
+          <TabButton id="categories" icon={Layers} label="Categorías" />
+          <TabButton id="levels" icon={GraduationCap} label="Niveles" />
+          <TabButton id="evento" icon={Settings} label="Evento" />
           <TabButton id="brackets" icon={Share2} label="Generador" />
           <button onClick={() => window.open('/keys', '_blank')} className="flex items-center gap-4 px-5 py-3.5 text-neutral-400 font-tech font-black hover:bg-white/5 hover:text-cb-yellow-neon transition-all duration-75 text-sm uppercase tracking-wider border-2 border-transparent hover:border-cb-yellow-neon/30">
             <Share2 size={18} /> Llaves del Torneo
@@ -647,6 +813,83 @@ const AdminPanel = () => {
             />
           )}
 
+          {/* EVENTO CONFIG */}
+          {activeTab === 'evento' && (
+            <EventConfigPanel token={token} />
+          )}
+
+          {/* LEVELS TABLE */}
+          {activeTab === 'levels' && (
+            <DataTable
+              data={data.levels}
+              keyField="id"
+              columns={[
+                { key: 'name', header: 'Nombre', render: (l) => (
+                  <span className="font-tech font-black uppercase tracking-wider">{l.name}</span>
+                )},
+                { key: 'description', header: 'Descripción', render: (l) => (
+                  <span className="text-xs text-neutral-400 font-tech whitespace-pre-line">{l.description || '---'}</span>
+                )},
+                { key: 'icon', header: 'Icono', render: (l) => (
+                  <span className="text-xs text-neutral-400 font-tech font-bold">{l.icon || '---'}</span>
+                )},
+                { key: 'order', header: 'Orden', render: (l) => (
+                  <span className="text-xs text-neutral-500 font-tech font-bold">{l.order}</span>
+                )},
+                { key: 'isActive', header: 'Activo', render: (l) => (
+                  l.isActive
+                    ? <span className="bg-cb-green-vibrant/20 text-cb-green-vibrant text-[10px] font-tech font-black uppercase px-2 py-0.5 border border-cb-green-vibrant/40">Sí</span>
+                    : <span className="bg-red-500/20 text-red-400 text-[10px] font-tech font-black uppercase px-2 py-0.5 border border-red-500/40">No</span>
+                )},
+              ]}
+              actions={(lvl) => (
+                <>
+                  <button onClick={() => handleEdit(lvl)} className="text-neutral-500 hover:text-cb-yellow-neon hover:bg-cb-yellow-neon/10 transition-all duration-75 p-2 border border-neutral-700 hover:border-cb-yellow-neon"><Edit2 size={15} /></button>
+                  <button onClick={() => handleDelete(lvl.id)} className="text-neutral-500 hover:text-red-400 hover:bg-red-500/10 transition-all duration-75 p-2 border border-neutral-700 hover:border-red-500"><Trash2 size={15} /></button>
+                </>
+              )}
+              emptyMessage="Sin niveles registrados"
+            />
+          )}
+
+          {/* CATEGORIES TABLE */}
+          {activeTab === 'categories' && (
+            <DataTable
+              data={data.categories.filter(c => {
+                if (!searchQuery) return true;
+                const q = searchQuery.toLowerCase();
+                return c.name?.toLowerCase().includes(q) || (c.levels || []).some((l: string) => l.toLowerCase().includes(q));
+              })}
+              keyField="id"
+              columns={[
+                { key: 'name', header: 'Nombre', render: (c) => (
+                  <span className="font-tech font-black uppercase tracking-wider">{c.name}</span>
+                )},
+                { key: 'levels', header: 'Niveles', render: (c) => (
+                  <div className="flex gap-1 flex-wrap">{(c.levels || []).map((l: string) => <span key={l} className="text-[10px] font-tech font-bold text-cb-yellow-neon px-2 py-0.5 bg-cb-yellow-neon/10 border border-cb-yellow-neon/30">{l}</span>)}</div>
+                )},
+                { key: 'icon', header: 'Icono', render: (c) => (
+                  <span className="text-xs text-neutral-400 font-tech font-bold">{c.icon || '---'}</span>
+                )},
+                { key: 'order', header: 'Orden', render: (c) => (
+                  <span className="text-xs text-neutral-500 font-tech font-bold">{c.order}</span>
+                )},
+                { key: 'isActive', header: 'Activa', render: (c) => (
+                  c.isActive
+                    ? <span className="bg-cb-green-vibrant/20 text-cb-green-vibrant text-[10px] font-tech font-black uppercase px-2 py-0.5 border border-cb-green-vibrant/40">Sí</span>
+                    : <span className="bg-red-500/20 text-red-400 text-[10px] font-tech font-black uppercase px-2 py-0.5 border border-red-500/40">No</span>
+                )},
+              ]}
+              actions={(cat) => (
+                <>
+                  <button onClick={() => handleEdit(cat)} className="text-neutral-500 hover:text-cb-yellow-neon hover:bg-cb-yellow-neon/10 transition-all duration-75 p-2 border border-neutral-700 hover:border-cb-yellow-neon"><Edit2 size={15} /></button>
+                  <button onClick={() => handleDelete(cat.id)} className="text-neutral-500 hover:text-red-400 hover:bg-red-500/10 transition-all duration-75 p-2 border border-neutral-700 hover:border-red-500"><Trash2 size={15} /></button>
+                </>
+              )}
+              emptyMessage="Sin categorías registradas"
+            />
+          )}
+
           {/* PAYMENTS TABLE */}
           {activeTab === 'payments' && (
             <DataTable
@@ -742,18 +985,30 @@ const AdminPanel = () => {
                     {/* Payment Actions */}
                     <div className="flex gap-2 pt-3 border-t-2 border-neutral-800">
                       {reg.paymentStatus !== 'APPROVED' && (
-                        <button onClick={() => handleUpdatePaymentStatus(reg, 'APPROVED')} className="py-2 px-4 font-tech font-black uppercase text-[10px] tracking-wider transition-all duration-75 bg-cb-green-vibrant text-cb-black-pure border-2 border-cb-green-vibrant hover:translate-y-[-1px]">
-                          Aprobar Pago
+                        <button 
+                          onClick={() => handleUpdatePaymentStatus(reg, 'APPROVED')} 
+                          disabled={processingPayments.has(reg.id)}
+                          className="py-2 px-4 font-tech font-black uppercase text-[10px] tracking-wider transition-all duration-75 bg-cb-green-vibrant text-cb-black-pure border-2 border-cb-green-vibrant hover:translate-y-[-1px] disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                          {processingPayments.has(reg.id) ? 'Procesando...' : 'Aprobar Pago'}
                         </button>
                       )}
-                      {reg.paymentStatus !== 'REJECTED' && (
-                        <button onClick={() => handleUpdatePaymentStatus(reg, 'REJECTED')} className="py-2 px-4 font-tech font-black uppercase text-[10px] tracking-wider transition-all duration-75 bg-transparent text-red-400 border-2 border-red-500/40 hover:bg-red-500/10">
-                          Rechazar
+                      {reg.paymentStatus === 'PENDING' && (
+                        <button 
+                          onClick={() => handleUpdatePaymentStatus(reg, 'REJECTED')} 
+                          disabled={processingPayments.has(reg.id)}
+                          className="py-2 px-4 font-tech font-black uppercase text-[10px] tracking-wider transition-all duration-75 bg-transparent text-red-400 border-2 border-red-500/40 hover:bg-red-500/10 disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                          {processingPayments.has(reg.id) ? 'Procesando...' : 'Rechazar'}
                         </button>
                       )}
                       {(reg.paymentStatus === 'APPROVED' || reg.paymentStatus === 'REJECTED') && (
-                        <button onClick={() => handleUpdatePaymentStatus(reg, 'PENDING')} className="py-2 px-4 font-tech font-black uppercase text-[10px] tracking-wider transition-all duration-75 bg-transparent text-neutral-500 border-2 border-neutral-700 hover:bg-white/5">
-                          Restaurar a Pendiente
+                        <button 
+                          onClick={() => handleUpdatePaymentStatus(reg, 'PENDING')} 
+                          disabled={processingPayments.has(reg.id)}
+                          className="py-2 px-4 font-tech font-black uppercase text-[10px] tracking-wider transition-all duration-75 bg-transparent text-neutral-500 border-2 border-neutral-700 hover:bg-white/5 disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                          {processingPayments.has(reg.id) ? 'Procesando...' : 'Restaurar a Pendiente'}
                         </button>
                       )}
                     </div>
@@ -1005,6 +1260,101 @@ const AdminPanel = () => {
                           <option value="SILVER">SILVER</option>
                           <option value="BRONZE">BRONZE</option>
                         </select>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {activeTab === 'categories' && (
+                  <div className="space-y-6">
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <label className="text-[10px] font-tech font-black uppercase text-neutral-500 tracking-widest">Nombre de la Categoría</label>
+                        <input required value={formData.name || ''} placeholder="ej. Minisumo Autónomo" className="w-full bg-[#0a0a0a] border-2 border-neutral-700 p-4 text-sm font-tech text-cb-white-tech focus:border-cb-yellow-neon outline-none transition-all duration-75 placeholder:text-neutral-600" onChange={e => setFormData({ ...formData, name: e.target.value })} />
+                      </div>
+                      <div className="space-y-2">
+                        <label className="text-[10px] font-tech font-black uppercase text-neutral-500 tracking-widest">Niveles</label>
+                        <div className="flex gap-3 bg-[#0a0a0a] border-2 border-neutral-700 p-4">
+                          {data.levels.map((l: any) => {
+                            const selected = (formData.levels || []).includes(l.name);
+                            return (
+                              <label key={l.id} className="flex items-center gap-2 cursor-pointer">
+                                <input type="checkbox" checked={selected} className="w-4 h-4 accent-[#10B961]"
+                                  onChange={() => {
+                                    const current: string[] = formData.levels || [];
+                                    const updated = selected ? current.filter((n: string) => n !== l.name) : [...current, l.name];
+                                    setFormData({ ...formData, levels: updated });
+                                  }} />
+                                <span className="text-xs font-tech font-bold text-cb-white-tech uppercase">{l.name}</span>
+                              </label>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <label className="text-[10px] font-tech font-black uppercase text-neutral-500 tracking-widest">Icono (Lucide)</label>
+                        <select value={formData.icon || 'Gamepad2'} className="w-full bg-[#0a0a0a] border-2 border-neutral-700 p-4 text-sm font-tech text-cb-white-tech focus:border-cb-yellow-neon outline-none transition-all duration-75 appearance-none" onChange={e => setFormData({ ...formData, icon: e.target.value })}>
+                          <option value="Gamepad2">Gamepad2</option>
+                          <option value="Bot">Bot</option>
+                          <option value="Trophy">Trophy</option>
+                          <option value="Map">Map</option>
+                          <option value="Hammer">Hammer</option>
+                          <option value="Activity">Activity</option>
+                          <option value="Code">Code</option>
+                          <option value="Leaf">Leaf</option>
+                          <option value="Baby">Baby</option>
+                          <option value="GraduationCap">GraduationCap</option>
+                        </select>
+                      </div>
+                      <div className="space-y-2">
+                        <label className="text-[10px] font-tech font-black uppercase text-neutral-500 tracking-widest">Orden</label>
+                        <input type="number" value={formData.order ?? 0} className="w-full bg-[#0a0a0a] border-2 border-neutral-700 p-4 text-sm font-tech text-cb-white-tech focus:border-cb-yellow-neon outline-none transition-all duration-75" onChange={e => setFormData({ ...formData, order: parseInt(e.target.value) || 0 })} />
+                      </div>
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-[10px] font-tech font-black uppercase text-neutral-500 tracking-widest">URL del Reglamento</label>
+                      <input value={formData.rulesUrl || ''} placeholder="https://..." className="w-full bg-[#0a0a0a] border-2 border-neutral-700 p-4 text-sm font-tech text-cb-white-tech focus:border-cb-yellow-neon outline-none transition-all duration-75 placeholder:text-neutral-600" onChange={e => setFormData({ ...formData, rulesUrl: e.target.value })} />
+                    </div>
+                    <div className="flex items-center gap-4 p-4 bg-[#0a0a0a] border-2 border-neutral-700">
+                      <input type="checkbox" id="catActive" checked={formData.isActive !== false} onChange={e => setFormData({ ...formData, isActive: e.target.checked })} className="w-5 h-5 accent-[#10B961]" />
+                      <label htmlFor="catActive" className="text-[10px] font-tech font-black uppercase text-neutral-400 cursor-pointer tracking-widest">Categoría Activa (visible en formulario)</label>
+                    </div>
+                  </div>
+                )}
+
+                {activeTab === 'levels' && (
+                  <div className="space-y-6">
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <label className="text-[10px] font-tech font-black uppercase text-neutral-500 tracking-widest">Nombre del Nivel</label>
+                        <input required value={formData.name || ''} placeholder="ej. Leyenda" className="w-full bg-[#0a0a0a] border-2 border-neutral-700 p-4 text-sm font-tech text-cb-white-tech focus:border-cb-yellow-neon outline-none transition-all duration-75 placeholder:text-neutral-600" onChange={e => setFormData({ ...formData, name: e.target.value })} />
+                      </div>
+                      <div className="space-y-2">
+                        <label className="text-[10px] font-tech font-black uppercase text-neutral-500 tracking-widest">Icono (Lucide)</label>
+                        <select value={formData.icon || 'Bot'} className="w-full bg-[#0a0a0a] border-2 border-neutral-700 p-4 text-sm font-tech text-cb-white-tech focus:border-cb-yellow-neon outline-none transition-all duration-75 appearance-none" onChange={e => setFormData({ ...formData, icon: e.target.value })}>
+                          <option value="Baby">Baby</option>
+                          <option value="Bot">Bot</option>
+                          <option value="GraduationCap">GraduationCap</option>
+                          <option value="Trophy">Trophy</option>
+                          <option value="Gamepad2">Gamepad2</option>
+                          <option value="Star">Star</option>
+                        </select>
+                      </div>
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-[10px] font-tech font-black uppercase text-neutral-500 tracking-widest">Descripción</label>
+                      <input value={formData.description || ''} placeholder="ej. EXPERTOS VETERANOS (Pro)" className="w-full bg-[#0a0a0a] border-2 border-neutral-700 p-4 text-sm font-tech text-cb-white-tech focus:border-cb-yellow-neon outline-none transition-all duration-75 placeholder:text-neutral-600" onChange={e => setFormData({ ...formData, description: e.target.value })} />
+                    </div>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <label className="text-[10px] font-tech font-black uppercase text-neutral-500 tracking-widest">Orden</label>
+                        <input type="number" value={formData.order ?? 0} className="w-full bg-[#0a0a0a] border-2 border-neutral-700 p-4 text-sm font-tech text-cb-white-tech focus:border-cb-yellow-neon outline-none transition-all duration-75" onChange={e => setFormData({ ...formData, order: parseInt(e.target.value) || 0 })} />
+                      </div>
+                      <div className="flex items-center gap-4 p-4 bg-[#0a0a0a] border-2 border-neutral-700 self-end">
+                        <input type="checkbox" id="lvlActive" checked={formData.isActive !== false} onChange={e => setFormData({ ...formData, isActive: e.target.checked })} className="w-5 h-5 accent-[#10B961]" />
+                        <label htmlFor="lvlActive" className="text-[10px] font-tech font-black uppercase text-neutral-400 cursor-pointer tracking-widest">Nivel Activo</label>
                       </div>
                     </div>
                   </div>

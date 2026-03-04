@@ -6,9 +6,12 @@ interface Step0Props {
     };
     updateData: (data: any) => void;
     handleNext: () => void;
+    eventConfig: Record<string, string>;
 }
 
-export default function Step0_PaymentInfo({ data, updateData, handleNext }: Step0Props) {
+export default function Step0_PaymentInfo({ data, updateData, handleNext, eventConfig }: Step0Props) {
+    const cost = eventConfig.registrationCost || '10';
+
     return (
         <div className="space-y-8">
             <div className="text-center md:text-left mb-10 border-b-4 border-cb-black-pure pb-6">
@@ -26,7 +29,7 @@ export default function Step0_PaymentInfo({ data, updateData, handleNext }: Step
                 <h2 className="text-3xl lg:text-4xl font-tech text-cb-yellow-neon mb-4 uppercase drop-shadow-[2px_2px_0_#FFF]">INFO DE PAGO</h2>
                 <p className="text-cb-white-tech font-bold mb-8 font-sans">
                     Habilita tu participación transfiriendo a nuestras coordenadas. 
-                    COSTO: <span className="text-cb-yellow-neon bg-cb-black-pure border-2 border-cb-yellow-neon px-2 py-1">$10.00</span> por equipo.
+                    COSTO: <span className="text-cb-yellow-neon bg-cb-black-pure border-2 border-cb-yellow-neon px-2 py-1">${cost}.00</span> por equipo.
                 </p>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-center relative z-10 w-full">
@@ -37,7 +40,7 @@ export default function Step0_PaymentInfo({ data, updateData, handleNext }: Step
                             </div>
                             <div>
                                 <p className="text-cb-black-pure text-[10px] md:text-xs font-black uppercase tracking-widest font-tech mb-0.5">Entidad Financiera</p>
-                                <p className="text-cb-green-dark font-tech font-bold text-lg md:text-xl uppercase">Cooperativa Biblián</p>
+                                <p className="text-cb-green-dark font-tech font-bold text-lg md:text-xl uppercase">{eventConfig.bankName || 'Cooperativa Biblián'}</p>
                             </div>
                         </div>
                         
@@ -45,18 +48,18 @@ export default function Step0_PaymentInfo({ data, updateData, handleNext }: Step
                             <div className="bg-cb-black-pure p-3 shrink-0">
                                 <Bot className="text-cb-yellow-neon" />
                             </div>
-                            <div className="w-full text-cb-black-pure overflow-hidden">
-                                <p className="text-cb-black-pure text-[10px] md:text-xs font-black uppercase tracking-widest font-tech mb-0.5">Número de Cuenta Ahorros</p>
-                                <p className="font-tech tracking-widest text-lg lg:text-2xl mb-1 text-black font-black break-all">0212011159836</p>
+                            <div className="w-full text-cb-black-pure">
+                                <p className="text-cb-black-pure text-[10px] md:text-xs font-black uppercase tracking-widest font-tech mb-0.5">Número de Cuenta {eventConfig.accountType || 'Ahorros'}</p>
+                                <p className="font-tech tracking-wide text-sm md:text-lg lg:text-2xl mb-1 text-black font-black whitespace-nowrap">{eventConfig.accountNumber || '---'}</p>
                                 
                                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-sm pt-2 border-t-2 border-cb-black-pure">
                                     <div>
                                         <p className="text-[10px] md:text-xs uppercase font-black font-sans text-neutral-500">Beneficiario:</p>
-                                        <p className="font-bold text-xs truncate">Segundo Pauta</p>
+                                        <p className="font-bold text-xs">{eventConfig.accountHolder || '---'}</p>
                                     </div>
                                     <div>
                                         <p className="text-[10px] md:text-xs uppercase font-black font-sans text-neutral-500">ID:</p>
-                                        <p className="font-bold text-xs truncate">0101995843</p>
+                                        <p className="font-bold text-xs">{eventConfig.accountHolderId || '---'}</p>
                                     </div>
                                 </div>
                             </div>
@@ -66,7 +69,7 @@ export default function Step0_PaymentInfo({ data, updateData, handleNext }: Step
                     <div className="relative mx-auto w-full max-w-[300px] md:max-w-none">
                         <div className="absolute inset-0 bg-cb-white-tech translate-x-4 translate-y-4 border-4 border-cb-black-pure" />
                         <img
-                            src="/src/assets/pago.png"
+                            src={eventConfig.paymentImageUrl || "/src/assets/pago.png"}
                             alt="Información de Pago"
                             className="relative z-10 border-4 border-cb-black-pure w-full h-auto object-cover grayscale hover:grayscale-0 transition-all duration-300 bg-cb-black-pure"
                         />

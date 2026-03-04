@@ -12,6 +12,14 @@ import { Robot } from './models/Robot';
 import { Match } from './models/Match';
 import { Sponsor } from './models/Sponsor';
 import { Registration } from './models/Registration';
+import { Category } from './models/Category';
+import { Level } from './models/Level';
+import { CategoryLevel } from './models/CategoryLevel';
+import { EventConfig } from './models/EventConfig';
+
+// Associations: Category <-> Level (many-to-many through CategoryLevel)
+Category.belongsToMany(Level, { through: CategoryLevel, foreignKey: 'categoryId', otherKey: 'levelId' });
+Level.belongsToMany(Category, { through: CategoryLevel, foreignKey: 'levelId', otherKey: 'categoryId' });
 import multer from 'multer';
 import path from 'path';
 import fs from 'fs';
@@ -31,11 +39,6 @@ app.use((req, res, next) => {
   res.set('Expires', '0');
 
   const start = Date.now();
-  
-  // Log request
-  console.log(`\n========== ${new Date().toISOString()} ==========`);
-  console.log(`REQUEST: ${req.method} ${req.url}`);
-  console.log(`HEADERS:`, JSON.stringify(req.headers, null, 2));
   
   if (req.body && Object.keys(req.body).length > 0) {
     console.log(`BODY:`, JSON.stringify(req.body, null, 2));
@@ -190,6 +193,120 @@ app.delete('/api/robots/:id', authenticateJWT, isAdmin, async (req, res) => {
   res.sendStatus(204);
 });
 
+// Categories (public GET, admin CUD)
+app.get('/api/categories', async (req, res) => {
+  const categories = await Category.findAll({
+    where: { isActive: true },
+    order: [['order', 'ASC']],
+    include: [{ model: Level, through: { attributes: [] }, attributes: ['id', 'name'] }]
+  });
+  // Transform to include levels as string array for frontend compatibility
+  const result = categories.map((c: any) => ({
+    ...c.toJSON(),
+    levels: c.Levels?.map((l: any) => l.name) || []
+  }));
+  res.json(result);
+});
+app.get('/api/categories/all', authenticateJWT, isAdmin, async (req, res) => {
+  const categories = await Category.findAll({
+    order: [['order', 'ASC']],
+    include: [{ model: Level, through: { attributes: [] }, attributes: ['id', 'name'] }]
+  });
+  const result = categories.map((c: any) => ({
+    ...c.toJSON(),
+    levels: c.Levels?.map((l: any) => l.name) || []
+  }));
+  res.json(result);
+});
+app.post('/api/categories', authenticateJWT, isAdmin, async (req, res) => {
+  const { levels, ...catData } = req.body;
+  const cat = await Category.create(catData);
+  if (levels && Array.isArray(levels)) {
+    const levelRecords = await Level.findAll({ where: { name: levels } });
+    await (cat as any).setLevels(levelRecords);
+  }
+  const result = await Category.findByPk(cat.id, { include: [{ model: Level, through: { attributes: [] }, attributes: ['id', 'name'] }] });
+  res.json({ ...(result as any).toJSON(), levels: (result as any).Levels?.map((l: any) => l.name) || [] });
+});
+app.put('/api/categories/:id', authenticateJWT, isAdmin, async (req, res) => {
+  const { levels, ...catData } = req.body;
+  await Category.update(catData, { where: { id: req.params.id } });
+  if (levels && Array.isArray(levels)) {
+    const cat = await Category.findByPk(req.params.id);
+    const levelRecords = await Level.findAll({ where: { name: levels } });
+    await (cat as any).setLevels(levelRecords);
+  }
+  const result = await Category.findByPk(req.params.id, { include: [{ model: Level, through: { attributes: [] }, attributes: ['id', 'name'] }] });
+  res.json({ ...(result as any).toJSON(), levels: (result as any).Levels?.map((l: any) => l.name) || [] });
+});
+app.delete('/api/categories/:id', authenticateJWT, isAdmin, async (req, res) => {
+  await Category.destroy({ where: { id: req.params.id } });
+  res.sendStatus(204);
+});
+
+// Levels (public GET, admin CUD)
+app.get('/api/levels', async (req, res) => {
+  const levels = await Level.findAll({
+    where: { isActive: true },
+    order: [['order', 'ASC']]
+  });
+  res.json(levels);
+});
+app.get('/api/levels/all', authenticateJWT, isAdmin, async (req, res) => {
+  const levels = await Level.findAll({ order: [['order', 'ASC']] });
+  res.json(levels);
+});
+app.post('/api/levels', authenticateJWT, isAdmin, async (req, res) => {
+  res.json(await Level.create(req.body));
+});
+app.put('/api/levels/:id', authenticateJWT, isAdmin, async (req, res) => {
+  await Level.update(req.body, { where: { id: req.params.id } });
+  res.json(await Level.findByPk(req.params.id));
+});
+app.delete('/api/levels/:id', authenticateJWT, isAdmin, async (req, res) => {
+  await Level.destroy({ where: { id: req.params.id } });
+  res.sendStatus(204);
+});
+
+// EventConfig (public GET, admin PUT)
+app.get('/api/event-config', async (req, res) => {
+  const configs = await EventConfig.findAll();
+  const result: Record<string, string> = {};
+  configs.forEach((c: any) => { result[c.key] = c.value; });
+  res.json(result);
+});
+app.get('/api/event-config/all', authenticateJWT, isAdmin, async (req, res) => {
+  const configs = await EventConfig.findAll({ order: [['group', 'ASC'], ['key', 'ASC']] });
+  res.json(configs);
+});
+app.put('/api/event-config', authenticateJWT, isAdmin, async (req, res) => {
+  const updates = req.body; // { key: value, key2: value2, ... }
+  for (const [key, value] of Object.entries(updates)) {
+    const [record] = await EventConfig.findOrCreate({ where: { key }, defaults: { key, value: value as string, label: key, group: 'custom' } });
+    await record.update({ value: value as string });
+  }
+  const configs = await EventConfig.findAll();
+  const result: Record<string, string> = {};
+  configs.forEach((c: any) => { result[c.key] = c.value; });
+  res.json(result);
+});
+
+// Event asset upload (logo, payment image, etc.)
+app.post('/api/event-assets/upload', authenticateJWT, isAdmin, upload.single('file'), async (req, res) => {
+  if (!req.file) return res.status(400).send({ message: 'No file uploaded' });
+  const configKey = req.body.configKey; // e.g. 'paymentImageUrl' or 'logoUrl'
+  const fileUrl = `/uploads/${req.file.filename}`;
+  if (configKey) {
+    const existing = await EventConfig.findOne({ where: { key: configKey } });
+    if (existing) {
+      await EventConfig.update({ value: fileUrl }, { where: { key: configKey } });
+    } else {
+      await EventConfig.create({ key: configKey, value: fileUrl, label: configKey, group: 'branding' });
+    }
+  }
+  res.json({ url: fileUrl, configKey });
+});
+
 // Referees (Users)
 app.get('/api/users', authenticateJWT, isAdmin, async (req, res) => {
   res.json(await User.findAll({ where: { role: 'REFEREE' }, attributes: { exclude: ['password'] } }));
@@ -329,8 +446,6 @@ app.post('/api/upload', authenticateJWT, isAdmin, upload.single('file'), (req, r
 app.post('/api/registrations/sync', async (req, res) => {
   const { email, step, data, paymentProof } = req.body;
 
-  console.log('Sync request:', { email, step, hasData: !!data, hasPaymentProof: !!paymentProof });
-
   if (!email) return res.status(400).send({ message: 'Email required' });
 
   try {
@@ -341,7 +456,6 @@ app.post('/api/registrations/sync', async (req, res) => {
       registration.data = data;
       if (paymentProof) registration.payment_proof_filename = paymentProof;
       await registration.save();
-      console.log('Updated draft:', registration.id);
     } else {
       registration = await Registration.create({
         google_email: email,
@@ -349,7 +463,6 @@ app.post('/api/registrations/sync', async (req, res) => {
         data,
         payment_proof_filename: paymentProof || null
       });
-      console.log('Created draft:', registration.id);
     }
 
     res.json({ success: true, registration });
@@ -375,10 +488,8 @@ app.post('/api/registrations/upload', upload.single('file'), (req, res) => {
 });
 
 app.post('/api/registrations/submit', async (req, res) => {
-  console.log('Submit request body:', req.body);
   const { email } = req.body;
   if (!email) {
-    console.log('Error: No email in request');
     return res.status(400).send({ message: 'Email required' });
   }
 
@@ -580,7 +691,7 @@ io.on('connection', (socket) => {
 });
 
 const PORT = Number(process.env.PORT) || 3001;
-sequelize.sync().then(async () => {
+sequelize.sync({ alter: true }).then(async () => {
   // Idempotent migration for missing columns
   try {
     const [cols]: any = await sequelize.query("SHOW COLUMNS FROM Matches");
@@ -639,6 +750,81 @@ sequelize.sync().then(async () => {
       role: 'ADMIN'
     });
     console.log('Seed: Admin user created');
+  }
+
+  // Seed levels if empty
+  const levelCount = await Level.count();
+  if (levelCount === 0) {
+    await Level.bulkCreate([
+      { name: 'Junior', description: 'OPERADORES EN FORMACIÓN\n(Básico)', icon: 'Baby', order: 1 },
+      { name: 'Senior', description: 'COMBATIENTES INTERMEDIOS\n(Bachillerato)', icon: 'Bot', order: 2 },
+      { name: 'Master', description: 'INGENIERÍA PESADA\n(Universidades/Clubes)', icon: 'GraduationCap', order: 3 },
+    ]);
+    console.log('Seed: Levels created');
+  }
+
+  // Seed categories if empty
+  const categoryCount = await Category.count();
+  if (categoryCount === 0) {
+    const urls = {
+      robofut: 'https://ucacueedu-my.sharepoint.com/personal/nathalia_peralta_ucacue_edu_ec/_layouts/15/Doc.aspx?sourcedoc=%7BABC9DD7A-3FCE-409D-ABCA-E0D90576CBBA%7D&file=Reglas_Robofut.docx&action=default&mobileredirect=true&CT=1771016156656&OR=ItemsView',
+      minisumo: 'https://ucacueedu-my.sharepoint.com/personal/nathalia_peralta_ucacue_edu_ec/_layouts/15/onedrive.aspx?id=%2Fpersonal%2Fnathalia%5Fperalta%5Fucacue%5Fedu%5Fec%2FDocuments%2F1%2E%20Unidad%20Academica%20de%20Informatica%2C%20ciencias%20de%20la%20computaci%C3%B3n%20e%20innovacion%20tecnologica%2FGestion%20de%20proyectos%2FCatoBots%2FIII%20Edicion%2FReglamentos&ga=1',
+      laberinto: 'https://ucacueedu-my.sharepoint.com/:w:/r/personal/nathalia_peralta_ucacue_edu_ec/_layouts/15/Doc.aspx?sourcedoc=%7B8B8E0F68-2D21-4C00-979A-7195CBF59F2A%7D&file=ReglamentoLaberinto_v1.docx&action=default&mobileredirect=true',
+      battlebots: 'https://ucacueedu-my.sharepoint.com/:w:/r/personal/nathalia_peralta_ucacue_edu_ec/_layouts/15/Doc.aspx?sourcedoc=%7B84E15B97-6EE4-4462-B0F5-CAD12491D94F%7D&file=BattleBots.docx&action=default&mobileredirect=true',
+      seguidor: 'https://ucacueedu-my.sharepoint.com/:w:/r/personal/nathalia_peralta_ucacue_edu_ec/_layouts/15/Doc.aspx?sourcedoc=%7BCAE4B9A8-D383-41E6-9AB8-2DF7FCBE172C%7D&file=ReglamentoSeguidordeLinea.docx&action=default&mobileredirect=true',
+      sumo_rc: 'https://ucacueedu-my.sharepoint.com/:w:/r/personal/nathalia_peralta_ucacue_edu_ec/_layouts/15/Doc.aspx?sourcedoc=%7BE504FB42-63DE-4F59-81F4-39B0B7B477DD%7D&file=ReglamentoSumoRC.docx&action=default&mobileredirect=true',
+      scratch: 'https://ucacueedu-my.sharepoint.com/:w:/r/personal/nathalia_peralta_ucacue_edu_ec/_layouts/15/Doc.aspx?sourcedoc=%7B964F0D59-F202-4681-BFAD-FA11CCEDEC2C%7D&file=Scratch%20%26%20Play%20-%20Code%20Masters%20Arena.docx&action=default&mobileredirect=true',
+    };
+
+    const categoryDefs = [
+      { data: { name: 'RoboFut', icon: 'Trophy', rulesUrl: urls.robofut, order: 1 }, levels: ['Junior', 'Senior'] },
+      { data: { name: 'Minisumo Autónomo', icon: 'Bot', rulesUrl: urls.minisumo, order: 2 }, levels: ['Junior', 'Senior', 'Master'] },
+      { data: { name: 'Laberinto', icon: 'Map', rulesUrl: urls.laberinto, order: 3 }, levels: ['Junior', 'Senior'] },
+      { data: { name: 'BattleBots 1lb', icon: 'Hammer', rulesUrl: urls.battlebots, order: 4 }, levels: ['Junior', 'Senior', 'Master'] },
+      { data: { name: 'Seguidor de Línea', icon: 'Activity', rulesUrl: urls.seguidor, order: 5 }, levels: ['Junior', 'Senior', 'Master'] },
+      { data: { name: 'Sumo RC', icon: 'Gamepad2', rulesUrl: urls.sumo_rc, order: 6 }, levels: ['Junior', 'Senior'] },
+      { data: { name: 'Scratch & Play: Code Masters Arena', icon: 'Code', rulesUrl: urls.scratch, order: 7 }, levels: ['Junior', 'Senior'] },
+      { data: { name: 'Batalla de Palitos de Helado', icon: 'Hammer', rulesUrl: null, order: 8 }, levels: ['Junior'] },
+      { data: { name: 'BioBot', icon: 'Leaf', rulesUrl: null, order: 9 }, levels: ['Senior'] },
+      { data: { name: 'RoboFut Master', icon: 'Trophy', rulesUrl: urls.robofut, order: 10 }, levels: ['Master'] },
+    ];
+
+    for (const def of categoryDefs) {
+      const cat = await Category.create(def.data);
+      const levelRecords = await Level.findAll({ where: { name: def.levels } });
+      await (cat as any).setLevels(levelRecords);
+    }
+    console.log('Seed: Categories created with level assignments');
+  }
+
+  // Seed event config if empty
+  const configCount = await EventConfig.count();
+  if (configCount === 0) {
+    await EventConfig.bulkCreate([
+      // Event Info
+      { key: 'eventName', value: 'CATOBOTS IV EDICIÓN', label: 'Nombre del Evento', group: 'evento' },
+      { key: 'eventDate', value: '20 DE MARZO DEL 2026', label: 'Fecha del Evento', group: 'evento' },
+      { key: 'eventVenue', value: 'COLISEO DE LAS AGUILAS ROJAS (TARQUI Y HUMBOLT)', label: 'Dirección del Evento', group: 'evento' },
+      { key: 'eventMapsUrl', value: 'https://maps.app.goo.gl/dwUEErcrpNe4CiN59', label: 'URL Google Maps', group: 'evento' },
+      // Contacts
+      { key: 'contactPhone', value: '', label: 'Teléfono de Contacto', group: 'contacto' },
+      { key: 'contactEmail', value: '', label: 'Correo de Contacto', group: 'contacto' },
+      // Payment
+      { key: 'registrationCost', value: '10', label: 'Costo de Inscripción ($)', group: 'pago' },
+      { key: 'bankName', value: 'Cooperativa Biblián', label: 'Entidad Financiera', group: 'pago' },
+      { key: 'accountNumber', value: '0212011159836', label: 'Número de Cuenta', group: 'pago' },
+      { key: 'accountType', value: 'Ahorros', label: 'Tipo de Cuenta', group: 'pago' },
+      { key: 'accountHolder', value: 'Segundo Pauta', label: 'Beneficiario', group: 'pago' },
+      { key: 'accountHolderId', value: '0101995843', label: 'Cédula del Beneficiario', group: 'pago' },
+      // General Instructions
+      { key: 'generalInstructions', value: 'Representación Institucional: Cada Unidad Educativa podrá inscribir un máximo de 4 robots por categoría. Estos cupos son exclusivos para la institución, independientemente de si los estudiantes pertenecen a la jornada matutina, vespertina o a un club independiente. La Unidad Educativa es la única entidad encargada de seleccionar a sus representantes oficiales.\n\nCosto de Inscripción: El valor de la inscripción es de $10 por Institución Educativa.\n\nEs fundamental escribir correctamente los nombres de la Unidad Educativa, Robots, Equipos e Integrantes.\n\nSe recomienda leer detenidamente el reglamento que será compartido.\n\nLos robots deberán ser homologados previamente a la competencia.\n\nLos equipos deben registrarse a través del formulario oficial del evento.', label: 'Indicaciones Generales', group: 'instrucciones' },
+      // Logo
+      { key: 'logoUrl', value: '/logo-yellow.png', label: 'URL del Logo', group: 'branding' },
+      { key: 'paymentImageUrl', value: '/src/assets/pago.png', label: 'Imagen de Pago', group: 'branding' },
+      { key: 'rulesGeneralUrl', value: 'https://ucacueedu-my.sharepoint.com/personal/nathalia_peralta_ucacue_edu_ec/_layouts/15/onedrive.aspx?id=%2Fpersonal%2Fnathalia%5Fperalta%5Fucacue%5Fedu%5Fec%2FDocuments%2F1%2E%20Unidad%20Academica%20de%20Informatica%2C%20ciencias%20de%20la%20computaci%C3%B3n%20e%20innovacion%20tecnologica%2FGestion%20de%20proyectos%2FCatoBots%2FIII%20Edicion%2FReglamentos&ga=1', label: 'Enlace Reglamento General', group: 'reglas' },
+      { key: 'maxRobotsPerCategory', value: '4', label: 'Máx. Robots por Categoría por Institución', group: 'reglas' },
+    ]);
+    console.log('Seed: EventConfig created');
   }
 
   httpServer.listen(PORT, '0.0.0.0', () => {

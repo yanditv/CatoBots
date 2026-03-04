@@ -9,16 +9,17 @@ interface Step5Props {
     updateData: (data: any) => void;
     handleNext: () => void;
     handleBack: () => void;
+    eventConfig: Record<string, string>;
 }
 
-export default function Step5_Payment({ data, updateData, handleNext, handleBack }: Step5Props) {
+export default function Step5_Payment({ data, updateData, handleNext, handleBack, eventConfig }: Step5Props) {
     const [isUploading, setIsUploading] = useState(false);
 
     const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
         if (e.target.files && e.target.files[0]) {
             const file = e.target.files[0];
-            if (file.size > 10 * 1024 * 1024) {
-                alert("CARGA RECHAZADA: ARCHIVO EXCEDE LÍMITE (10MB)");
+            if (file.size > 2 * 1024 * 1024) {
+                alert("CARGA RECHAZADA: ARCHIVO EXCEDE LÍMITE DE 2MB");
                 return;
             }
 
@@ -46,7 +47,7 @@ export default function Step5_Payment({ data, updateData, handleNext, handleBack
             <div className="text-center md:text-left mb-10 border-b-4 border-cb-black-pure pb-6">
                 <h2 className="text-3xl font-tech font-black text-cb-black-pure mb-2 uppercase drop-shadow-[2px_2px_0_rgba(255,240,0,1)]">VALIDACIÓN DE FONDOS</h2>
                 <p className="font-tech text-cb-black-pure text-lg font-bold mt-4 uppercase">
-                    CUOTA DE INSCRIPCIÓN: $10.00 POR FACCIÓN.<br/>
+                    CUOTA DE INSCRIPCIÓN: ${eventConfig.registrationCost || '10'}.00 POR INSTITUCIÓN.<br/>
                     AUTORIZA EL PAGO Y CARGA LA EVIDENCIA (RECIBO).
                 </p>
             </div>
@@ -60,7 +61,7 @@ export default function Step5_Payment({ data, updateData, handleNext, handleBack
                     </div>
                     <div className="p-6 flex-1 flex flex-col items-center justify-center bg-cb-white-tech border-x-4 border-b-4 border-cb-black-pure m-2">
                         <img
-                            src="/src/assets/pago.png"
+                            src={eventConfig.paymentImageUrl || "/src/assets/pago.png"}
                             alt="Datos Bancarios"
                             className="max-w-full h-auto object-contain drop-shadow-[4px_4px_0_#000]"
                             onError={(e) => {
@@ -69,19 +70,23 @@ export default function Step5_Payment({ data, updateData, handleNext, handleBack
                         />
                         {/* Fallback Text if image is missing */}
                         <div className="text-cb-black-pure font-tech font-bold text-sm md:text-base space-y-2 uppercase hidden only:block">
-                            <p className="flex justify-between border-b-2 border-cb-black-pure pb-1"><span className="text-neutral-500">INSTITUCIÓN:</span> <span className="text-right">Cooperativa Biblián</span></p>
-                            <p className="flex justify-between border-b-2 border-cb-black-pure pb-1"><span className="text-neutral-500">TIPO:</span> <span className="text-right">Ahorros</span></p>
-                            <p className="flex justify-between border-b-2 border-cb-black-pure pb-1"><span className="text-neutral-500">ID CUENTA:</span> <span className="text-right text-cb-green-vibrant drop-shadow-[1px_1px_0_#000] text-lg">0212011159836</span></p>
-                            <p className="flex justify-between border-b-2 border-cb-black-pure pb-1"><span className="text-neutral-500">DESTINATARIO:</span> <span className="text-right">CatoBots (Segundo Pauta)</span></p>
-                            <p className="flex justify-between"><span className="text-neutral-500">CREDENCIAL:</span> <span className="text-right">0101995843</span></p>
+                            <p className="flex justify-between border-b-2 border-cb-black-pure pb-1"><span className="text-neutral-500">INSTITUCIÓN:</span> <span className="text-right">{eventConfig.bankName || '---'}</span></p>
+                            <p className="flex justify-between border-b-2 border-cb-black-pure pb-1"><span className="text-neutral-500">TIPO:</span> <span className="text-right">{eventConfig.accountType || 'Ahorros'}</span></p>
+                            <p className="flex justify-between border-b-2 border-cb-black-pure pb-1"><span className="text-neutral-500">ID CUENTA:</span> <span className="text-right text-cb-green-vibrant drop-shadow-[1px_1px_0_#000] text-lg">{eventConfig.accountNumber || '---'}</span></p>
+                            <p className="flex justify-between border-b-2 border-cb-black-pure pb-1"><span className="text-neutral-500">DESTINATARIO:</span> <span className="text-right">CatoBots ({eventConfig.accountHolder || '---'})</span></p>
+                            <p className="flex justify-between"><span className="text-neutral-500">CREDENCIAL:</span> <span className="text-right">{eventConfig.accountHolderId || '---'}</span></p>
                         </div>
                     </div>
                 </div>
 
                 {/* Upload Area */}
                 <div className="space-y-4 flex flex-col justify-center">
-                    <label className="block text-sm font-tech font-black uppercase tracking-widest text-cb-black-pure mb-2">
-                        TRASMISIÓN DE COMPROBANTE (IMG/PDF)
+                    <label className="flex justify-between items-center mb-2">
+                        <span className="text-sm font-tech font-black uppercase tracking-widest text-cb-black-pure">TRASMISIÓN DE COMPROBANTE</span>
+                        <div className="flex gap-2">
+                            <span className="text-xs font-tech font-bold bg-cb-gray-industrial border-2 border-cb-black-pure text-cb-white-tech px-2 py-1 uppercase hidden md:inline-block">IMG / PDF</span>
+                            <span className="text-xs font-tech font-bold bg-cb-black-pure text-cb-yellow-neon px-2 py-1 uppercase">MÁX 2MB</span>
+                        </div>
                     </label>
 
                     {!data.paymentProof ? (
@@ -111,22 +116,26 @@ export default function Step5_Payment({ data, updateData, handleNext, handleBack
                             </div>
                         </div>
                     ) : (
-                        <div className="bg-cb-green-vibrant border-4 border-cb-black-pure shadow-[8px_8px_0_#000] p-6 flex items-center justify-between">
-                            <div className="flex items-center gap-4 w-[85%]">
-                                <div className="bg-cb-black-pure p-3 border-4 border-cb-black-pure shadow-[2px_2px_0_#FFF]">
+                        <div className="bg-cb-green-vibrant border-4 border-cb-black-pure shadow-[8px_8px_0_#000] p-5 relative mt-4">
+                            <div className="flex items-center gap-4 mb-3">
+                                <div className="bg-cb-black-pure p-3 border-4 border-cb-black-pure">
                                     <Upload size={24} className="text-cb-yellow-neon" />
                                 </div>
-                                <div className="w-full">
-                                    <p className="text-cb-black-pure font-tech font-black text-lg uppercase tracking-widest">TRANSMISIÓN EXITOSA</p>
-                                    <p className="text-cb-black-pure/70 font-tech font-bold text-sm truncate uppercase bg-cb-white-tech px-2 py-1 mt-1 border-2 border-cb-black-pure inline-block w-full">{data.paymentProof}</p>
+                                <div className="pr-10">
+                                    <p className="text-cb-black-pure font-tech font-black text-xl leading-none uppercase tracking-widest">TRANSMISIÓN<br/>EXITOSA</p>
                                 </div>
                             </div>
+                            
+                            <div className="bg-cb-white-tech border-4 border-cb-black-pure px-3 py-2 text-cb-black-pure/80 font-tech font-bold text-sm truncate uppercase w-full">
+                                {data.paymentProof}
+                            </div>
+
                             <button
                                 onClick={() => updateData({ paymentProof: null })}
-                                className="bg-cb-black-pure p-2 border-4 border-cb-black-pure text-cb-white-tech hover:text-cb-yellow-neon hover:bg-cb-gray-industrial transition-colors"
+                                className="absolute top-4 right-4 bg-cb-black-pure p-2 border-2 border-cb-white-tech text-cb-white-tech hover:text-cb-yellow-neon hover:border-cb-yellow-neon transition-colors"
                                 title="ELIMINAR ARCHIVO"
                             >
-                                <X size={24} strokeWidth={3} />
+                                <X size={20} strokeWidth={3} />
                             </button>
                         </div>
                     )}

@@ -21,16 +21,35 @@ const CATO_BOTS_LOGO_URL = process.env.PUBLIC_URL
     ? `${process.env.PUBLIC_URL}/logo-yellow.png` 
     : 'https://catobots.com/logo-yellow.png';
 
-const rulesUrls: Record<string, string> = {
-    'RoboFut': "https://ucacueedu-my.sharepoint.com/personal/nathalia_peralta_ucacue_edu_ec/_layouts/15/Doc.aspx?sourcedoc=%7BABC9DD7A-3FCE-409D-ABCA-E0D90576CBBA%7D&file=Reglas_Robofut.docx&action=default&mobileredirect=true&CT=1771016156656&OR=ItemsView",
-    'RoboFut Master': "https://ucacueedu-my.sharepoint.com/personal/nathalia_peralta_ucacue_edu_ec/_layouts/15/Doc.aspx?sourcedoc=%7BABC9DD7A-3FCE-409D-ABCA-E0D90576CBBA%7D&file=Reglas_Robofut.docx&action=default&mobileredirect=true&CT=1771016156656&OR=ItemsView",
-    'Minisumo Autónomo': "https://ucacueedu-my.sharepoint.com/personal/nathalia_peralta_ucacue_edu_ec/_layouts/15/onedrive.aspx?id=%2Fpersonal%2Fnathalia%5Fperalta%5Fucacue%5Fedu%5Fec%2FDocuments%2F1%2E%20Unidad%20Academica%20de%20Informatica%2C%20ciencias%20de%20la%20computaci%C3%B3n%20e%20innovacion%20tecnologica%2FGestion%20de%20proyectos%2FCatoBots%2FIII%20Edicion%2FReglamentos&ga=1",
-    'Laberinto': "https://ucacueedu-my.sharepoint.com/:w:/r/personal/nathalia_peralta_ucacue_edu_ec/_layouts/15/Doc.aspx?sourcedoc=%7B8B8E0F68-2D21-4C00-979A-7195CBF59F2A%7D&file=ReglamentoLaberinto_v1.docx&action=default&mobileredirect=true",
-    'BattleBots 1lb': "https://ucacueedu-my.sharepoint.com/:w:/r/personal/nathalia_peralta_ucacue_edu_ec/_layouts/15/Doc.aspx?sourcedoc=%7B84E15B97-6EE4-4462-B0F5-CAD12491D94F%7D&file=BattleBots.docx&action=default&mobileredirect=true",
-    'Seguidor de Línea': "https://ucacueedu-my.sharepoint.com/:w:/r/personal/nathalia_peralta_ucacue_edu_ec/_layouts/15/Doc.aspx?sourcedoc=%7BCAE4B9A8-D383-41E6-9AB8-2DF7FCBE172C%7D&file=ReglamentoSeguidordeLinea.docx&action=default&mobileredirect=true",
-    'Sumo RC': "https://ucacueedu-my.sharepoint.com/:w:/r/personal/nathalia_peralta_ucacue_edu_ec/_layouts/15/Doc.aspx?sourcedoc=%7BE504FB42-63DE-4F59-81F4-39B0B7B477DD%7D&file=ReglamentoSumoRC.docx&action=default&mobileredirect=true",
-    'Scratch & Play: Code Masters Arena': "https://ucacueedu-my.sharepoint.com/:w:/r/personal/nathalia_peralta_ucacue_edu_ec/_layouts/15/Doc.aspx?sourcedoc=%7B964F0D59-F202-4681-BFAD-FA11CCEDEC2C%7D&file=Scratch%20%26%20Play%20-%20Code%20Masters%20Arena.docx&action=default&mobileredirect=true",
-    'BioBot': "#"
+import { Category } from '../models/Category';
+import { EventConfig } from '../models/EventConfig';
+
+// Dynamically fetch rules URLs from the database
+const getRulesUrls = async (): Promise<Record<string, string>> => {
+    try {
+        const categories = await Category.findAll({ where: { isActive: true } });
+        const urls: Record<string, string> = {};
+        categories.forEach((c: any) => {
+            if (c.rulesUrl) urls[c.name] = c.rulesUrl;
+        });
+        return urls;
+    } catch {
+        console.error('Failed to fetch category rules URLs');
+        return {};
+    }
+};
+
+// Dynamically fetch event config from the database
+const getEventConfig = async (): Promise<Record<string, string>> => {
+    try {
+        const configs = await EventConfig.findAll();
+        const result: Record<string, string> = {};
+        configs.forEach((c: any) => { result[c.key] = c.value; });
+        return result;
+    } catch {
+        console.error('Failed to fetch event config');
+        return {};
+    }
 };
 
 const getLogoImgTag = (width: number = 160) => {
@@ -159,6 +178,8 @@ export const sendWelcomeEmail = async (to: string, formData: any) => {
     console.log('Categories detected:', uniqueCategories);
 
     // Build rules links
+    const rulesUrls = await getRulesUrls();
+    const ec = await getEventConfig();
     const rulesLinksHtml = uniqueCategories.map(cat => {
         const url = rulesUrls[cat];
         if (url) {
@@ -238,6 +259,31 @@ export const sendWelcomeEmail = async (to: string, formData: any) => {
             </tr>
         </table>
         ` : ''}
+        <!-- Contact Info Footer -->
+        ${ec.contactPhone || ec.contactEmail ? `
+        <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
+            <tr>
+                <td style="background-color: #0a0a0a; padding: 20px; border-top: 3px solid #2d2d44; text-align: center;">
+                    <span style="display: block; color: #10B961; font-size: 11px; font-weight: 900; text-transform: uppercase; letter-spacing: 3px; margin-bottom: 10px;">
+                        PARA MÁS INFORMACIÓN
+                    </span>
+                    ${ec.contactPhone ? `
+                    <a href="tel:${ec.contactPhone}" style="display: inline-block; color: #FFFFFF; font-size: 13px; font-weight: 700; text-decoration: none; margin: 0 8px;">
+                        📞 ${ec.contactPhone}
+                    </a>
+                    <a href="https://wa.me/${ec.contactPhone.replace(/\D/g, '').replace(/^0/, '593')}" style="display: inline-block; background-color: #25D366; color: #FFFFFF; padding: 6px 14px; text-decoration: none; font-weight: 900; font-size: 11px; text-transform: uppercase; letter-spacing: 1px; margin: 0 8px;">
+                        💬 WhatsApp
+                    </a>
+                    ` : ''}
+                    ${ec.contactEmail ? `
+                    <a href="mailto:${ec.contactEmail}" style="display: inline-block; color: #FFFFFF; font-size: 13px; font-weight: 700; text-decoration: none; margin: 0 8px;">
+                        ✉️ ${ec.contactEmail}
+                    </a>
+                    ` : ''}
+                </td>
+            </tr>
+        </table>
+        ` : ''}
     `;
 
     const htmlContent = buildEmailHtml({
@@ -284,7 +330,7 @@ export const sendWelcomeEmail = async (to: string, formData: any) => {
 // ============================================================
 export const sendStatusEmail = async (to: string, status: 'APPROVED' | 'REJECTED', formData?: any) => {
     const isApproved = status === 'APPROVED';
-    
+    const ec = await getEventConfig();
     const config = {
         headerBg: isApproved ? '#10B961' : '#DC2626',
         titleColor: '#FFF000',
@@ -350,8 +396,8 @@ export const sendStatusEmail = async (to: string, status: 'APPROVED' | 'REJECTED
                         COORDENADAS DEL EVENTO
                     </span>
                     <span style="display: block; color: #FFFFFF; font-size: 13px; font-weight: 700; text-transform: uppercase; line-height: 1.8;">
-                        &#9889; FECHA: 20 DE MARZO DEL 2026<br />
-                        &#9889; LUGAR: COMPLEJO DEPORTIVO BANCO CENTRAL
+                        &#9889; FECHA: ${ec.eventDate || '---'}<br />
+                        &#9889; LUGAR: ${ec.eventVenue || '---'}
                     </span>
                 </td>
             </tr>
@@ -361,7 +407,7 @@ export const sendStatusEmail = async (to: string, status: 'APPROVED' | 'REJECTED
         <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
             <tr>
                 <td style="background-color: #000000; border: 3px solid #10B961; overflow: hidden; text-align: center; padding: 10px;">
-                    <a href="https://maps.app.goo.gl/FjRKZn9o9d1hV2nA7" target="_blank" style="text-decoration: none; display: inline-block;">
+                    <a href="${ec.eventMapsUrl || '#'}" target="_blank" style="text-decoration: none; display: inline-block;">
                         <!-- Using a generic map placeholder since direct Google Static Maps require an API key and are often blocked in emails -->
                         <div style="background-color: #1a1a2e; border: 1px solid #2d2d44; padding: 20px; text-align: center;">
                            <span style="color: #10B961; font-size: 30px; display: block; margin-bottom: 10px;">🗺️</span>
@@ -371,7 +417,7 @@ export const sendStatusEmail = async (to: string, status: 'APPROVED' | 'REJECTED
                     <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
                         <tr>
                             <td style="padding: 14px 16px; text-align: center;">
-                                <a href="https://maps.app.goo.gl/FjRKZn9o9d1hV2nA7" target="_blank" style="display: inline-block; background-color: #10B961; color: #000000; padding: 10px 24px; text-decoration: none; font-weight: 900; font-size: 12px; text-transform: uppercase; letter-spacing: 2px; border: 3px solid #000000; box-shadow: 3px 3px 0px #000000;">
+                                <a href="${ec.eventMapsUrl || '#'}" target="_blank" style="display: inline-block; background-color: #10B961; color: #000000; padding: 10px 24px; text-decoration: none; font-weight: 900; font-size: 12px; text-transform: uppercase; letter-spacing: 2px; border: 3px solid #000000; box-shadow: 3px 3px 0px #000000;">
                                     &#128205; ABRIR EN GOOGLE MAPS
                                 </a>
                             </td>
@@ -395,6 +441,31 @@ export const sendStatusEmail = async (to: string, status: 'APPROVED' | 'REJECTED
             </tr>
         </table>
         `}
+        <!-- Contact Info Footer -->
+        ${ec.contactPhone || ec.contactEmail ? `
+        <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
+            <tr>
+                <td style="background-color: #0a0a0a; padding: 20px; border-top: 3px solid #2d2d44; text-align: center;">
+                    <span style="display: block; color: #10B961; font-size: 11px; font-weight: 900; text-transform: uppercase; letter-spacing: 3px; margin-bottom: 10px;">
+                        PARA MÁS INFORMACIÓN
+                    </span>
+                    ${ec.contactPhone ? `
+                    <a href="tel:${ec.contactPhone}" style="display: inline-block; color: #FFFFFF; font-size: 13px; font-weight: 700; text-decoration: none; margin: 0 8px;">
+                        📞 ${ec.contactPhone}
+                    </a>
+                    <a href="https://wa.me/${ec.contactPhone.replace(/\D/g, '').replace(/^0/, '593')}" style="display: inline-block; background-color: #25D366; color: #FFFFFF; padding: 6px 14px; text-decoration: none; font-weight: 900; font-size: 11px; text-transform: uppercase; letter-spacing: 1px; margin: 0 8px;">
+                        💬 WhatsApp
+                    </a>
+                    ` : ''}
+                    ${ec.contactEmail ? `
+                    <a href="mailto:${ec.contactEmail}" style="display: inline-block; color: #FFFFFF; font-size: 13px; font-weight: 700; text-decoration: none; margin: 0 8px;">
+                        ✉️ ${ec.contactEmail}
+                    </a>
+                    ` : ''}
+                </td>
+            </tr>
+        </table>
+        ` : ''}
     `;
 
     const htmlContent = buildEmailHtml({
