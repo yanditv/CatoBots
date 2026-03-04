@@ -15,23 +15,11 @@ console.log('RESEND_API_KEY:', process.env.RESEND_API_KEY ? '***SET***' : 'NOT S
 console.log('EMAIL_FROM:', process.env.EMAIL_FROM || 'onboarding@resend.dev');
 console.log('===========================');
 
-// --- Logo Embedding via CID ---
-// Try to load the logo from the frontend public folder
-const LOGO_PATH = path.resolve(__dirname, '../../frondend/public/logo-yellow.png');
-let logoBase64: string | null = null;
-try {
-    if (fs.existsSync(LOGO_PATH)) {
-        logoBase64 = fs.readFileSync(LOGO_PATH).toString('base64');
-        console.log('✅ Logo loaded for email embedding');
-    } else {
-        console.log('⚠️ Logo not found at:', LOGO_PATH);
-    }
-} catch (e) {
-    console.log('⚠️ Could not load logo:', e);
-}
-
-// Fallback URL if CID doesn't work
-const CATO_BOTS_LOGO_URL = 'https://catobots.com/logo.png';
+// --- Logo ---
+// Since local CID attachments fail in production deployment, we strictly rely on an absolute URL
+const CATO_BOTS_LOGO_URL = process.env.PUBLIC_URL 
+    ? `${process.env.PUBLIC_URL}/logo-yellow.png` 
+    : 'https://catobots.com/logo-yellow.png';
 
 const rulesUrls: Record<string, string> = {
     'RoboFut': "https://ucacueedu-my.sharepoint.com/personal/nathalia_peralta_ucacue_edu_ec/_layouts/15/Doc.aspx?sourcedoc=%7BABC9DD7A-3FCE-409D-ABCA-E0D90576CBBA%7D&file=Reglas_Robofut.docx&action=default&mobileredirect=true&CT=1771016156656&OR=ItemsView",
@@ -45,20 +33,7 @@ const rulesUrls: Record<string, string> = {
     'BioBot': "#"
 };
 
-// --- Resend attachment for CID logo ---
-const getLogoAttachments = () => {
-    if (!logoBase64) return [];
-    return [{
-        filename: 'catobots-logo.png',
-        content: logoBase64,
-        content_type: 'image/png' as const, 
-    }];
-};
-
 const getLogoImgTag = (width: number = 160) => {
-    if (logoBase64) {
-        return `<img src="data:image/png;base64,${logoBase64}" alt="CATOBOTS IV" width="${width}" style="display: block; margin: 0 auto; max-width: ${width}px; height: auto;" />`;
-    }
     return `<img src="${CATO_BOTS_LOGO_URL}" alt="CATOBOTS IV" width="${width}" style="display: block; margin: 0 auto; max-width: ${width}px; height: auto;" />`;
 };
 

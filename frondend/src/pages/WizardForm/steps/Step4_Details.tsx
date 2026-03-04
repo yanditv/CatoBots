@@ -146,7 +146,7 @@ export default function Step4_Details({ data, categoryType, updateData, handleNe
                                 <input
                                     type="text"
                                     value={data.robotName}
-                                    onChange={(e) => updateData({ robotName: e.target.value })}
+                                    onChange={(e) => updateData({ robotName: e.target.value.toUpperCase() })}
                                     className="w-full bg-cb-white-tech border-4 border-cb-black-pure rounded-none px-4 py-3 text-cb-black-pure font-tech text-lg focus:outline-none focus:ring-4 focus:ring-cb-yellow-neon uppercase placeholder:text-neutral-400 transition-all shadow-[4px_4px_0_#000] focus:shadow-none translate-y-0 focus:translate-y-1 block"
                                     placeholder="EJ. TERMINATOR DESTRUCTOR"
                                 />
@@ -218,7 +218,7 @@ export default function Step4_Details({ data, categoryType, updateData, handleNe
                             <input
                                 type="text"
                                 value={data.teamName}
-                                onChange={(e) => updateData({ teamName: e.target.value })}
+                                onChange={(e) => updateData({ teamName: e.target.value.toUpperCase() })}
                                 className="w-full bg-cb-white-tech border-4 border-cb-black-pure rounded-none px-4 py-3 text-cb-black-pure font-tech text-lg focus:outline-none focus:ring-4 focus:ring-cb-yellow-neon uppercase placeholder:text-neutral-400 transition-all shadow-[4px_4px_0_#000] focus:shadow-none translate-y-0 focus:translate-y-1 block"
                                 placeholder="EJ. COMANDOS CIBERNÉTICOS"
                             />
@@ -257,7 +257,7 @@ export default function Step4_Details({ data, categoryType, updateData, handleNe
                                 <input
                                     type="text"
                                     value={member1}
-                                    onChange={(e) => setMember1(e.target.value)}
+                                    onChange={(e) => setMember1(e.target.value.toUpperCase())}
                                     className="w-full bg-cb-white-tech border-4 border-cb-white-tech rounded-none px-4 py-3 text-cb-black-pure font-tech text-lg focus:outline-none focus:ring-4 focus:ring-cb-yellow-neon uppercase placeholder:text-neutral-500 transition-all"
                                     placeholder="NOMBRE COMPLETO"
                                 />
@@ -274,7 +274,7 @@ export default function Step4_Details({ data, categoryType, updateData, handleNe
                                     <input
                                         type="text"
                                         value={member2}
-                                        onChange={(e) => setMember2(e.target.value)}
+                                        onChange={(e) => setMember2(e.target.value.toUpperCase())}
                                         className="w-full bg-cb-white-tech border-4 border-cb-white-tech rounded-none px-4 py-3 text-cb-black-pure font-tech text-lg focus:outline-none focus:ring-4 focus:ring-cb-yellow-neon uppercase placeholder:text-neutral-500 transition-all"
                                         placeholder="NOMBRE COMPLETO"
                                     />
@@ -294,7 +294,7 @@ export default function Step4_Details({ data, categoryType, updateData, handleNe
                             <input
                                 type="text"
                                 value={data.advisorName}
-                                onChange={(e) => updateData({ advisorName: e.target.value })}
+                                onChange={(e) => updateData({ advisorName: e.target.value.toUpperCase() })}
                                 className="w-full bg-cb-white-tech border-4 border-cb-black-pure rounded-none px-4 py-3 text-cb-black-pure font-tech text-lg focus:outline-none focus:ring-4 focus:ring-cb-yellow-neon uppercase placeholder:text-neutral-400 transition-all shadow-[4px_4px_0_#000] focus:shadow-none translate-y-0 focus:translate-y-1 block"
                                 placeholder="NOMBRE DEL DOCENTE"
                             />

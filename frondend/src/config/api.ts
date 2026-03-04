@@ -3,11 +3,12 @@ const API_URL = ''
 
 export const api = {
   get: (path: string, options?: RequestInit) => 
-    fetch(`${API_URL}${path}`, options),
+    fetch(`${API_URL}${path}`, { cache: 'no-store', ...options }),
   
   post: (path: string, body?: any, options?: RequestInit) => {
     const fetchOptions: RequestInit = {
       method: 'POST',
+      cache: 'no-store',
       ...options,
       headers: { 'Content-Type': 'application/json', ...options?.headers },
     }

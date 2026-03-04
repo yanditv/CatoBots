@@ -65,7 +65,7 @@ export default function Step1_EventDetails({ data, updateData, googleUser, handl
                     <input
                         type="text"
                         value={data.institution}
-                        onChange={(e) => updateData({ institution: e.target.value })}
+                        onChange={(e) => updateData({ institution: e.target.value.toUpperCase() })}
                         placeholder="INGRESE EL NOMBRE DE LA ORGANIZACIÓN"
                         className="w-full bg-cb-black-pure border-4 border-cb-black-pure rounded-none px-4 py-3 text-cb-yellow-neon font-tech text-lg focus:outline-none focus:ring-4 focus:ring-cb-yellow-neon focus:border-cb-black-pure placeholder:text-neutral-600 transition-all uppercase"
                     />

@@ -23,8 +23,13 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-// Enhanced logging middleware
+// Enhanced logging and caching middleware
 app.use((req, res, next) => {
+  // Disable caching for API calls to prevent stale data
+  res.set('Cache-Control', 'no-store, no-cache, must-revalidate, private');
+  res.set('Pragma', 'no-cache');
+  res.set('Expires', '0');
+
   const start = Date.now();
   
   // Log request
