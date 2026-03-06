@@ -156,7 +156,7 @@ export default function Step6_Summary({ data, categoryType, updateData, handleBa
                             </li>
                         </ul>
                         <p className="text-cb-yellow-neon font-tech font-black text-base mt-4 uppercase">
-                            ⚠️  REVISA SPAM / BANDEJA DE NO DESEADOS DESPUÉS DE REGISTRARTE
+                            REVISA SPAM / BANDEJA DE NO DESEADOS DESPUÉS DE REGISTRARTE
                         </p>
                     </div>
                 </div>
