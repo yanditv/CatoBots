@@ -283,7 +283,8 @@ const AdminPanel = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    let endpoint = `/api/${activeTab}`;
+    let tabEndpoint = activeTab === 'payments' ? 'registrations' : activeTab;
+    let endpoint = `/api/${tabEndpoint}`;
     const method = isEditMode ? 'PUT' : 'POST';
     if (isEditMode) endpoint += `/${editingId}`;
 
@@ -318,7 +319,8 @@ const AdminPanel = () => {
 
   const handleDelete = async (id: string) => {
     if (!confirm('¿Estás seguro de eliminar este registro?')) return;
-    const endpoint = `/api/${activeTab}/${id}`;
+    const tabEndpoint = activeTab === 'payments' ? 'registrations' : activeTab;
+    const endpoint = `/api/${tabEndpoint}/${id}`;
 
     try {
       const response = await api.del(endpoint, { headers: { 'Authorization': `Bearer ${token}` } });
@@ -402,6 +404,29 @@ const AdminPanel = () => {
     } catch (err) {
       console.error('Error uploading file:', err);
       alert('Error de conexión al subir imagen');
+    }
+  };
+
+  const handlePaymentProofUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const form = new FormData();
+    form.append('file', file);
+
+    try {
+      const res = await api.upload('/api/upload', form, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (res.ok) {
+        const body = await res.json();
+        setFormData((prev: any) => ({ ...prev, payment_proof_filename: body.filename }));
+      } else {
+        alert('Error al subir comprobante');
+      }
+    } catch (err) {
+      console.error('Error uploading file:', err);
+      alert('Error de conexión al subir comprobante');
     }
   };
 
@@ -1015,6 +1040,12 @@ const AdminPanel = () => {
                   </div>
                 );
               }}
+              actions={(reg) => (
+                <>
+                  <button onClick={() => handleEdit(reg)} className="text-neutral-500 hover:text-cb-yellow-neon hover:bg-cb-yellow-neon/10 transition-all duration-75 p-2 border border-neutral-700 hover:border-cb-yellow-neon"><Edit2 size={15} /></button>
+                  <button onClick={() => handleDelete(reg.id)} className="text-neutral-500 hover:text-red-400 hover:bg-red-500/10 transition-all duration-75 p-2 border border-neutral-700 hover:border-red-500"><Trash2 size={15} /></button>
+                </>
+              )}
               emptyMessage="Sin registros de pago"
             />
           )}
@@ -1355,6 +1386,54 @@ const AdminPanel = () => {
                       <div className="flex items-center gap-4 p-4 bg-[#0a0a0a] border-2 border-neutral-700 self-end">
                         <input type="checkbox" id="lvlActive" checked={formData.isActive !== false} onChange={e => setFormData({ ...formData, isActive: e.target.checked })} className="w-5 h-5 accent-[#10B961]" />
                         <label htmlFor="lvlActive" className="text-[10px] font-tech font-black uppercase text-neutral-400 cursor-pointer tracking-widest">Nivel Activo</label>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {activeTab === 'payments' && (
+                  <div className="space-y-6">
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <label className="text-[10px] font-tech font-black uppercase text-neutral-500 tracking-widest">Email (Google)</label>
+                        <input required value={formData.google_email || ''} className="w-full bg-[#0a0a0a] border-2 border-neutral-700 p-4 text-sm font-tech text-cb-white-tech focus:border-cb-yellow-neon outline-none transition-all duration-75" onChange={e => setFormData({ ...formData, google_email: e.target.value })} />
+                      </div>
+                      <div className="space-y-2">
+                        <label className="text-[10px] font-tech font-black uppercase text-neutral-500 tracking-widest">Estado de Pago</label>
+                        <select required value={formData.paymentStatus || 'PENDING'} className="w-full bg-[#0a0a0a] border-2 border-neutral-700 p-4 text-sm font-tech text-cb-white-tech focus:border-cb-yellow-neon outline-none transition-all duration-75 appearance-none" onChange={e => setFormData({ ...formData, paymentStatus: e.target.value })}>
+                          <option value="PENDING">PENDING</option>
+                          <option value="APPROVED">APPROVED</option>
+                          <option value="REJECTED">REJECTED</option>
+                        </select>
+                      </div>
+                    </div>
+                    
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <label className="text-[10px] font-tech font-black uppercase text-neutral-500 tracking-widest">Robot/Equipo</label>
+                        <input value={formData.data?.robotName || formData.data?.teamName || ''} className="w-full bg-[#0a0a0a] border-2 border-neutral-700 p-4 text-sm font-tech text-cb-white-tech focus:border-cb-yellow-neon outline-none transition-all duration-75" onChange={e => {
+                          const isTeam = formData.data?.teamName !== undefined;
+                          setFormData({ ...formData, data: { ...formData.data, [isTeam ? 'teamName' : 'robotName']: e.target.value } });
+                        }} />
+                      </div>
+                      <div className="space-y-2">
+                        <label className="text-[10px] font-tech font-black uppercase text-neutral-500 tracking-widest">Institución</label>
+                        <input value={formData.data?.institution || ''} className="w-full bg-[#0a0a0a] border-2 border-neutral-700 p-4 text-sm font-tech text-cb-white-tech focus:border-cb-yellow-neon outline-none transition-all duration-75" onChange={e => setFormData({ ...formData, data: { ...formData.data, institution: e.target.value } })} />
+                      </div>
+                    </div>
+
+                    <div className="space-y-2">
+                      <label className="text-[10px] font-tech font-black uppercase text-neutral-500 tracking-widest">Comprobante (Archivo / URL)</label>
+                      <div className="flex gap-4 items-center">
+                        <div className="flex-1">
+                          <input value={formData.payment_proof_filename || ''} placeholder="URL o subir archivo..." className="w-full bg-[#0a0a0a] border-2 border-neutral-700 p-4 text-sm font-tech text-cb-white-tech focus:border-cb-yellow-neon outline-none transition-all duration-75" onChange={e => setFormData({ ...formData, payment_proof_filename: e.target.value })} />
+                        </div>
+                        <div className="relative w-48 shrink-0">
+                          <input type="file" accept="image/*,application/pdf" onChange={handlePaymentProofUpload} className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10" />
+                          <div className="bg-[#1a1a1a] border-2 border-neutral-700 p-4 flex items-center justify-center text-cb-yellow-neon hover:border-cb-yellow-neon transition-all duration-75 cursor-pointer text-center">
+                            <span className="text-[10px] font-tech font-black uppercase tracking-widest">Subir Archivo</span>
+                          </div>
+                        </div>
                       </div>
                     </div>
                   </div>

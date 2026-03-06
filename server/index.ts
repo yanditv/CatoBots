@@ -58,10 +58,10 @@ app.use((req, res, next) => {
   next();
 });
 
-app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+app.use('/uploads', express.static(path.join(process.cwd(), 'uploads')));
 
 // Ensure uploads directory exists
-const uploadDir = path.join(__dirname, 'uploads');
+const uploadDir = path.join(process.cwd(), 'uploads');
 if (!fs.existsSync(uploadDir)) {
   fs.mkdirSync(uploadDir);
 }
@@ -529,13 +529,18 @@ app.get('/api/registrations', authenticateJWT, isAdmin, async (req, res) => {
 });
 
 app.put('/api/registrations/:id', authenticateJWT, isAdmin, async (req, res) => {
-  const { paymentStatus } = req.body;
+  const { paymentStatus, google_email, payment_proof_filename, data } = req.body;
 
   let isPaid = false;
   if (paymentStatus === 'APPROVED') isPaid = true;
   // If REJECTED or PENDING, isPaid remains false (or becomes false)
 
-  await Registration.update({ isPaid, paymentStatus }, { where: { id: req.params.id } });
+  const updateFields: any = { isPaid, paymentStatus };
+  if (google_email !== undefined) updateFields.google_email = google_email;
+  if (payment_proof_filename !== undefined) updateFields.payment_proof_filename = payment_proof_filename;
+  if (data !== undefined) updateFields.data = data;
+
+  await Registration.update(updateFields, { where: { id: req.params.id } });
 
   const updatedRegistration = await Registration.findByPk(req.params.id);
 
@@ -592,6 +597,11 @@ app.put('/api/registrations/:id', authenticateJWT, isAdmin, async (req, res) => 
   }
 
   res.json(updatedRegistration);
+});
+
+app.delete('/api/registrations/:id', authenticateJWT, isAdmin, async (req, res) => {
+  await Registration.destroy({ where: { id: req.params.id } });
+  res.sendStatus(204);
 });
 
 // --- Socket.io Real-time Logic ---
