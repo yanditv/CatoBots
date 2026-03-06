@@ -139,24 +139,10 @@ export default function Step6_Summary({ data, categoryType, updateData, handleBa
                     <div className="flex-1">
                         <h4 className="text-xl font-tech font-black text-cb-yellow-neon uppercase mb-3 flex items-center gap-2">
                             <AlertCircle size={20} strokeWidth={3} />
-                            ATENCIÓN: VERIFICAR CORREO
+                            ATENCIÓN:
                         </h4>
                         <p className="text-cb-white-tech font-tech font-bold text-base leading-relaxed mb-3">
-                            Tu correo de confirmación puede llegar a la bandeja de <span className="text-cb-yellow-neon">SPAM o CORREOS NO DESEADOS</span>, especialmente si utilizas:
-                        </p>
-                        <ul className="space-y-2 text-cb-white-tech font-tech font-bold text-sm ml-4">
-                            <li className="flex items-center gap-2">
-                                <span className="text-cb-yellow-neon">→</span> Correos institucionales
-                            </li>
-                            <li className="flex items-center gap-2">
-                                <span className="text-cb-yellow-neon">→</span> Hotmail / Outlook
-                            </li>
-                            <li className="flex items-center gap-2">
-                                <span className="text-cb-yellow-neon">→</span> Otros proveedores de correo
-                            </li>
-                        </ul>
-                        <p className="text-cb-yellow-neon font-tech font-black text-base mt-4 uppercase">
-                            REVISA SPAM / BANDEJA DE NO DESEADOS DESPUÉS DE REGISTRARTE
+                            Revisa tu bandeja de entrada. Si no encuentras el correo, verifica también la carpeta de SPAM o correos no deseados
                         </p>
                     </div>
                 </div>
