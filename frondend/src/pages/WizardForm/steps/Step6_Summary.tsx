@@ -1,4 +1,4 @@
-import { CheckCircle, AlertTriangle, Check } from "lucide-react";
+import { CheckCircle, AlertTriangle, Check, Mail, AlertCircle } from "lucide-react";
 import { useState } from "react";
 
 interface Step6Props {
@@ -128,6 +128,38 @@ export default function Step6_Summary({ data, categoryType, updateData, handleBa
                     CONFIRMO HABER PROCESADO Y ACEPTADO EL REGLAMENTO OFICIAL DE COMBATE. 
                     <span className="block mt-1 text-red-600 font-black">ADVERTENCIA: TRANSFERENCIA DE FONDOS NO REVERSIBLE.</span>
                 </label>
+            </div>
+
+            {/* Spam Warning Alert */}
+            <div className="bg-cb-black-pure border-4 border-cb-yellow-neon p-6 shadow-block-sm relative overflow-hidden">
+                <div className="flex gap-4 items-start">
+                    <div className="flex-shrink-0 mt-1">
+                        <Mail className="w-8 h-8 text-cb-yellow-neon" strokeWidth={2.5} />
+                    </div>
+                    <div className="flex-1">
+                        <h4 className="text-xl font-tech font-black text-cb-yellow-neon uppercase mb-3 flex items-center gap-2">
+                            <AlertCircle size={20} strokeWidth={3} />
+                            ATENCIÓN: VERIFICAR CORREO
+                        </h4>
+                        <p className="text-cb-white-tech font-tech font-bold text-base leading-relaxed mb-3">
+                            Tu correo de confirmación puede llegar a la bandeja de <span className="text-cb-yellow-neon">SPAM o CORREOS NO DESEADOS</span>, especialmente si utilizas:
+                        </p>
+                        <ul className="space-y-2 text-cb-white-tech font-tech font-bold text-sm ml-4">
+                            <li className="flex items-center gap-2">
+                                <span className="text-cb-yellow-neon">→</span> Correos institucionales
+                            </li>
+                            <li className="flex items-center gap-2">
+                                <span className="text-cb-yellow-neon">→</span> Hotmail / Outlook
+                            </li>
+                            <li className="flex items-center gap-2">
+                                <span className="text-cb-yellow-neon">→</span> Otros proveedores de correo
+                            </li>
+                        </ul>
+                        <p className="text-cb-yellow-neon font-tech font-black text-base mt-4 uppercase">
+                            ⚠️  REVISA SPAM / BANDEJA DE NO DESEADOS DESPUÉS DE REGISTRARTE
+                        </p>
+                    </div>
+                </div>
             </div>
 
             <div className="flex flex-col-reverse md:flex-row gap-4 justify-between pt-8 border-t-4 border-cb-black-pure mt-10">
