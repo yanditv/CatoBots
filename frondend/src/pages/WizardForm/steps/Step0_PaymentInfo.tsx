@@ -28,8 +28,8 @@ export default function Step0_PaymentInfo({ data, updateData, handleNext, eventC
                 
                 <h2 className="text-3xl lg:text-4xl font-tech text-cb-yellow-neon mb-4 uppercase drop-shadow-[2px_2px_0_#FFF]">INFO DE PAGO</h2>
                 <p className="text-cb-white-tech font-bold mb-8 font-sans">
-                    Habilita tu participación transfiriendo a nuestras coordenadas. 
-                    COSTO: <span className="text-cb-yellow-neon bg-cb-black-pure border-2 border-cb-yellow-neon px-2 py-1">${cost}.00</span> por equipo.
+                    💰 El valor de inscripción es de ${cost} por institución, independientemente del número de categorías en las que participen — ya sea en una o varias modalidades distintas, el pago se realiza una sola vez.<br/><br/>
+                    👥 La inscripción de los equipos es individual; al finalizar cada registro, deberán adjuntar el mismo comprobante de pago previamente generado.
                 </p>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-center relative z-10 w-full">

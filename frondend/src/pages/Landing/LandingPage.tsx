@@ -233,8 +233,8 @@ export default function LandingPage() {
                         <div>
                             <h2 className="text-2xl md:text-4xl font-tech text-cb-yellow-neon mb-3 md:mb-4 uppercase drop-shadow-[2px_2px_0_#FFF]">INFO DE PAGO</h2>
                             <p className="text-cb-white-tech font-bold mb-4 md:mb-8 font-sans text-sm md:text-base">
-                                Habilita tu participación transfiriendo a nuestras coordenadas.
-                                COSTO: <span className="text-cb-yellow-neon bg-cb-black-pure px-2 py-1">${eventConfig.registrationCost || '10'}.00</span> por equipo.
+                                💰 El valor de inscripción es de ${eventConfig.registrationCost || '10'} por institución, independientemente del número de categorías en las que participen — ya sea en una o varias modalidades distintas, el pago se realiza una sola vez.<br/><br/>
+                                👥 La inscripción de los equipos es individual; al finalizar cada registro, deberán adjuntar el mismo comprobante de pago previamente generado.
                             </p>
 
                             <div className="space-y-3 md:space-y-6">
