@@ -658,10 +658,16 @@ io.on('connection', (socket) => {
       case 'RESET':
         match.scoreA = 0; match.scoreB = 0;
         match.penaltiesA = []; match.penaltiesB = [];
-        match.timeLeft = 180; match.isActive = false;
+        match.timeLeft = typeof payload === 'number' ? payload : 180;
+        match.isActive = false;
+        break;
+      case 'SET_TIME':
+        match.timeLeft = Number(payload) || 0;
         break;
       case 'ADD_SCORE_A': match.scoreA += payload || 1; break;
       case 'ADD_SCORE_B': match.scoreB += payload || 1; break;
+      case 'SET_SCORE_A': match.scoreA = Number(payload); break;
+      case 'SET_SCORE_B': match.scoreB = Number(payload); break;
       case 'ADD_PENALTY_A': match.penaltiesA = [...match.penaltiesA, payload || 'Warning']; break;
       case 'ADD_PENALTY_B': match.penaltiesB = [...match.penaltiesB, payload || 'Warning']; break;
       case 'ADD_TIME': match.timeLeft += Number(payload) || 30; break;
