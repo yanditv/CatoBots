@@ -6,14 +6,9 @@ import {
   Plus,
   ShieldAlert,
   Timer,
-  Trophy,
   ChevronLeft,
   LogOut,
   Terminal,
-  Clock3,
-  Swords,
-  AlertTriangle,
-  CircleCheckBig,
 } from "lucide-react";
 import type { MatchState } from "../App";
 import { useAuth } from "../context/AuthContext";
@@ -23,6 +18,7 @@ import { MazeControl } from "./Referee/MazeControl";
 import { BioBotsControl } from "./Referee/BioBotsControl";
 import { SumoControl } from "./Referee/SumoControl";
 import { RobofutControl } from "./Referee/RobofutControl";
+import { BattleBotsControl } from "./Referee/BattleBotsControl";
 
 interface RefereeControlProps {
   matches: MatchState[];
@@ -348,9 +344,6 @@ const RefereeControl = ({ matches, onControl }: RefereeControlProps) => {
     );
   }
 
-  const hasBothCompetitors = Boolean(
-    selectedMatch.robotA && selectedMatch.robotB,
-  );
 
   return (
     <div className="min-h-screen bg-cb-green-vibrant bg-noise p-3 md:p-6 flex flex-col max-w-2xl md:max-w-4xl mx-auto">
@@ -428,7 +421,16 @@ const RefereeControl = ({ matches, onControl }: RefereeControlProps) => {
       {/* Category Specific Controls */}
       {(() => {
         const cat = (selectedMatch.category || "").toLowerCase();
-        if (cat.includes("battlebots") || cat.includes("palitos")) {
+        if (cat.includes("battlebots")) {
+          return (
+            <BattleBotsControl
+              match={selectedMatch}
+              onControl={onControl}
+              formatTime={formatTime}
+            />
+          );
+        }
+        if (cat.includes("palitos")) {
           return (
             <CombatControl
               match={selectedMatch}

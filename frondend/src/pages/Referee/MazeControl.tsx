@@ -1,5 +1,6 @@
-import { useState, useEffect, type ElementType } from "react";
+import { useState, useEffect } from "react";
 import { ConfirmModal } from "../../components/ConfirmModal";
+import { ActionButton } from "../../components/ActionButton";
 import {
   Play,
   Pause,
@@ -23,34 +24,7 @@ interface MazeControlProps {
   formatTime: (seconds: number) => string;
 }
 
-const ActionButton = ({
-  icon: Icon,
-  label,
-  onClick,
-  color,
-  textColor,
-  disabled,
-  className = "",
-  size = "py-5",
-}: {
-  icon: ElementType;
-  label: string;
-  onClick: () => void;
-  color: string;
-  textColor: string;
-  disabled?: boolean;
-  className?: string;
-  size?: string;
-}) => (
-  <button
-    disabled={disabled}
-    onClick={onClick}
-    className={`${color} ${textColor} w-full ${size} rounded-none border-3 border-cb-black-pure font-tech font-black uppercase text-xs md:text-sm flex flex-col items-center justify-center gap-1 md:gap-2 active:scale-95 transition-all duration-150 hover:-translate-y-1 hover:shadow-[4px_4px_0_#000] disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:translate-y-0 disabled:hover:shadow-none ${className}`}
-  >
-    <Icon size={24} strokeWidth={2.5} className="mb-1" />
-    <span className="leading-tight text-center px-1">{label}</span>
-  </button>
-);
+
 
 export const MazeControl = ({
   match,
@@ -445,7 +419,7 @@ export const MazeControl = ({
                 label="Rearranque"
                 color="bg-cb-green-vibrant"
                 textColor="text-cb-black-pure"
-                disabled={attemptScores[currentAttempt].restarts >= 2}
+                disabled={!match.isActive || attemptScores[currentAttempt].restarts >= 2}
                 onClick={handleRestartEvent}
               />
               <ActionButton
@@ -454,6 +428,7 @@ export const MazeControl = ({
                 label="Salida de Pista"
                 color="bg-cb-green-vibrant"
                 textColor="text-cb-black-pure"
+                disabled={!match.isActive}
                 onClick={() => handleFault("Salida de Pista")}
               />
               <ActionButton
@@ -462,6 +437,7 @@ export const MazeControl = ({
                 label="Dirección Mal"
                 color="bg-cb-green-vibrant"
                 textColor="text-cb-black-pure"
+                disabled={!match.isActive}
                 onClick={() => handleFault("Sentido Contrario")}
               />
               <ActionButton
@@ -470,6 +446,7 @@ export const MazeControl = ({
                 label="Violación Genérica"
                 color="bg-cb-green-vibrant"
                 textColor="text-cb-black-pure"
+                disabled={!match.isActive}
                 onClick={() => handleFault("Violación General")}
               />
             </div>
@@ -483,6 +460,7 @@ export const MazeControl = ({
                 label="¡LLEGÓ A META!"
                 color="bg-cb-yellow-neon"
                 textColor="text-cb-black-pure"
+                disabled={!match.isActive}
                 onClick={() => {
                   openConfirm(
                     "Registro de Llegada",
@@ -499,6 +477,7 @@ export const MazeControl = ({
                 color="bg-red-500"
                 textColor="text-white"
                 className="text-xs"
+                disabled={!match.isActive}
                 onClick={() => {
                   openConfirm(
                     "Penalización Grave",

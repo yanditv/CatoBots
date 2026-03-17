@@ -20,7 +20,10 @@ import {
   Layers,
   GraduationCap,
   Settings,
-  Upload
+  Upload,
+  FileSearch,
+  History,
+  Clock
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
@@ -249,6 +252,11 @@ const AdminPanel = () => {
     levels: []
   });
 
+  const [selectedMatchLogs, setSelectedMatchLogs] = useState<any[]>([]);
+  const [showAuditModal, setShowAuditModal] = useState(false);
+  const [loadingLogs, setLoadingLogs] = useState(false);
+  const [auditedMatch, setAuditedMatch] = useState<Match | null>(null);
+
   const fetchData = async () => {
     try {
       const authHeader = { 'Authorization': `Bearer ${token}` };
@@ -337,6 +345,21 @@ const AdminPanel = () => {
       if (resp.ok) fetchData();
     } catch (err) {
       console.error('Error toggling dashboard:', err);
+    }
+  };
+
+  const handleViewAudit = async (match: Match) => {
+    setAuditedMatch(match);
+    setShowAuditModal(true);
+    setLoadingLogs(true);
+    try {
+      const response = await api.get(`/api/matches/${match.id}/logs`, { headers: { 'Authorization': `Bearer ${token}` } });
+      const logs = await response.json();
+      setSelectedMatchLogs(logs);
+    } catch (err) {
+      alert('Error al cargar la auditoría');
+    } finally {
+      setLoadingLogs(false);
     }
   };
 
@@ -798,6 +821,13 @@ const AdminPanel = () => {
                     title="Mostrar en Dashboard"
                   >
                     <LayoutDashboard size={15} />
+                  </button>
+                  <button
+                    onClick={() => handleViewAudit(m)}
+                    className="text-neutral-500 hover:text-cb-yellow-neon hover:bg-cb-yellow-neon/10 transition-all duration-75 p-2 border border-neutral-700 hover:border-cb-yellow-neon"
+                    title="Ver Auditoría de Combate"
+                  >
+                    <FileSearch size={15} />
                   </button>
                   <button onClick={() => handleEdit(m)} className="text-neutral-500 hover:text-cb-yellow-neon hover:bg-cb-yellow-neon/10 transition-all duration-75 p-2 border border-neutral-700 hover:border-cb-yellow-neon"><Edit2 size={15} /></button>
                   <button onClick={() => handleDelete(m.id)} className="text-neutral-500 hover:text-red-400 hover:bg-red-500/10 transition-all duration-75 p-2 border border-neutral-700 hover:border-red-500"><Trash2 size={15} /></button>
@@ -1441,6 +1471,95 @@ const AdminPanel = () => {
 
                 <button type="submit" className="w-full bg-cb-yellow-neon text-cb-black-pure font-tech font-black py-5 border-3 border-cb-black-pure shadow-[4px_4px_0_#10B961] hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-none transition-all duration-75 mt-6 text-sm uppercase tracking-widest">{isEditMode ? 'Guardar Cambios' : 'Desplegar Cambios'}</button>
               </form>
+            </motion.div>
+          </div>
+        )}
+        {/* AUDIT MODAL */}
+        {showAuditModal && (
+          <div className="fixed inset-0 bg-black/90 backdrop-blur-md z-[100] flex items-center justify-center p-4">
+            <motion.div initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="bg-[#111] w-full max-w-4xl max-h-[90vh] shadow-[12px_12px_0_#000] overflow-hidden border-3 border-cb-green-vibrant flex flex-col">
+              <div className="p-6 border-b-2 border-neutral-800 flex justify-between items-center bg-[#0a0a0a]">
+                <div className="flex items-center gap-4">
+                  <div className="p-3 bg-cb-green-vibrant/20 border-2 border-cb-green-vibrant text-cb-green-vibrant">
+                    <History size={24} />
+                  </div>
+                  <div>
+                    <h2 className="text-2xl font-tech font-black text-cb-white-tech uppercase tracking-wider">Auditoría de Combate</h2>
+                    <p className="text-[10px] font-tech font-bold text-cb-green-vibrant uppercase tracking-widest mt-1">
+                      {auditedMatch?.category} • {auditedMatch?.robotA?.name} vs {auditedMatch?.robotB?.name}
+                    </p>
+                  </div>
+                </div>
+                <button onClick={() => setShowAuditModal(false)} className="w-12 h-12 border-2 border-neutral-700 flex items-center justify-center text-neutral-500 hover:text-cb-yellow-neon hover:border-cb-yellow-neon transition-all duration-75">
+                  <X size={24} />
+                </button>
+              </div>
+
+              <div className="flex-1 overflow-y-auto p-6 custom-scrollbar bg-black/30">
+                {loadingLogs ? (
+                  <div className="h-64 flex flex-col items-center justify-center gap-4">
+                    <div className="w-12 h-12 border-4 border-cb-yellow-neon border-t-transparent animate-spin rounded-full" />
+                    <p className="font-tech font-black text-xs text-neutral-500 uppercase">Recuperando registros...</p>
+                  </div>
+                ) : selectedMatchLogs.length === 0 ? (
+                  <div className="h-64 flex flex-col items-center justify-center text-neutral-600 gap-4">
+                    <FileSearch size={48} />
+                    <p className="font-tech font-black text-sm uppercase">Sin registros de eventos para este encuentro</p>
+                  </div>
+                ) : (
+                  <div className="relative">
+                    {/* Vertical line for the timeline */}
+                    <div className="absolute left-8 top-0 bottom-0 w-1 bg-neutral-800" />
+                    
+                    <div className="flex flex-col gap-6">
+                      {selectedMatchLogs.map((log) => {
+                        const isPoint = log.type === 'POINT';
+                        const isPenalty = log.type === 'PENALTY';
+                        const isState = log.type === 'STATE_CHANGE';
+                        
+                        return (
+                          <div key={log.id} className="flex gap-6 relative group">
+                            <div className={`w-16 h-16 flex-shrink-0 flex flex-col items-center justify-center border-2 z-10 
+                              ${isPoint ? 'bg-cb-green-vibrant border-cb-black-pure text-cb-black-pure' : 
+                                isPenalty ? 'bg-red-500 border-cb-black-pure text-cb-white-tech' : 
+                                isState ? 'bg-cb-yellow-neon border-cb-black-pure text-cb-black-pure' :
+                                'bg-[#1a1a1a] border-neutral-700 text-neutral-400'}`}>
+                              <Clock size={16} />
+                              <span className="font-mono font-black text-xs mt-1">
+                                {Math.floor(log.matchTime / 60)}:{(log.matchTime % 60).toString().padStart(2, '0')}
+                              </span>
+                            </div>
+
+                            <div className="flex-1 bg-[#1a1a1a] border-2 border-neutral-800 p-4 transition-all duration-75 hover:border-neutral-600 group-hover:translate-x-1">
+                              <div className="flex justify-between items-start mb-1">
+                                <span className={`text-[10px] font-tech font-black uppercase px-2 py-0.5 
+                                  ${isPoint ? 'bg-cb-green-vibrant/20 text-cb-green-vibrant' : 
+                                    isPenalty ? 'bg-red-500/20 text-red-500' : 
+                                    'text-neutral-500'}`}>
+                                  {log.type}
+                                </span>
+                                <span className="text-[9px] font-mono text-neutral-600 uppercase">
+                                  {new Date(log.createdAt).toLocaleTimeString()}
+                                </span>
+                              </div>
+                              <p className="font-tech font-black text-cb-white-tech text-sm tracking-wide">{log.description}</p>
+                              {log.Robot && (
+                                <p className="text-[10px] font-tech font-bold text-neutral-500 mt-1 uppercase">Afectado: {log.Robot.name}</p>
+                              )}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              <div className="p-6 border-t-2 border-neutral-800 flex justify-end bg-[#0a0a0a]">
+                <button onClick={() => setShowAuditModal(false)} className="bg-cb-yellow-neon text-cb-black-pure px-8 py-3 font-tech font-black uppercase text-xs tracking-widest border-2 border-cb-black-pure shadow-[4px_4px_0_#FFF]">
+                  Cerrar Auditoría
+                </button>
+              </div>
             </motion.div>
           </div>
         )}

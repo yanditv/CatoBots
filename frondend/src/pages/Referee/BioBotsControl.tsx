@@ -1,5 +1,6 @@
-import { useState, useEffect, type ElementType } from "react";
+import { useState, useEffect } from "react";
 import { ConfirmModal } from "../../components/ConfirmModal";
+import { ActionButton } from "../../components/ActionButton";
 import {
   Play,
   Pause,
@@ -22,34 +23,7 @@ interface BioBotsControlProps {
   formatTime: (seconds: number) => string;
 }
 
-const ActionButton = ({
-  icon: Icon,
-  label,
-  onClick,
-  color,
-  textColor,
-  disabled,
-  className = "",
-  size = "py-5",
-}: {
-  icon: ElementType;
-  label: string;
-  onClick: () => void;
-  color: string;
-  textColor: string;
-  disabled?: boolean;
-  className?: string;
-  size?: string;
-}) => (
-  <button
-    disabled={disabled}
-    onClick={onClick}
-    className={`${color} ${textColor} w-full ${size} rounded-none border-3 border-cb-black-pure font-tech font-black uppercase text-xs md:text-sm flex flex-col items-center justify-center gap-1 md:gap-2 active:scale-95 transition-all duration-150 hover:-translate-y-1 hover:shadow-[4px_4px_0_#000] disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:translate-y-0 disabled:hover:shadow-none ${className}`}
-  >
-    <Icon size={24} strokeWidth={2.5} className="mb-1" />
-    <span className="leading-tight text-center px-1">{label}</span>
-  </button>
-);
+
 
 export const BioBotsControl = ({
   match,
@@ -259,14 +233,16 @@ export const BioBotsControl = ({
                 </span>
                 <div className="flex gap-2">
                   <button
+                    disabled={!match.isActive}
                     onClick={() => updateObjectState(i, true)}
-                    className={`p-2 border-2 border-cb-black-pure ${state === true ? "bg-cb-green-vibrant text-cb-black-pure shadow-[2px_2px_0_#000]" : "bg-white text-neutral-400"} active:scale-95 transition-all`}
+                    className={`p-2 border-2 border-cb-black-pure ${state === true ? "bg-cb-green-vibrant text-cb-black-pure shadow-[2px_2px_0_#000]" : "bg-white text-neutral-400"} active:scale-95 transition-all disabled:opacity-50 disabled:cursor-not-allowed`}
                   >
                     <CheckCircle size={18} strokeWidth={3} />
                   </button>
                   <button
+                    disabled={!match.isActive}
                     onClick={() => updateObjectState(i, false)}
-                    className={`p-2 border-2 border-cb-black-pure ${state === false ? "bg-red-500 text-cb-black-pure shadow-[2px_2px_0_#000]" : "bg-white text-neutral-400"} active:scale-95 transition-all`}
+                    className={`p-2 border-2 border-cb-black-pure ${state === false ? "bg-red-500 text-cb-black-pure shadow-[2px_2px_0_#000]" : "bg-white text-neutral-400"} active:scale-95 transition-all disabled:opacity-50 disabled:cursor-not-allowed`}
                   >
                     <XCircle size={18} strokeWidth={3} />
                   </button>
@@ -292,6 +268,7 @@ export const BioBotsControl = ({
                 <span className="text-cb-yellow-neon">{rubric.biomechanic} pts</span>
               </label>
               <input
+                disabled={!match.isActive}
                 type="range"
                 min="0"
                 max="30"
@@ -299,7 +276,7 @@ export const BioBotsControl = ({
                 onChange={(e) =>
                   setRubric({ ...rubric, biomechanic: Number(e.target.value) })
                 }
-                className="w-full mt-2 accent-cb-yellow-neon"
+                className="w-full mt-2 accent-cb-yellow-neon disabled:opacity-50"
               />
             </div>
             
@@ -309,6 +286,7 @@ export const BioBotsControl = ({
                 <span className="text-cb-yellow-neon">{rubric.precision} pts</span>
               </label>
               <input
+                disabled={!match.isActive}
                 type="range"
                 min="0"
                 max="20"
@@ -316,7 +294,7 @@ export const BioBotsControl = ({
                 onChange={(e) =>
                   setRubric({ ...rubric, precision: Number(e.target.value) })
                 }
-                className="w-full mt-2 accent-cb-yellow-neon"
+                className="w-full mt-2 accent-cb-yellow-neon disabled:opacity-50"
               />
             </div>
 
@@ -326,6 +304,7 @@ export const BioBotsControl = ({
                 <span className="text-cb-yellow-neon">{rubric.similarity} pts</span>
               </label>
               <input
+                disabled={!match.isActive}
                 type="range"
                 min="0"
                 max="20"
@@ -333,7 +312,7 @@ export const BioBotsControl = ({
                 onChange={(e) =>
                   setRubric({ ...rubric, similarity: Number(e.target.value) })
                 }
-                className="w-full mt-2 accent-cb-yellow-neon"
+                className="w-full mt-2 accent-cb-yellow-neon disabled:opacity-50"
               />
             </div>
 
@@ -343,6 +322,7 @@ export const BioBotsControl = ({
                 <span className="text-cb-yellow-neon">{rubric.design} pts</span>
               </label>
               <input
+                disabled={!match.isActive}
                 type="range"
                 min="0"
                 max="15"
@@ -350,7 +330,7 @@ export const BioBotsControl = ({
                 onChange={(e) =>
                   setRubric({ ...rubric, design: Number(e.target.value) })
                 }
-                className="w-full mt-2 accent-cb-yellow-neon"
+                className="w-full mt-2 accent-cb-yellow-neon disabled:opacity-50"
               />
             </div>
 
@@ -360,6 +340,7 @@ export const BioBotsControl = ({
                 <span className="text-cb-yellow-neon">{rubric.innovation} pts</span>
               </label>
               <input
+                disabled={!match.isActive}
                 type="range"
                 min="0"
                 max="15"
@@ -367,7 +348,7 @@ export const BioBotsControl = ({
                 onChange={(e) =>
                   setRubric({ ...rubric, innovation: Number(e.target.value) })
                 }
-                className="w-full mt-2 accent-cb-yellow-neon"
+                className="w-full mt-2 accent-cb-yellow-neon disabled:opacity-50"
               />
             </div>
           </div>
@@ -384,6 +365,7 @@ export const BioBotsControl = ({
               label="Falta Disc."
               color="bg-cb-yellow-neon"
               textColor="text-cb-black-pure"
+              disabled={!match.isActive}
               onClick={() => {
                 openConfirm(
                   "Falta Disciplinaria",
@@ -402,6 +384,7 @@ export const BioBotsControl = ({
               label="Descalificar"
               color="bg-red-500"
               textColor="text-white"
+              disabled={!match.isActive}
               onClick={() => {
                 openConfirm(
                   "Descalificación Directa",

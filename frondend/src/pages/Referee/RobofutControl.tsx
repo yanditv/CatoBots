@@ -1,5 +1,6 @@
-import { useState, useEffect, type ElementType } from "react";
+import { useState, useEffect } from "react";
 import { ConfirmModal } from "../../components/ConfirmModal";
+import { ActionButton } from "../../components/ActionButton";
 import {
   Play,
   Pause,
@@ -29,34 +30,7 @@ interface RobofutControlProps {
   formatTime: (seconds: number) => string;
 }
 
-const ActionButton = ({
-  icon: Icon,
-  label,
-  onClick,
-  color,
-  textColor,
-  disabled,
-  className = "",
-  size = "py-5",
-}: {
-  icon: ElementType;
-  label: string;
-  onClick: () => void;
-  color: string;
-  textColor: string;
-  disabled?: boolean;
-  className?: string;
-  size?: string;
-}) => (
-  <button
-    disabled={disabled}
-    onClick={onClick}
-    className={`${color} ${textColor} w-full ${size} rounded-none border-3 border-cb-black-pure font-tech font-black uppercase text-xs md:text-sm flex flex-col items-center justify-center gap-1 md:gap-2 active:scale-95 transition-all duration-150 hover:-translate-y-1 hover:shadow-[4px_4px_0_#000] disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:translate-y-0 disabled:hover:shadow-none ${className}`}
-  >
-    <Icon size={24} strokeWidth={2.5} className="mb-1" />
-    <span className="leading-tight text-center px-1">{label}</span>
-  </button>
-);
+
 
 export const RobofutControl = ({
   match,
@@ -341,6 +315,7 @@ export const RobofutControl = ({
                label="¡GOL!"
                color="bg-cb-green-vibrant"
                textColor="text-cb-black-pure"
+               disabled={!match.isActive}
                onClick={() => handleGoal("A")}
              />
              <ActionButton
@@ -349,6 +324,7 @@ export const RobofutControl = ({
                label="Quitar Gol"
                color="bg-white"
                textColor="text-cb-black-pure"
+               disabled={!match.isActive}
                onClick={() => handleUndoGoal("A")}
              />
           </div>
@@ -360,6 +336,7 @@ export const RobofutControl = ({
               label={`Infracción (${violationsA}/3)`}
               color="bg-cb-yellow-neon"
               textColor="text-cb-black-pure"
+              disabled={!match.isActive}
               onClick={() => addInfraction("A")}
             />
             <ActionButton
@@ -368,6 +345,7 @@ export const RobofutControl = ({
               label="Penalidad Grave"
               color="bg-red-500"
               textColor="text-white"
+              disabled={!match.isActive}
               onClick={() => {
                 openConfirm("Penalización Grave", "Descalificación directa por agresión, daños o fraude.", () => {}, "danger");
               }}
@@ -393,6 +371,7 @@ export const RobofutControl = ({
                label="¡GOL!"
                color="bg-cb-green-vibrant"
                textColor="text-cb-black-pure"
+               disabled={!match.isActive}
                onClick={() => handleGoal("B")}
              />
              <ActionButton
@@ -401,6 +380,7 @@ export const RobofutControl = ({
                label="Quitar Gol"
                color="bg-white"
                textColor="text-cb-black-pure"
+               disabled={!match.isActive}
                onClick={() => handleUndoGoal("B")}
              />
           </div>
@@ -412,6 +392,7 @@ export const RobofutControl = ({
               label={`Infracción (${violationsB}/3)`}
               color="bg-cb-yellow-neon"
               textColor="text-cb-black-pure"
+              disabled={!match.isActive}
               onClick={() => addInfraction("B")}
             />
             <ActionButton
@@ -420,6 +401,7 @@ export const RobofutControl = ({
               label="Penalidad Grave"
               color="bg-red-500"
               textColor="text-white"
+              disabled={!match.isActive}
               onClick={() => {
                  openConfirm("Penalización Grave", "Descalificación directa por agresión, daños o fraude.", () => {}, "danger");
               }}
@@ -441,16 +423,40 @@ export const RobofutControl = ({
                     <div className="text-xs uppercase text-neutral-400">PÉNALES A</div>
                     <div className="text-4xl font-black text-cb-green-vibrant">{penaltyScoreA} / {penaltyTakedA}</div>
                     <div className="flex gap-1 justify-center mt-2">
-                       <button onClick={() => {setPenaltyScoreA(s=>s+1); setPenaltyTakedA(t=>t+1)}} className="bg-cb-green-vibrant text-cb-black-pure px-3 py-2 flex items-center gap-1 font-bold"><Trophy size={16}/> GOL</button>
-                       <button onClick={() => setPenaltyTakedA(t=>t+1)} className="bg-red-500 text-white px-3 py-2 flex items-center gap-1 font-bold"><XCircle size={16}/> FALLO</button>
+                       <button 
+                          disabled={!match.isActive}
+                          onClick={() => {setPenaltyScoreA(s=>s+1); setPenaltyTakedA(t=>t+1)}} 
+                          className="bg-cb-green-vibrant text-cb-black-pure px-3 py-2 flex items-center gap-1 font-bold disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                          <Trophy size={16}/> GOL
+                        </button>
+                       <button 
+                          disabled={!match.isActive}
+                          onClick={() => setPenaltyTakedA(t=>t+1)} 
+                          className="bg-red-500 text-white px-3 py-2 flex items-center gap-1 font-bold disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                          <XCircle size={16}/> FALLO
+                        </button>
                     </div>
                  </div>
                  <div className="text-white pl-2">
                     <div className="text-xs uppercase text-neutral-400">PÉNALES B</div>
                     <div className="text-4xl font-black text-cb-green-vibrant">{penaltyScoreB} / {penaltyTakedB}</div>
                     <div className="flex gap-1 justify-center mt-2">
-                        <button onClick={() => {setPenaltyScoreB(s=>s+1); setPenaltyTakedB(t=>t+1)}} className="bg-cb-green-vibrant text-cb-black-pure px-3 py-2 flex items-center gap-1 font-bold"><Trophy size={16}/> GOL</button>
-                        <button onClick={() => setPenaltyTakedB(t=>t+1)} className="bg-red-500 text-white px-3 py-2 flex items-center gap-1 font-bold"><XCircle size={16}/> FALLO</button>
+                        <button 
+                           disabled={!match.isActive}
+                           onClick={() => {setPenaltyScoreB(s=>s+1); setPenaltyTakedB(t=>t+1)}} 
+                           className="bg-cb-green-vibrant text-cb-black-pure px-3 py-2 flex items-center gap-1 font-bold disabled:opacity-50 disabled:cursor-not-allowed"
+                         >
+                           <Trophy size={16}/> GOL
+                         </button>
+                        <button 
+                           disabled={!match.isActive}
+                           onClick={() => setPenaltyTakedB(t=>t+1)} 
+                           className="bg-red-500 text-white px-3 py-2 flex items-center gap-1 font-bold disabled:opacity-50 disabled:cursor-not-allowed"
+                         >
+                           <XCircle size={16}/> FALLO
+                         </button>
                     </div>
                  </div>
               </div>

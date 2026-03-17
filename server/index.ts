@@ -16,6 +16,7 @@ import { Category } from './models/Category';
 import { Level } from './models/Level';
 import { CategoryLevel } from './models/CategoryLevel';
 import { EventConfig } from './models/EventConfig';
+import { MatchLog } from './models/MatchLog';
 
 // Associations: Category <-> Level (many-to-many through CategoryLevel)
 Category.belongsToMany(Level, { through: CategoryLevel, foreignKey: 'categoryId', otherKey: 'levelId' });
@@ -360,6 +361,15 @@ app.delete('/api/matches/:id', authenticateJWT, isAdmin, async (req, res) => {
   res.sendStatus(204);
 });
 
+app.get('/api/matches/:id/logs', authenticateJWT, async (req, res) => {
+  const logs = await MatchLog.findAll({
+    where: { matchId: req.params.id },
+    order: [['createdAt', 'ASC']],
+    include: [{ model: Robot, attributes: ['name'] }]
+  });
+  res.json(logs);
+});
+
 // --- Bracket Generation ---
 
 app.post('/api/brackets/generate', authenticateJWT, isAdmin, async (req, res) => {
@@ -649,36 +659,130 @@ io.on('connection', (socket) => {
   broadcastState();
   socket.on('control_match', async (data: { matchId: string, action: string, payload?: any }) => {
     const { matchId, action, payload } = data;
-    const match = await Match.findByPk(matchId);
+    const match = await Match.findByPk(matchId, { include: ['robotA', 'robotB'] });
     if (!match) return;
 
+    let logType: 'POINT' | 'PENALTY' | 'TIMER' | 'STATE_CHANGE' | 'SYSTEM_EVENT' = 'SYSTEM_EVENT';
+    let logDescription = '';
+    let logRobotId = null;
+    let logPoints = 0;
+    let logMetadata = payload;
+
     switch (action) {
-      case 'START': match.isActive = true; break;
-      case 'PAUSE': match.isActive = false; break;
+      case 'START': 
+        match.isActive = true; 
+        logType = 'STATE_CHANGE';
+        logDescription = 'Combate Iniciado/Reanudado';
+        break;
+      case 'PAUSE': 
+        match.isActive = false; 
+        logType = 'STATE_CHANGE';
+        logDescription = 'Combate Pausado';
+        break;
       case 'RESET':
         match.scoreA = 0; match.scoreB = 0;
         match.penaltiesA = []; match.penaltiesB = [];
         match.timeLeft = typeof payload === 'number' ? payload : 180;
         match.isActive = false;
+        match.isFinished = false;
+        match.winnerId = null as any;
+        logType = 'SYSTEM_EVENT';
+        logDescription = 'Encuentro Reiniciado';
         break;
       case 'SET_TIME':
         match.timeLeft = Number(payload) || 0;
+        logType = 'TIMER';
+        logDescription = `Tiempo ajustado a ${payload}s`;
         break;
-      case 'ADD_SCORE_A': match.scoreA += payload || 1; break;
-      case 'ADD_SCORE_B': match.scoreB += payload || 1; break;
+      case 'ADD_SCORE_A': {
+        const p = typeof payload === 'object' ? payload.points : (payload || 1);
+        match.scoreA += p; 
+        logType = 'POINT';
+        logRobotId = match.robotAId;
+        logPoints = p;
+        logDescription = `Puntos para Robot A: ${p > 0 ? '+' : ''}${p} (${typeof payload === 'object' ? payload.reason : 'Manual'})`;
+        break;
+      }
+      case 'ADD_SCORE_B': {
+        const p = typeof payload === 'object' ? payload.points : (payload || 1);
+        match.scoreB += p; 
+        logType = 'POINT';
+        logRobotId = match.robotBId;
+        logPoints = p;
+        logDescription = `Puntos para Robot B: ${p > 0 ? '+' : ''}${p} (${typeof payload === 'object' ? payload.reason : 'Manual'})`;
+        break;
+      }
       case 'SET_SCORE_A': match.scoreA = Number(payload); break;
       case 'SET_SCORE_B': match.scoreB = Number(payload); break;
-      case 'ADD_PENALTY_A': match.penaltiesA = [...match.penaltiesA, payload || 'Warning']; break;
-      case 'ADD_PENALTY_B': match.penaltiesB = [...match.penaltiesB, payload || 'Warning']; break;
+      case 'ADD_PENALTY_A': 
+        match.penaltiesA = [...match.penaltiesA, payload || 'Warning']; 
+        logType = 'PENALTY';
+        logRobotId = match.robotAId;
+        logDescription = `Amonestación para Robot A: ${payload}`;
+        break;
+      case 'ADD_PENALTY_B': 
+        match.penaltiesB = [...match.penaltiesB, payload || 'Warning']; 
+        logType = 'PENALTY';
+        logRobotId = match.robotBId;
+        logDescription = `Amonestación para Robot B: ${payload}`;
+        break;
       case 'ADD_TIME': match.timeLeft += Number(payload) || 30; break;
+      
+      // BATTLEBOTS SPECIFIC AUDIT ACTIONS
+      case 'BB_LOOSE_PARTS':
+        match.isActive = false;
+        logType = 'SYSTEM_EVENT';
+        logDescription = 'PAUSA: Piezas sueltas en la arena';
+        break;
+      case 'BB_ACCIDENT_START':
+        match.isActive = false;
+        logType = 'TIMER';
+        logDescription = 'PAUSA: Iniciado tiempo de accidente (60s)';
+        break;
+      case 'BB_PROLONGATION_START':
+        match.isActive = false;
+        logType = 'PENALTY';
+        const pRobot = payload === 'A' ? 'Robot A' : 'Robot B';
+        logRobotId = payload === 'A' ? match.robotAId : match.robotBId;
+        logDescription = `PRÓRROGA: ${pRobot} solicita tiempo técnico (-5 pts)`;
+        if (payload === 'A') {
+          match.scoreA -= 5;
+          match.penaltiesA = [...match.penaltiesA, 'Prórroga'];
+        } else {
+          match.scoreB -= 5;
+          match.penaltiesB = [...match.penaltiesB, 'Prórroga'];
+        }
+        break;
+      case 'BB_IMMOBILIZATION_START':
+        match.isActive = false;
+        logType = 'TIMER';
+        const robotLabel = payload === 'A' ? 'Robot A' : 'Robot B';
+        logRobotId = payload === 'A' ? match.robotAId : match.robotBId;
+        logDescription = `PAUSA: Iniciado conteo de inmovilidad para ${robotLabel}`;
+        break;
+      case 'BB_SURRENDER':
+        match.isActive = false;
+        match.isFinished = true;
+        match.timeLeft = 0;
+        const loser = payload === 'A' ? 'Robot A' : 'Robot B';
+        logType = 'STATE_CHANGE';
+        logDescription = `RENDICIÓN: ${loser} se ha rendido o tiene desperfecto grave`;
+        if (payload === 'A') match.winnerId = match.robotBId as any;
+        else match.winnerId = match.robotAId as any;
+        break;
+
       case 'FINISH':
         match.isActive = false;
         match.isFinished = true;
-        let winnerId = null;
-        if (match.scoreA > match.scoreB) winnerId = match.robotAId;
-        else if (match.scoreB > match.scoreA) winnerId = match.robotBId;
+        let winnerId = payload?.winnerId || null;
+        if (!winnerId) {
+          if (match.scoreA > match.scoreB) winnerId = match.robotAId;
+          else if (match.scoreB > match.scoreA) winnerId = match.robotBId;
+        }
 
         match.winnerId = winnerId as any;
+        logType = 'STATE_CHANGE';
+        logDescription = `Combate Finalizado. Ganador: ${winnerId === match.robotAId ? 'Robot A' : (winnerId === match.robotBId ? 'Robot B' : 'Empate/Indefinido')}`;
 
         // Auto-advance logic
         if (winnerId && match.nextMatchId) {
@@ -699,9 +803,28 @@ io.on('connection', (socket) => {
       case 'UNFINISH':
         match.isFinished = false;
         match.winnerId = null as any;
+        logType = 'STATE_CHANGE';
+        logDescription = 'Resultado revertido (Combate no finalizado)';
         break;
     }
     await match.save();
+    
+    // SAVE LOG
+    try {
+      await MatchLog.create({
+        matchId: match.id,
+        robotId: logRobotId,
+        type: logType,
+        action: action,
+        description: logDescription || action,
+        points: logPoints,
+        matchTime: match.timeLeft,
+        metadata: typeof logMetadata === 'object' ? logMetadata : { value: logMetadata }
+      });
+    } catch (logErr) {
+      console.error('Error saving match log:', logErr);
+    }
+
     broadcastState();
   });
 });

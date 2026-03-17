@@ -1,5 +1,6 @@
-import { useState, useEffect, type ElementType } from "react";
+import { useState, useEffect } from "react";
 import { ConfirmModal } from "../../components/ConfirmModal";
+import { ActionButton } from "../../components/ActionButton";
 import {
   Play,
   Pause,
@@ -14,6 +15,7 @@ import {
   MoreVertical,
   Zap,
   StopCircle,
+  Timer,
 } from "lucide-react";
 import type { MatchState } from "../../App";
 
@@ -22,35 +24,6 @@ interface MinisumoControlProps {
   onControl: (matchId: string, action: string, payload?: any) => void;
   formatTime: (seconds: number) => string;
 }
-
-const ActionButton = ({
-  icon: Icon,
-  label,
-  onClick,
-  color,
-  textColor,
-  disabled,
-  className = "",
-  size = "py-5",
-}: {
-  icon: ElementType;
-  label: string;
-  onClick: () => void;
-  color: string;
-  textColor: string;
-  disabled?: boolean;
-  className?: string;
-  size?: string;
-}) => (
-  <button
-    disabled={disabled}
-    onClick={onClick}
-    className={`${color} ${textColor} w-full ${size} rounded-none border-3 border-cb-black-pure font-tech font-black uppercase text-xs md:text-sm flex flex-col items-center justify-center gap-1 md:gap-2 active:scale-95 transition-all duration-150 hover:-translate-y-1 hover:shadow-[4px_4px_0_#000] disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:translate-y-0 disabled:hover:shadow-none ${className}`}
-  >
-    <Icon size={24} strokeWidth={2.5} className="mb-1" />
-    <span className="leading-tight text-center px-1">{label}</span>
-  </button>
-);
 
 export const MinisumoControl = ({
   match,
@@ -222,15 +195,13 @@ export const MinisumoControl = ({
   return (
     <div className="flex flex-col gap-2 relative">
       {/* Visual Indicator of Round */}
-      {/* <div className="bg-cb-yellow-neon border-x-4 border-t-4 border-b-4 border-cb-black-pure p-2 text-center shadow-inner">
+      <div className="bg-cb-yellow-neon border-x-4 border-t-4 border-b-4 border-cb-black-pure p-2 text-center shadow-inner">
         <h3 className="font-tech font-black text-cb-black-pure text-base md:text-lg uppercase flex flex-col md:flex-row justify-center items-center gap-2">
           <span>Round {currentRound} / 3:</span>
-          <span className="bg-cb-black-pure text-cb-white-tech px-2 py-1">
-            {pos.text}
-          </span>
+          <span className="text-cb-black-pure px-2 py-1">{pos.text}</span>
         </h3>
         <p className="font-tech text-sm mt-1 text-neutral-800">{pos.desc}</p>
-      </div> */}
+      </div>
 
       {/* 1. STICKY HEADER: Timer & Primary Controls */}
       <div className="sticky top-0 z-50 bg-neutral-100 border-4 border-cb-black-pure shadow-md p-2 flex items-center justify-between gap-2">
@@ -390,7 +361,9 @@ export const MinisumoControl = ({
               label="Echar del Dohyo"
               color="bg-cb-green-vibrant"
               textColor="text-cb-black-pure"
-              disabled={match.scoreB >= 2 || match.scoreA >= 2}
+              disabled={
+                !match.isActive || match.scoreB >= 2 || match.scoreA >= 2
+              }
               onClick={() => {
                 openConfirm(
                   "Victoria de Round",
@@ -406,6 +379,7 @@ export const MinisumoControl = ({
               label={`Violación (${violationsA}/2)`}
               color="bg-cb-yellow-neon"
               textColor="text-cb-black-pure"
+              disabled={!match.isActive}
               onClick={() => addViolation("A")}
             />
 
@@ -415,6 +389,7 @@ export const MinisumoControl = ({
               label="Penalidad Grave"
               color="bg-red-500"
               textColor="text-white"
+              disabled={!match.isActive}
               onClick={() => {
                 openConfirm(
                   "Penalidad Grave",
@@ -429,20 +404,32 @@ export const MinisumoControl = ({
           {/* Immobilization */}
           <div className="w-full mt-auto">
             {immobilizeTimerA !== null ? (
-              <button
-                className="w-full py-3 bg-red-500 text-white font-tech font-black border-3 border-cb-black-pure uppercase active:scale-95 transition shadow-[2px_2px_0_#000]"
-                onClick={() => setImmobilizeTimerA(null)}
-              >
-                Cancel. Immov A ({immobilizeTimerA}s)
-              </button>
+              <ActionButton
+                size="py-3"
+                icon={StopCircle}
+                label={`Cancelar Inmovilidad A (${immobilizeTimerA}s)`}
+                color="bg-red-500"
+                textColor="text-white"
+                onClick={() => {
+                  setImmobilizeTimerA(null);
+                  onControl(match.id, "START");
+                }}
+              />
             ) : (
-              <button
-                disabled={match.scoreB >= 2 || match.scoreA >= 2}
-                onClick={() => setImmobilizeTimerA(15)}
-                className="w-full py-3 bg-neutral-800 text-cb-yellow-neon font-tech font-black border-3 border-cb-black-pure uppercase hover:-translate-y-1 transition shadow-[2px_2px_0_#000] disabled:opacity-50"
-              >
-                Inmovilidad (15s)
-              </button>
+              <ActionButton
+                size="py-3"
+                icon={Timer}
+                label="Inmovilidad (15s)"
+                color="bg-neutral-800"
+                textColor="text-cb-yellow-neon"
+                disabled={
+                  !match.isActive || match.scoreB >= 2 || match.scoreA >= 2
+                }
+                onClick={() => {
+                  setImmobilizeTimerA(15);
+                  onControl(match.id, "PAUSE");
+                }}
+              />
             )}
           </div>
         </div>
@@ -474,7 +461,9 @@ export const MinisumoControl = ({
               label="Echar del Dohyo"
               color="bg-cb-green-vibrant"
               textColor="text-cb-black-pure"
-              disabled={match.scoreB >= 2 || match.scoreA >= 2}
+              disabled={
+                !match.isActive || match.scoreB >= 2 || match.scoreA >= 2
+              }
               onClick={() => {
                 openConfirm(
                   "Victoria de Round",
@@ -490,6 +479,7 @@ export const MinisumoControl = ({
               label={`Violación (${violationsB}/2)`}
               color="bg-cb-yellow-neon"
               textColor="text-cb-black-pure"
+              disabled={!match.isActive}
               onClick={() => addViolation("B")}
             />
 
@@ -499,6 +489,7 @@ export const MinisumoControl = ({
               label="Penalidad Grave"
               color="bg-red-500"
               textColor="text-white"
+              disabled={!match.isActive}
               onClick={() => {
                 openConfirm(
                   "Penalidad Grave",
@@ -512,20 +503,32 @@ export const MinisumoControl = ({
           {/* Immobilization */}
           <div className="w-full mt-auto">
             {immobilizeTimerB !== null ? (
-              <button
-                className="w-full py-3 bg-red-500 text-white font-tech font-black border-3 border-cb-black-pure uppercase active:scale-95 transition shadow-[2px_2px_0_#000]"
-                onClick={() => setImmobilizeTimerB(null)}
-              >
-                Cancel. Immov B ({immobilizeTimerB}s)
-              </button>
+              <ActionButton
+                size="py-3"
+                icon={StopCircle}
+                label={`Cancel. Immov B (${immobilizeTimerB}s)`}
+                color="bg-red-500"
+                textColor="text-white"
+                onClick={() => {
+                  setImmobilizeTimerB(null);
+                  onControl(match.id, "START");
+                }}
+              />
             ) : (
-              <button
-                disabled={match.scoreB >= 2 || match.scoreA >= 2}
-                onClick={() => setImmobilizeTimerB(15)}
-                className="w-full py-3 bg-neutral-800 text-cb-yellow-neon font-tech font-black border-3 border-cb-black-pure uppercase hover:-translate-y-1 transition shadow-[2px_2px_0_#000] disabled:opacity-50"
-              >
-                Inmovilidad (15s)
-              </button>
+              <ActionButton
+                size="py-3"
+                icon={Timer}
+                label="Inmovilidad (15s)"
+                color="bg-neutral-800"
+                textColor="text-cb-yellow-neon"
+                disabled={
+                  !match.isActive || match.scoreB >= 2 || match.scoreA >= 2
+                }
+                onClick={() => {
+                  setImmobilizeTimerB(15);
+                  onControl(match.id, "PAUSE");
+                }}
+              />
             )}
           </div>
         </div>
@@ -539,6 +542,7 @@ export const MinisumoControl = ({
             label="Round Nulo"
             color="bg-white"
             textColor="text-cb-black-pure"
+            disabled={!match.isActive}
             onClick={() => {
               openConfirm(
                 "Round Nulo",

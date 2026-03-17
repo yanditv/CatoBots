@@ -1,5 +1,6 @@
-import { useState, useEffect, type ElementType } from "react";
+import { useState, useEffect } from "react";
 import { ConfirmModal } from "../../components/ConfirmModal";
+import { ActionButton } from "../../components/ActionButton";
 import {
   Play,
   Pause,
@@ -24,34 +25,7 @@ interface SumoControlProps {
   formatTime: (seconds: number) => string;
 }
 
-const ActionButton = ({
-  icon: Icon,
-  label,
-  onClick,
-  color,
-  textColor,
-  disabled,
-  className = "",
-  size = "py-5",
-}: {
-  icon: ElementType;
-  label: string;
-  onClick: () => void;
-  color: string;
-  textColor: string;
-  disabled?: boolean;
-  className?: string;
-  size?: string;
-}) => (
-  <button
-    disabled={disabled}
-    onClick={onClick}
-    className={`${color} ${textColor} w-full ${size} rounded-none border-3 border-cb-black-pure font-tech font-black uppercase text-xs md:text-sm flex flex-col items-center justify-center gap-1 md:gap-2 active:scale-95 transition-all duration-150 hover:-translate-y-1 hover:shadow-[4px_4px_0_#000] disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:translate-y-0 disabled:hover:shadow-none ${className}`}
-  >
-    <Icon size={24} strokeWidth={2.5} className="mb-1" />
-    <span className="leading-tight text-center px-1">{label}</span>
-  </button>
-);
+
 
 export const SumoControl = ({
   match,
@@ -395,7 +369,7 @@ export const SumoControl = ({
               label="Echar del Dohyo"
               color="bg-cb-green-vibrant"
               textColor="text-cb-black-pure"
-              disabled={match.scoreB >= 2 || match.scoreA >= 2}
+              disabled={!match.isActive || match.scoreB >= 2 || match.scoreA >= 2}
               onClick={() => {
                 openConfirm(
                   "Victoria de Round",
@@ -411,6 +385,7 @@ export const SumoControl = ({
               label={`Violación (${violationsA}/2)`}
               color="bg-cb-yellow-neon"
               textColor="text-cb-black-pure"
+              disabled={!match.isActive}
               onClick={() => addViolation("A")}
             />
 
@@ -420,6 +395,7 @@ export const SumoControl = ({
               label="Penalidad Grave"
               color="bg-red-500"
               textColor="text-white"
+              disabled={!match.isActive}
               onClick={() => {
                 openConfirm(
                   "Penalidad Grave",
@@ -436,20 +412,30 @@ export const SumoControl = ({
           {/* Immobilization */}
           <div className="w-full mt-auto">
             {immobilizeTimerA !== null ? (
-              <button
-                className="w-full py-3 bg-red-500 text-white font-tech font-black border-3 border-cb-black-pure uppercase active:scale-95 transition shadow-[2px_2px_0_#000]"
-                onClick={() => setImmobilizeTimerA(null)}
-              >
-                Cancel. Immov A ({immobilizeTimerA}s)
-              </button>
+              <ActionButton
+                size="py-3"
+                icon={StopCircle}
+                label={`Cancel. Immov A (${immobilizeTimerA}s)`}
+                color="bg-red-500"
+                textColor="text-white"
+                onClick={() => {
+                  setImmobilizeTimerA(null);
+                  onControl(match.id, "START");
+                }}
+              />
             ) : (
-              <button
-                disabled={match.scoreB >= 2 || match.scoreA >= 2}
-                onClick={() => setImmobilizeTimerA(15)}
-                className="w-full py-3 bg-neutral-800 text-cb-yellow-neon font-tech font-black border-3 border-cb-black-pure uppercase hover:-translate-y-1 transition shadow-[2px_2px_0_#000] disabled:opacity-50"
-              >
-                Inmovilidad/Volteo (15s)
-              </button>
+              <ActionButton
+                size="py-3"
+                icon={StopCircle}
+                label="Inmovilidad/Volteo (15s)"
+                color="bg-neutral-800"
+                textColor="text-cb-yellow-neon"
+                disabled={!match.isActive || match.scoreB >= 2 || match.scoreA >= 2}
+                onClick={() => {
+                  setImmobilizeTimerA(15);
+                  onControl(match.id, "PAUSE");
+                }}
+              />
             )}
           </div>
         </div>
@@ -481,7 +467,7 @@ export const SumoControl = ({
               label="Echar del Dohyo"
               color="bg-cb-green-vibrant"
               textColor="text-cb-black-pure"
-              disabled={match.scoreB >= 2 || match.scoreA >= 2}
+              disabled={!match.isActive || match.scoreB >= 2 || match.scoreA >= 2}
               onClick={() => {
                 openConfirm(
                   "Victoria de Round",
@@ -497,6 +483,7 @@ export const SumoControl = ({
               label={`Violación (${violationsB}/2)`}
               color="bg-cb-yellow-neon"
               textColor="text-cb-black-pure"
+              disabled={!match.isActive}
               onClick={() => addViolation("B")}
             />
 
@@ -506,6 +493,7 @@ export const SumoControl = ({
               label="Penalidad Grave"
               color="bg-red-500"
               textColor="text-white"
+              disabled={!match.isActive}
               onClick={() => {
                 openConfirm(
                   "Penalidad Grave",
@@ -521,20 +509,30 @@ export const SumoControl = ({
           {/* Immobilization */}
           <div className="w-full mt-auto">
             {immobilizeTimerB !== null ? (
-              <button
-                className="w-full py-3 bg-red-500 text-white font-tech font-black border-3 border-cb-black-pure uppercase active:scale-95 transition shadow-[2px_2px_0_#000]"
-                onClick={() => setImmobilizeTimerB(null)}
-              >
-                Cancel. Immov B ({immobilizeTimerB}s)
-              </button>
+              <ActionButton
+                size="py-3"
+                icon={StopCircle}
+                label={`Cancel. Immov B (${immobilizeTimerB}s)`}
+                color="bg-red-500"
+                textColor="text-white"
+                onClick={() => {
+                  setImmobilizeTimerB(null);
+                  onControl(match.id, "START");
+                }}
+              />
             ) : (
-              <button
-                disabled={match.scoreB >= 2 || match.scoreA >= 2}
-                onClick={() => setImmobilizeTimerB(15)}
-                className="w-full py-3 bg-neutral-800 text-cb-yellow-neon font-tech font-black border-3 border-cb-black-pure uppercase hover:-translate-y-1 transition shadow-[2px_2px_0_#000] disabled:opacity-50"
-              >
-                Inmovilidad/Volteo (15s)
-              </button>
+              <ActionButton
+                size="py-3"
+                icon={StopCircle}
+                label="Inmovilidad/Volteo (15s)"
+                color="bg-neutral-800"
+                textColor="text-cb-yellow-neon"
+                disabled={!match.isActive || match.scoreB >= 2 || match.scoreA >= 2}
+                onClick={() => {
+                  setImmobilizeTimerB(15);
+                  onControl(match.id, "PAUSE");
+                }}
+              />
             )}
           </div>
         </div>
@@ -548,6 +546,7 @@ export const SumoControl = ({
             label="Round Empatado"
             color="bg-white"
             textColor="text-cb-black-pure"
+            disabled={!match.isActive}
             onClick={() => {
               openConfirm(
                 "Round Sin Ganador",
