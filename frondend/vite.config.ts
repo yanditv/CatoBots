@@ -13,7 +13,7 @@ export default defineConfig({
     host: true,
     port: 5173,
     strictPort: true,
-    allowedHosts: ['catobots.teobu.com', 'localhost', '.teobu.com'],
+    allowedHosts: ['catobots.teobu.com', 'localhost', '.teobu.com', 'web.test'],
     proxy: {
       '/api': {
         target: apiTarget,

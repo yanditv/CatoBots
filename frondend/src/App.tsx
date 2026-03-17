@@ -5,10 +5,10 @@ import WizardForm from './pages/WizardForm/WizardForm'
 import LandingPage from './pages/Landing/LandingPage'
 import Dashboard from './pages/Dashboard'
 import RefereeControl from './pages/RefereeControl'
-import Registration from './pages/Registration'
 import Login from './pages/Login'
 import AdminPanel from './pages/Admin/AdminPanel'
 import Brackets from './pages/Brackets'
+import NotFound from './pages/NotFound'
 import { AuthProvider, useAuth } from './context/AuthContext'
 import { SOCKET_URL } from './config/api'
 
@@ -103,8 +103,9 @@ function AppContent() {
           </ProtectedRoute>
         } />
 
-        {/* Registration is now likely an Admin function, but keeping for now or moved to Admin */}
-        <Route path="/register" element={<Registration />} />
+        {/* 404 */}
+        <Route path="*" element={<NotFound />} />
+
       </Routes>
     </div>
   )

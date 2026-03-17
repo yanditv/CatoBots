@@ -114,6 +114,18 @@ const EventConfigPanel = ({ token }: { token: string | null }) => {
 
   const update = (key: string, value: string) => setConfig(prev => ({ ...prev, [key]: value }));
 
+  const toggleRegistration = async () => {
+    const newValue = config.registrationEnabled === 'false' ? 'true' : 'false';
+    const updated = { ...config, registrationEnabled: newValue };
+    setConfig(updated);
+    try {
+      const authHeader = { 'Authorization': `Bearer ${token}` };
+      await api.put('/api/event-config', { registrationEnabled: newValue }, { headers: authHeader });
+      setSaved(true);
+      setTimeout(() => setSaved(false), 2000);
+    } catch (err) { console.error(err); }
+  };
+
   const handleUpload = async (file: File, configKey: string) => {
     const formData = new FormData();
     formData.append('file', file);
@@ -167,6 +179,22 @@ const EventConfigPanel = ({ token }: { token: string | null }) => {
         <div className="space-y-1"><label className={labelCls}>Número de Cuenta</label><input value={config.accountNumber || ''} onChange={e => update('accountNumber', e.target.value)} className={inputCls} /></div>
         <div className="space-y-1"><label className={labelCls}>Beneficiario</label><input value={config.accountHolder || ''} onChange={e => update('accountHolder', e.target.value)} className={inputCls} /></div>
         <div className="space-y-1"><label className={labelCls}>Cédula del Beneficiario</label><input value={config.accountHolderId || ''} onChange={e => update('accountHolderId', e.target.value)} className={inputCls} /></div>
+      </div>
+
+      {/* 🔒 Control de Inscripciones */}
+      <div className="border-b-2 border-neutral-700 pb-2 mb-4 mt-6"><h3 className="text-xs font-tech font-black uppercase text-cb-yellow-neon tracking-widest">🔒 Control de Inscripciones</h3></div>
+      <div className="flex items-center justify-between p-4 bg-[#0a0a0a] border-2 border-neutral-700">
+        <div>
+          <p className="text-xs font-tech font-black uppercase text-cb-white-tech tracking-wider">Inscripciones Públicas</p>
+          <p className="text-[10px] font-tech text-neutral-500 mt-0.5">Habilita o deshabilita el formulario en /registro</p>
+        </div>
+        <button
+          type="button"
+          onClick={toggleRegistration}
+          className={`px-6 py-2 border-2 font-tech font-black text-xs uppercase tracking-wider transition-all duration-75 ${config.registrationEnabled === 'false' ? 'bg-red-500/10 border-red-500/40 text-red-400 hover:border-red-400' : 'bg-cb-green-vibrant/10 border-cb-green-vibrant/40 text-cb-green-vibrant hover:border-cb-green-vibrant'}`}
+        >
+          {config.registrationEnabled === 'false' ? 'CERRADAS' : 'ABIERTAS'}
+        </button>
       </div>
 
       {/* 📋 Indicaciones Generales */}
@@ -1123,7 +1151,7 @@ const AdminPanel = () => {
                         <label className="text-[10px] font-tech font-black text-neutral-500 uppercase tracking-widest">Categoría</label>
                         <select required disabled={!formData.level} value={formData.category || ''} className="w-full text-cb-white-tech bg-[#0a0a0a] border-2 border-neutral-700 p-4 appearance-none font-tech text-sm focus:border-cb-yellow-neon outline-none transition-all duration-75 disabled:opacity-40" onChange={e => setFormData({ ...formData, category: e.target.value })}>
                           <option value="">Seleccionar...</option>
-                          {formData.level && CATEGORIES_BY_LEVEL[formData.level].map(cat => <option key={cat} value={cat}>{cat}</option>)}
+                          {formData.level && (CATEGORIES_BY_LEVEL[formData.level] || []).map(cat => <option key={cat} value={cat}>{cat}</option>)}
                         </select>
                       </div>
 
@@ -1238,7 +1266,7 @@ const AdminPanel = () => {
                         <label className="text-[10px] font-tech font-black uppercase text-neutral-500 tracking-widest">Categoría</label>
                         <select required disabled={!formData.level} value={formData.category || ''} className="w-full bg-[#0a0a0a] border-2 border-neutral-700 p-4 text-sm font-tech text-cb-white-tech focus:border-cb-yellow-neon outline-none transition-all duration-75 placeholder:text-neutral-600 appearance-none text-sm" onChange={e => setFormData({ ...formData, category: e.target.value })}>
                           <option value="">Seleccionar...</option>
-                          {formData.level && CATEGORIES_BY_LEVEL[formData.level].map(cat => <option key={cat} value={cat}>{cat}</option>)}
+                          {formData.level && (CATEGORIES_BY_LEVEL[formData.level] || []).map(cat => <option key={cat} value={cat}>{cat}</option>)}
                         </select>
                       </div>
                       <div className="space-y-2">

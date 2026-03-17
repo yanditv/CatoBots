@@ -15,10 +15,12 @@ import Rules from "../Form/Regulations/rules";
 import AlertModal from "./AlertModal";
 import { Loader2 } from "lucide-react";
 import { api } from "../../config/api";
+import RegistrationClosed from "./RegistrationClosed";
 
 export default function WizardForm() {
     const { googleUser, loginGoogle } = useAuth();
     const [isLoading, setIsLoading] = useState(true);
+    const [configLoaded, setConfigLoaded] = useState(false);
     const [currentStep, setCurrentStep] = useState(1);
     const [showRules, setShowRules] = useState(false);
     const [alertConfig, setAlertConfig] = useState<{title: string, message: string, type: 'success' | 'warning' | 'error', onClose?: () => void} | null>(null);
@@ -106,7 +108,7 @@ export default function WizardForm() {
     useEffect(() => {
         api.get('/api/categories').then(res => res.json()).then(data => setCategories(data)).catch(err => console.error('Failed to fetch categories', err));
         api.get('/api/levels').then(res => res.json()).then(data => setLevels(data)).catch(err => console.error('Failed to fetch levels', err));
-        api.get('/api/event-config').then(res => res.json()).then(data => setEventConfig(data)).catch(err => console.error('Failed to fetch event config', err));
+        api.get('/api/event-config').then(res => res.json()).then(data => { setEventConfig(data); setConfigLoaded(true); }).catch(err => { console.error('Failed to fetch event config', err); setConfigLoaded(true); });
     }, []);
 
     const saveDraft = async (stepToSave: number) => {
@@ -196,12 +198,16 @@ export default function WizardForm() {
         return "ROBOTICA"; // Default
     };
 
-    if (isLoading) {
+    if (isLoading || !configLoaded) {
         return (
             <div className="min-h-screen bg-neutral-950 flex items-center justify-center">
                 <Loader2 className="animate-spin text-purple-500 w-10 h-10" />
             </div>
         );
+    }
+
+    if (eventConfig.registrationEnabled === 'false') {
+        return <RegistrationClosed contactEmail={eventConfig.contactEmail} />;
     }
 
     const steps = [
