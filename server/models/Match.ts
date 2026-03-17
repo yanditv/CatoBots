@@ -22,6 +22,7 @@ export class Match extends Model {
   declare nextMatchId: string | null;
   declare positionInNextMatch: 'A' | 'B' | null;
   declare showInDashboard: boolean;
+  declare roundWinners: string[];
 }
 
 Match.init({
@@ -34,6 +35,7 @@ Match.init({
   scoreB: { type: DataTypes.INTEGER, defaultValue: 0 },
   penaltiesA: { type: DataTypes.JSON, defaultValue: [] },
   penaltiesB: { type: DataTypes.JSON, defaultValue: [] },
+  roundWinners: { type: DataTypes.JSON, defaultValue: [] },
   timeLeft: { type: DataTypes.INTEGER, defaultValue: 180 },
   isActive: { type: DataTypes.BOOLEAN, defaultValue: false },
   isFinished: { type: DataTypes.BOOLEAN, defaultValue: false },

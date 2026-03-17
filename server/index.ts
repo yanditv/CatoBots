@@ -682,6 +682,7 @@ io.on('connection', (socket) => {
       case 'RESET':
         match.scoreA = 0; match.scoreB = 0;
         match.penaltiesA = []; match.penaltiesB = [];
+        match.roundWinners = [];
         match.timeLeft = typeof payload === 'number' ? payload : 180;
         match.isActive = false;
         match.isFinished = false;
@@ -753,6 +754,60 @@ io.on('connection', (socket) => {
           match.penaltiesB = [...match.penaltiesB, 'Prórroga'];
         }
         break;
+      
+      // MINISUMO & SUMO SPECIFIC AUDIT ACTIONS
+      case 'MS_ROUND_WIN': {
+        const winner = payload === 'A' ? 'Robot A' : (payload === 'B' ? 'Robot B' : 'Nadie');
+        if (payload === 'A') match.scoreA += 1;
+        if (payload === 'B') match.scoreB += 1;
+        match.roundWinners = [...match.roundWinners, payload];
+        logType = 'POINT';
+        logRobotId = payload === 'A' ? match.robotAId : (payload === 'B' ? match.robotBId : null);
+        logPoints = 1;
+        logDescription = `ROUND GANADO: ${winner} gana el asalto.`;
+        break;
+      }
+      case 'MS_VIOLATION': {
+        const robot = payload === 'A' ? 'Robot A' : 'Robot B';
+        logType = 'PENALTY';
+        logRobotId = payload === 'A' ? match.robotAId : match.robotBId;
+        logDescription = `VIOLACIÓN: ${robot} cometió una falta reglamentaria.`;
+        if (payload === 'A') match.penaltiesA = [...match.penaltiesA, 'Violación'];
+        else match.penaltiesB = [...match.penaltiesB, 'Violación'];
+        break;
+      }
+      case 'MS_GRAVE_PENALTY': {
+        const robot = payload === 'A' ? 'Robot A' : 'Robot B';
+        const opponent = payload === 'A' ? 'B' : 'A';
+        logType = 'STATE_CHANGE';
+        logDescription = `PENALIDAD GRAVE: ${robot} descalificado por falta grave. Victoria total para el oponente.`;
+        
+        // Disqualify: Opponent gets ideal score (3 rounds)
+        if (payload === 'A') {
+          match.scoreA = 0;
+          match.scoreB = 3;
+          match.roundWinners = ['B', 'B', 'B'];
+          match.winnerId = match.robotBId as any;
+          match.penaltiesA = [...match.penaltiesA, 'Falta Grave/Descalificación'];
+        } else {
+          match.scoreB = 0;
+          match.scoreA = 3;
+          match.roundWinners = ['A', 'A', 'A'];
+          match.winnerId = match.robotAId as any;
+          match.penaltiesB = [...match.penaltiesB, 'Falta Grave/Descalificación'];
+        }
+        match.isFinished = true;
+        match.isActive = false;
+        break;
+      }
+      case 'MS_IMMOBILIZATION_START':
+        match.isActive = false;
+        logType = 'TIMER';
+        const msRobotLabel = payload === 'A' ? 'Robot A' : 'Robot B';
+        logRobotId = payload === 'A' ? match.robotAId : match.robotBId;
+        logDescription = `PAUSA: Iniciado conteo de inmovilidad/volteo para ${msRobotLabel} (15s)`;
+        break;
+
       case 'BB_IMMOBILIZATION_START':
         match.isActive = false;
         logType = 'TIMER';
@@ -769,6 +824,23 @@ io.on('connection', (socket) => {
         logDescription = `RENDICIÓN: ${loser} se ha rendido o tiene desperfecto grave`;
         if (payload === 'A') match.winnerId = match.robotBId as any;
         else match.winnerId = match.robotAId as any;
+        break;
+      
+      // BIOBOTS SPECIFIC AUDIT ACTIONS
+      case 'BIO_OBJECT_START':
+        logType = 'SYSTEM_EVENT';
+        logDescription = `BIOBOTS: Iniciado intento de levantamiento - Objeto ${payload.objectId} (Intento ${payload.attemptId})`;
+        break;
+      case 'BIO_OBJECT_RESULT':
+        logType = payload.success ? 'POINT' : 'SYSTEM_EVENT';
+        logRobotId = match.robotAId;
+        logPoints = payload.points || 0;
+        logDescription = `BIOBOTS: Resultado Objeto ${payload.objectId} - ${payload.success ? 'ÉXITO' : 'FALLO'} (Intento ${payload.attemptId}). Puntos: ${logPoints}`;
+        if (payload.success) match.scoreA += logPoints;
+        break;
+      case 'BIO_REST_START':
+        logType = 'TIMER';
+        logDescription = `BIOBOTS: Iniciado descanso de 5 min tras Objeto ${payload.objectId}`;
         break;
 
       case 'FINISH':
@@ -797,6 +869,35 @@ io.on('connection', (socket) => {
           }
         }
         break;
+
+      // MAZE SPECIFIC AUDIT ACTIONS
+      case 'MAZE_START':
+        logType = 'STATE_CHANGE';
+        logDescription = `LABERINTO: Iniciado Intento ${payload.attemptId}`;
+        match.isActive = true;
+        break;
+      case 'MAZE_FINISH':
+        logType = 'POINT';
+        logPoints = payload.timeTaken;
+        logDescription = `LABERINTO: Meta alcanzada en Intento ${payload.attemptId}. Tiempo Base: ${payload.baseTime}s, Penalizaciones: ${payload.penaltyTime}s. Total: ${payload.timeTaken}s`;
+        match.isActive = false;
+        break;
+      case 'MAZE_RESTART':
+        logType = 'PENALTY';
+        logDescription = `LABERINTO: Rearranque en Intento ${payload.attemptId} (+15s).`;
+        break;
+      case 'MAZE_FAULT':
+        logType = 'SYSTEM_EVENT';
+        logDescription = `LABERINTO: Falta registrada: ${payload.reason}`;
+        break;
+      case 'MAZE_DISQUALIFY':
+        logType = 'STATE_CHANGE';
+        logDescription = `LABERINTO: DESCALIFICACIÓN - ${payload.reason}`;
+        match.isActive = false;
+        match.isFinished = true;
+        match.winnerId = null as any; 
+        break;
+
       case 'REVEAL_WINNER':
         io.emit('trigger_reveal_winner', { matchId: match.id });
         break;

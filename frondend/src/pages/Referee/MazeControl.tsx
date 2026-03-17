@@ -127,6 +127,7 @@ export const MazeControl = ({
     }
 
     onControl(match.id, "PAUSE");
+    onControl(match.id, "MAZE_RESTART", { attemptId: currentAttempt });
     openConfirm(
       "Rearranque (+15s)",
       "El robot será recolocado en la zona de rearranque anterior más cercana. El cronómetro está pausado, reanúdalo cuando estés listo.",
@@ -136,7 +137,7 @@ export const MazeControl = ({
           [currentAttempt]: {
             ...prev[currentAttempt],
             restarts: prev[currentAttempt].restarts + 1,
-            faults: prev[currentAttempt].faults + 1, // Rearranque cuenta también como falta visualmente, o podemos mantenerlo separado
+            faults: prev[currentAttempt].faults + 1,
           },
         }));
       },
@@ -149,6 +150,7 @@ export const MazeControl = ({
       "Registrar Falta",
       `¿Registrar falta por: ${reason}? Esto afectará la calificación final del intento.`,
       () => {
+        onControl(match.id, "MAZE_FAULT", { reason });
         setAttemptScores((prev) => ({
           ...prev,
           [currentAttempt]: {
@@ -161,21 +163,26 @@ export const MazeControl = ({
     );
   };
 
-  const calcCurrentAttemptTime = () => {
-    if (match.timeLeft === 0) return 0; // Descalificado
-    const timeTaken =
-      MAX_TIME - match.timeLeft + attemptScores[currentAttempt].restarts * 15;
-    return timeTaken;
-  };
+
 
   const finishAttempt = () => {
     onControl(match.id, "PAUSE");
-    const finalTime = calcCurrentAttemptTime();
+    const baseTime = MAX_TIME - match.timeLeft;
+    const penaltyTime = attemptScores[currentAttempt].restarts * 15;
+    const finalTotalTime = baseTime + penaltyTime;
+
+    onControl(match.id, "MAZE_FINISH", {
+      attemptId: currentAttempt,
+      baseTime: baseTime,
+      penaltyTime: penaltyTime,
+      timeTaken: finalTotalTime,
+    });
+
     setAttemptScores((prev) => ({
       ...prev,
       [currentAttempt]: {
         ...prev[currentAttempt],
-        time: finalTime,
+        time: finalTotalTime,
       },
     }));
   };
@@ -242,7 +249,11 @@ export const MazeControl = ({
           className={`flex-shrink-0 w-16 h-12 flex items-center justify-center border-2 border-cb-black-pure shadow-[2px_2px_0_#000] active:scale-95 transition-all ${match.isActive ? "bg-cb-yellow-neon text-cb-black-pure" : "bg-cb-green-vibrant text-cb-black-pure"}`}
           onClick={() => {
             if (repairTimer !== null && isRepairRunning) return;
-            onControl(match.id, match.isActive ? "PAUSE" : "START");
+            if (!match.isActive) {
+              onControl(match.id, "MAZE_START", { attemptId: currentAttempt });
+            } else {
+              onControl(match.id, "PAUSE");
+            }
           }}
         >
           {match.isActive ? (
@@ -364,12 +375,11 @@ export const MazeControl = ({
             textColor="text-white"
             onClick={() => {
               openConfirm(
-                "Retiro",
-                "¿El equipo solicitó retiro voluntario?",
+                "Retiro de Competencia",
+                "¿Confirmar retiro voluntario? El capitán ha declarado que el robot no puede continuar.",
                 () => {
-                  onControl(match.id, "PAUSE");
+                  onControl(match.id, "MAZE_DISQUALIFY", { reason: "Retiro Voluntario" });
                   setShowMoreActions(false);
-                  openConfirm("Retiro Confirmado", "RETIRO REGISTRADO EXITOSAMENTE.", () => {}, "info");
                 },
                 "danger",
               );
@@ -470,20 +480,20 @@ export const MazeControl = ({
                   );
                 }}
               />
-              <ActionButton
+               <ActionButton
                 size="py-2"
                 icon={XCircle}
-                label="Eliminar Equipo (Grave)"
+                label="Descalificación Automática"
                 color="bg-red-500"
                 textColor="text-white"
-                className="text-xs"
-                disabled={!match.isActive}
+                className="text-[10px]"
+                disabled={match.isFinished}
                 onClick={() => {
                   openConfirm(
                     "Penalización Grave",
-                    "Eliminación automática por daños al área, agresión o fraude. ¿Proceder?",
+                    "Eliminación automática por daños al área, agresión, fraude o manipulación externa. ¿Proceder?",
                     () => {
-                      onControl(match.id, "PAUSE");
+                      onControl(match.id, "MAZE_DISQUALIFY", { reason: "Falta Grave / Manipulación" });
                     },
                     "danger",
                   );

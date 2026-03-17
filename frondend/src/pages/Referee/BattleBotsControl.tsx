@@ -202,7 +202,7 @@ export const BattleBotsControl = ({
 
         <div className="flex-1 h-12 flex items-center justify-center border-2 border-cb-black-pure bg-cb-black-pure shadow-[2px_2px_0_#CBFF00] relative">
           <span className="absolute top-0 left-1 text-[10px] text-cb-green-vibrant font-tech">
-            {isSuddenDeath ? "MUERTE SÚBITA" : "BATTLEBOTS 1LB"}
+            {isSuddenDeath ? "MUERTE SÚBITA" : match.category.toUpperCase()}
           </span>
           <div
             className={`font-mono font-black text-3xl tracking-widest ${match.timeLeft <= 10 ? "text-red-500 animate-pulse" : "text-cb-white-tech"}`}

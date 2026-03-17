@@ -11,10 +11,10 @@ import {
   LogOut,
   Terminal,
   Trophy,
+  Clock,
 } from "lucide-react";
 import type { MatchState } from "../App";
 import { useAuth } from "../context/AuthContext";
-import { CombatControl } from "./Referee/CombatControl";
 import { MinisumoControl } from "./Referee/MinisumoControl";
 import { MazeControl } from "./Referee/MazeControl";
 import { BioBotsControl } from "./Referee/BioBotsControl";
@@ -206,58 +206,74 @@ const RefereeControl = ({ matches, onControl }: RefereeControlProps) => {
 
   if (!selectedMatch) {
     return (
-      <div className="min-h-screen bg-cb-green-vibrant bg-noise p-4 md:p-8 flex flex-col">
+      <div className="min-h-screen bg-cb-green-vibrant bg-noise p-2 sm:p-4 md:p-8 flex flex-col items-center">
         {/* Header */}
-        <header className="flex justify-between items-center mb-8">
+        <header className="w-full max-w-4xl flex flex-col sm:flex-row justify-between items-center gap-4 mb-6 sm:mb-10">
           <div className="flex items-center gap-3 md:gap-4">
-            <div className="w-20 md:w-32 h-auto flex items-center justify-center p-2">
+            <div className="w-16 sm:w-20 md:w-28 h-auto flex items-center justify-center p-1 sm:p-2 bg-cb-black-pure border-2 border-cb-black-pure shadow-[3px_3px_0_#CBFF00]">
               <img
                 src="/logo-yellow.png"
                 alt="Logo"
-                className="w-full h-full object-contain drop-shadow-[4px_4px_0_#000]"
+                className="w-full h-full object-contain"
               />
             </div>
-            <div>
-              <h1 className="text-lg md:text-2xl text-cb-black-pure font-tech font-black uppercase tracking-wider">
-                Control <span className="text-cb-yellow-neon">Árbitro</span>
+            <div className="text-left">
+              <h1 className="text-xl sm:text-2xl md:text-3xl text-cb-black-pure font-tech font-black uppercase tracking-tighter leading-none">
+                Control <span className="bg-cb-black-pure text-cb-yellow-neon px-1">Árbitro</span>
               </h1>
-              <p className="text-xs md:text-sm font-tech font-bold text-cb-black-pure uppercase">
-                Panel de Operaciones
+              <p className="text-[10px] sm:text-xs font-tech font-bold text-cb-black-pure uppercase mt-1 opacity-80">
+                Operaciones del Torneo v4.0
               </p>
             </div>
           </div>
           <button
             onClick={logout}
-            className="p-3 bg-cb-black-pure border-3 border-cb-black-pure text-cb-white-tech hover:bg-red-600 hover:text-white transition-colors shadow-block-sm"
+            className="w-full sm:w-auto px-6 py-3 bg-cb-black-pure border-3 border-cb-black-pure text-cb-white-tech hover:bg-red-600 hover:text-white transition-all flex items-center justify-center gap-2 font-tech font-black uppercase text-xs shadow-block-sm active:translate-x-1 active:translate-y-1 active:shadow-none"
           >
-            <LogOut size={20} strokeWidth={2.5} />
+            <LogOut size={16} strokeWidth={2.5} />
+            Cerrar Sesión
           </button>
         </header>
 
-        <div className="flex-1 max-w-2xl mx-auto w-full">
-          <h2 className="text-xs md:text-sm font-tech font-black text-cb-black-pure uppercase mb-4 px-2">
-            Encuentros Asignados
+        <div className="w-full max-w-4xl flex-1 flex flex-col">
+          <h2 className="text-[10px] sm:text-xs font-tech font-black text-cb-black-pure uppercase mb-4 px-1 opacity-60">
+            Bitácora de Encuentros Asignados
           </h2>
-          <div className="flex flex-wrap items-center gap-2 mb-4 px-2">
-            <span className="text-[10px] md:text-xs font-tech font-black uppercase px-2 py-1 border-2 border-cb-black-pure bg-cb-yellow-neon text-cb-black-pure">
-              Total: {myMatches.length}
-            </span>
-            <span className="text-[10px] md:text-xs font-tech font-black uppercase px-2 py-1 border-2 border-cb-black-pure bg-red-600 text-white">
-              En vivo:{" "}
-              {myMatches.filter((m) => m.isActive && !m.isFinished).length}
-            </span>
-            <span className="text-[10px] md:text-xs font-tech font-black uppercase px-2 py-1 border-2 border-cb-black-pure bg-cb-black-pure text-cb-yellow-neon">
-              Finalizados: {myMatches.filter((m) => m.isFinished).length}
-            </span>
+          
+          {/* Quick Stats Dashboard */}
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-6 px-1">
+            <div className="bg-cb-white-tech border-2 border-cb-black-pure p-2 md:p-3 shadow-[2px_2px_0_#000]">
+                <p className="text-[8px] font-tech font-black text-cb-black-pure/50 uppercase">Asignados</p>
+                <p className="text-xl font-tech font-black text-cb-black-pure">{myMatches.length}</p>
+            </div>
+            <div className="bg-cb-black-pure border-2 border-cb-black-pure p-2 md:p-3 shadow-[2px_2px_0_#CBFF00]">
+                <p className="text-[8px] font-tech font-black text-cb-yellow-neon/60 uppercase">En Vivo</p>
+                <p className="text-xl font-tech font-black text-cb-yellow-neon">
+                  {myMatches.filter((m) => m.isActive && !m.isFinished).length}
+                </p>
+            </div>
+            <div className="bg-neutral-800 border-2 border-cb-black-pure p-2 md:p-3 shadow-[2px_2px_0_#000]">
+                <p className="text-[8px] font-tech font-black text-white/50 uppercase">Terminados</p>
+                <p className="text-xl font-tech font-black text-white">
+                  {myMatches.filter((m) => m.isFinished).length}
+                </p>
+            </div>
+            <div className="bg-cb-yellow-neon border-2 border-cb-black-pure p-2 md:p-3 shadow-[2px_2px_0_#000]">
+                <p className="text-[8px] font-tech font-black text-cb-black-pure/50 uppercase">Pendientes</p>
+                <p className="text-xl font-tech font-black text-cb-black-pure">
+                  {myMatches.filter((m) => !m.isActive && !m.isFinished).length}
+                </p>
+            </div>
           </div>
-          {myMatches.length > 0 && (
-            <div className="flex flex-wrap items-center gap-2 mb-4 px-2">
-              <span className="text-[10px] md:text-xs font-tech font-black uppercase text-cb-black-pure">
+
+          <div className="mb-8 overflow-x-auto pb-2 scrollbar-hide">
+            <div className="flex items-center gap-2 min-w-max px-1">
+              <span className="text-[10px] font-tech font-black uppercase text-cb-black-pure whitespace-nowrap mr-2">
                 Filtrar fase:
               </span>
               <button
                 onClick={() => setPhaseFilter("all")}
-                className={`px-2 py-1 border-2 border-cb-black-pure font-tech font-black uppercase text-[10px] md:text-xs ${phaseFilter === "all" ? "bg-cb-yellow-neon text-cb-black-pure" : "bg-cb-white-tech text-cb-black-pure"}`}
+                className={`px-3 py-1.5 border-2 border-cb-black-pure font-tech font-black uppercase text-[10px] transition-all ${phaseFilter === "all" ? "bg-cb-black-pure text-cb-yellow-neon shadow-[3px_3px_0_#CBFF00]" : "bg-cb-white-tech text-cb-black-pure shadow-[2px_2px_0_#000]"}`}
               >
                 Todas ({myMatches.length})
               </button>
@@ -265,26 +281,25 @@ const RefereeControl = ({ matches, onControl }: RefereeControlProps) => {
                 <button
                   key={group.phase}
                   onClick={() => setPhaseFilter(group.phase)}
-                  className={`px-2 py-1 border-2 border-cb-black-pure font-tech font-black uppercase text-[10px] md:text-xs ${phaseFilter === group.phase ? "bg-cb-yellow-neon text-cb-black-pure" : "bg-cb-white-tech text-cb-black-pure"}`}
+                  className={`px-3 py-1.5 border-2 border-cb-black-pure font-tech font-black uppercase text-[10px] transition-all ${phaseFilter === group.phase ? "bg-cb-black-pure text-cb-yellow-neon shadow-[3px_3px_0_#CBFF00]" : "bg-cb-white-tech text-cb-black-pure shadow-[2px_2px_0_#000]"}`}
                 >
                   {group.label} ({group.matches.length})
                 </button>
               ))}
             </div>
-          )}
-          <div className="grid gap-4 md:gap-5">
+          </div>
+
+          <div className="grid gap-6 md:gap-8 min-h-[40vh] mb-8">
             {myMatches.length > 0 ? (
               filteredGroups.map((phaseGroup) => (
-                <section key={phaseGroup.phase} className="space-y-3">
-                  <div className="flex items-center justify-between px-1">
-                    <h3 className="text-xs md:text-sm font-tech font-black uppercase text-cb-black-pure">
+                <section key={phaseGroup.phase} className="space-y-4">
+                  <div className="flex items-center gap-3 border-l-8 border-cb-black-pure pl-3">
+                    <h3 className="text-sm md:text-lg font-tech font-black uppercase text-cb-black-pure italic tracking-tighter">
                       Fase: {phaseGroup.label}
                     </h3>
-                    <span className="text-[10px] md:text-xs font-tech font-black uppercase px-2 py-1 border-2 border-cb-black-pure bg-cb-white-tech text-cb-black-pure">
-                      {phaseGroup.matches.length} encuentros
-                    </span>
+                    <div className="h-[2px] flex-1 bg-cb-black-pure/10" />
                   </div>
-                  <div className="grid gap-3 md:gap-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     {phaseGroup.matches.map((m) => {
                       const visualStatus = getMatchVisualStatus(m);
                       const status = statusConfig[visualStatus];
@@ -294,49 +309,57 @@ const RefereeControl = ({ matches, onControl }: RefereeControlProps) => {
                         <button
                           key={m.id}
                           onClick={() => setSelectedMatchId(m.id)}
-                          className="bg-cb-white-tech border-4 border-cb-black-pure p-4 md:p-5 flex justify-between items-center gap-3 shadow-block-sm hover:translate-x-1 hover:translate-y-1 hover:shadow-none transition-all duration-150 group"
+                          className="bg-cb-white-tech border-4 border-cb-black-pure p-4 sm:p-5 flex justify-between items-center gap-4 shadow-block-sm hover:translate-x-1 hover:translate-y-1 hover:shadow-none transition-all duration-150 group relative overflow-hidden"
                         >
+                          {m.isActive && !m.isFinished && (
+                              <div className="absolute top-0 right-0 p-1 bg-red-600 text-white font-tech font-black text-[7px] uppercase tracking-widest px-2">LIVE NOW</div>
+                          )}
                           <div className="text-left min-w-0 flex-1">
-                            <div className="flex flex-wrap items-center gap-2 mb-2">
-                              <span className="text-[10px] md:text-xs font-tech font-black text-cb-yellow-neon uppercase bg-cb-black-pure px-2 py-1 border-2 border-cb-black-pure">
-                                {m.category || "Sin categoría"} |{" "}
-                                {m.round || "Sin ronda"}
+                            <div className="flex flex-wrap items-center gap-1.5 mb-3">
+                              <span className="text-[8px] md:text-[10px] font-tech font-black text-cb-yellow-neon uppercase bg-cb-black-pure px-2 py-0.5 border-2 border-cb-black-pure">
+                                {m.category || "---"}
+                              </span>
+                              <span className="text-[8px] md:text-[10px] font-tech font-black text-cb-black-pure uppercase bg-transparent px-2 py-0.5 border-2 border-cb-black-pure opacity-40">
+                                {m.round || "---"}
                               </span>
                               <span
-                                className={`text-[10px] md:text-xs font-tech font-black uppercase px-2 py-1 border-2 ${status.className}`}
+                                className={`text-[8px] md:text-[10px] font-tech font-black uppercase px-2 py-0.5 border-2 ${status.className}`}
                               >
                                 {status.label}
                               </span>
                             </div>
-                            <p className="text-base md:text-2xl font-tech font-black text-cb-black-pure group-hover:text-cb-yellow-neon transition-colors truncate">
-                              {m.robotA?.name || "---"}{" "}
-                              <span className="text-cb-black-pure mx-1">
-                                VS
-                              </span>{" "}
-                              {m.robotB?.name || "---"}
-                            </p>
-                            <div className="mt-2 flex flex-wrap items-center gap-2 text-[10px] md:text-xs font-tech font-bold uppercase">
-                              <span className="px-2 py-1 bg-cb-black-pure border-2 border-cb-black-pure text-cb-yellow-neon">
-                                Tiempo: {formatTime(m.timeLeft)}
+                            
+                            <div className="flex flex-col gap-1">
+                                <p className="text-lg md:text-xl font-tech font-black text-cb-black-pure group-hover:text-neutral-600 transition-colors truncate">
+                                    {m.robotA?.name || "???"}
+                                </p>
+                                <div className="flex items-center gap-2">
+                                    <div className="h-[1px] w-4 bg-cb-black-pure opacity-30" />
+                                    <span className="text-[10px] font-tech font-bold text-cb-black-pure/40 italic">VS</span>
+                                    <div className="h-[1px] flex-1 bg-cb-black-pure opacity-30" />
+                                </div>
+                                <p className="text-lg md:text-xl font-tech font-black text-cb-black-pure group-hover:text-neutral-600 transition-colors truncate">
+                                    {m.robotB?.name || "???"}
+                                </p>
+                            </div>
+
+                            <div className="mt-4 flex flex-wrap items-center gap-2 text-[9px] font-tech font-black uppercase">
+                              <span className="px-2 py-1 bg-neutral-100 border-2 border-cb-black-pure text-cb-black-pure flex items-center gap-1">
+                                <Clock size={10} strokeWidth={3} /> {formatTime(m.timeLeft)}
                               </span>
                               <span className="px-2 py-1 bg-cb-black-pure border-2 border-cb-black-pure text-cb-yellow-neon">
-                                Score: {m.scoreA} - {m.scoreB}
-                              </span>
-                              <span className="px-2 py-1 bg-cb-black-pure border-2 border-cb-black-pure text-cb-yellow-neon">
-                                Faltas:{" "}
-                                {m.penaltiesA.length + m.penaltiesB.length}
+                                RESULT: {m.scoreA} - {m.scoreB}
                               </span>
                               {!hasCompetitors && (
-                                <span className="px-2 py-1 bg-neutral-200 border-2 border-cb-black-pure text-cb-black-pure">
-                                  Pendiente de competidores
+                                <span className="px-2 py-1 bg-red-100 border-2 border-red-200 text-red-600">
+                                  WAITING COMPETITORS
                                 </span>
                               )}
                             </div>
                           </div>
-                          <ChevronLeft
-                            size={24}
-                            className="rotate-180 text-cb-black-pure group-hover:text-cb-yellow-neon transition-colors shrink-0"
-                          />
+                          <div className="hidden sm:flex flex-col items-center justify-center p-3 border-2 border-cb-black-pure bg-cb-black-pure text-cb-yellow-neon group-hover:bg-cb-yellow-neon group-hover:text-cb-black-pure transition-colors shrink-0 shadow-[2px_2px_0_#CBFF00]">
+                             <ChevronLeft size={18} className="rotate-180" strokeWidth={4} />
+                          </div>
                         </button>
                       );
                     })}
@@ -344,14 +367,14 @@ const RefereeControl = ({ matches, onControl }: RefereeControlProps) => {
                 </section>
               ))
             ) : (
-              <div className="p-8 md:p-12 text-center bg-cb-black-pure border-4 border-cb-black-pure shadow-block-sm">
+              <div className="p-8 md:p-12 text-center bg-cb-black-pure border-4 border-cb-black-pure shadow-divider">
                 <Terminal
                   size={32}
-                  className="mx-auto mb-4 text-cb-yellow-neon"
+                  className="mx-auto mb-4 text-cb-yellow-neon animate-pulse"
                   strokeWidth={2.5}
                 />
-                <p className="text-cb-white-tech font-tech font-bold uppercase">
-                  No tienes encuentros asignados para hoy.
+                <p className="text-cb-white-tech font-tech font-black uppercase text-sm tracking-widest">
+                  STREAMS OFFLINE: NO MATCHES ASSIGNED
                 </p>
               </div>
             )}
@@ -445,18 +468,9 @@ const RefereeControl = ({ matches, onControl }: RefereeControlProps) => {
       {/* Category Specific Controls */}
       {(() => {
         const cat = (selectedMatch.category || "").toLowerCase();
-        if (cat.includes("battlebots")) {
+        if (cat.includes("battlebots") || cat.includes("palitos")) {
           return (
             <BattleBotsControl
-              match={selectedMatch}
-              onControl={onControl}
-              formatTime={formatTime}
-            />
-          );
-        }
-        if (cat.includes("palitos")) {
-          return (
-            <CombatControl
               match={selectedMatch}
               onControl={onControl}
               formatTime={formatTime}

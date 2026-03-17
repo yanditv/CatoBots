@@ -35,6 +35,7 @@ export interface MatchState {
   showInDashboard: boolean;
   winnerId: string | null;
   refereeId: string | null;
+  roundWinners?: string[];
 }
 
 let socket: Socket;

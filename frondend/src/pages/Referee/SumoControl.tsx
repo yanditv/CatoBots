@@ -97,7 +97,7 @@ export const SumoControl = ({
 
   const handleRoundWin = (who: "A" | "B" | "NULL") => {
     if (who !== "NULL") {
-      onControl(match.id, `ADD_SCORE_${who}`, 1);
+      onControl(match.id, "MS_ROUND_WIN", who);
     }
     onControl(match.id, "PAUSE");
     onControl(match.id, "SET_TIME", 60);
@@ -169,9 +169,29 @@ export const SumoControl = ({
         "danger",
       );
     } else {
-      if (who === "A") setViolationsA((v) => v + 1);
-      else setViolationsB((v) => v + 1);
+      if (who === "A") {
+        setViolationsA((v) => v + 1);
+        onControl(match.id, "MS_VIOLATION", "A");
+      } else {
+        setViolationsB((v) => v + 1);
+        onControl(match.id, "MS_VIOLATION", "B");
+      }
     }
+  };
+
+  const handleGravePenalty = (who: "A" | "B") => {
+    const robotName = who === "A" ? match.robotA?.name || "Robot A" : match.robotB?.name || "Robot B";
+    const opponentLabel = who === "A" ? (match.robotB?.name || "Robot B") : (match.robotA?.name || "Robot A");
+
+    openConfirm(
+      "Penalidad Grave",
+      `¿Aplicar penalidad grave a ${robotName}? Perderá el combate automáticamente y ${opponentLabel} será declarado ganador con puntaje ideal.`,
+      () => {
+        onControl(match.id, "PAUSE");
+        onControl(match.id, "MS_GRAVE_PENALTY", who);
+      },
+      "danger"
+    );
   };
 
   return (
@@ -349,17 +369,28 @@ export const SumoControl = ({
           </h2>
 
           <div className="flex gap-2 justify-center my-3 w-full bg-cb-white-tech border-3 border-cb-black-pure py-2">
-            {[1, 2, 3].map((r) => (
-              <CircleDot
-                key={r}
-                size={32}
-                className={
-                  r <= match.scoreA
-                    ? "text-cb-green-vibrant fill-cb-green-vibrant drop-shadow-[2px_2px_0_#000]"
-                    : "text-neutral-800"
-                }
-              />
-            ))}
+            {[1, 2, 3].map((r) => {
+              const winner = match.roundWinners?.[r - 1];
+              const isWon = winner === 'A';
+              const isLost = winner === 'B';
+              const isNull = winner === 'NULL';
+
+              return (
+                <CircleDot
+                  key={r}
+                  size={32}
+                  className={
+                    isWon
+                      ? "text-cb-green-vibrant fill-cb-green-vibrant drop-shadow-[2px_2px_0_#000]"
+                      : isLost
+                        ? "text-red-500 fill-red-500 drop-shadow-[2px_2px_0_#000]"
+                        : isNull
+                          ? "text-neutral-500 fill-neutral-500 opacity-50"
+                          : "text-neutral-400 opacity-20"
+                  }
+                />
+              );
+            })}
           </div>
 
           <div className="grid grid-cols-3 gap-2 w-full mb-3">
@@ -369,7 +400,7 @@ export const SumoControl = ({
               label="Echar del Dohyo"
               color="bg-cb-green-vibrant"
               textColor="text-cb-black-pure"
-              disabled={!match.isActive || match.scoreB >= 2 || match.scoreA >= 2}
+              disabled={!match.isActive || match.isFinished || match.scoreB >= 2 || match.scoreA >= 2}
               onClick={() => {
                 openConfirm(
                   "Victoria de Round",
@@ -385,7 +416,7 @@ export const SumoControl = ({
               label={`Violación (${violationsA}/2)`}
               color="bg-cb-yellow-neon"
               textColor="text-cb-black-pure"
-              disabled={!match.isActive}
+              disabled={!match.isActive || match.isFinished}
               onClick={() => addViolation("A")}
             />
 
@@ -395,17 +426,8 @@ export const SumoControl = ({
               label="Penalidad Grave"
               color="bg-red-500"
               textColor="text-white"
-              disabled={!match.isActive}
-              onClick={() => {
-                openConfirm(
-                  "Penalidad Grave",
-                  "Descalificación del combate por daño intencional, separación, líquidos o insultos. ¿Proceder?",
-                  () => {
-                    openConfirm("Combate Finalizado", "ROBOT A PIERDE EL COMBATE DIRECTAMENTE.", () => {}, "danger");
-                  },
-                  "danger",
-                );
-              }}
+              disabled={!match.isActive || match.isFinished}
+              onClick={() => handleGravePenalty("A")}
             />
           </div>
 
@@ -433,7 +455,7 @@ export const SumoControl = ({
                 disabled={!match.isActive || match.scoreB >= 2 || match.scoreA >= 2}
                 onClick={() => {
                   setImmobilizeTimerA(15);
-                  onControl(match.id, "PAUSE");
+                  onControl(match.id, "MS_IMMOBILIZATION_START", "A");
                 }}
               />
             )}
@@ -447,17 +469,28 @@ export const SumoControl = ({
           </h2>
 
           <div className="flex gap-2 justify-center my-3 w-full bg-cb-white-tech border-3 border-cb-black-pure py-2">
-            {[1, 2, 3].map((r) => (
-              <CircleDot
-                key={r}
-                size={32}
-                className={
-                  r <= match.scoreB
-                    ? "text-cb-green-vibrant fill-cb-green-vibrant drop-shadow-[2px_2px_0_#000]"
-                    : "text-neutral-800"
-                }
-              />
-            ))}
+            {[1, 2, 3].map((r) => {
+              const winner = match.roundWinners?.[r - 1];
+              const isWon = winner === 'B';
+              const isLost = winner === 'A';
+              const isNull = winner === 'NULL';
+
+              return (
+                <CircleDot
+                  key={r}
+                  size={32}
+                  className={
+                    isWon
+                      ? "text-cb-green-vibrant fill-cb-green-vibrant drop-shadow-[2px_2px_0_#000]"
+                      : isLost
+                        ? "text-red-500 fill-red-500 drop-shadow-[2px_2px_0_#000]"
+                        : isNull
+                          ? "text-neutral-500 fill-neutral-500 opacity-50"
+                          : "text-neutral-400 opacity-20"
+                  }
+                />
+              );
+            })}
           </div>
 
           <div className="grid grid-cols-3 gap-2 w-full mb-3">
@@ -467,7 +500,7 @@ export const SumoControl = ({
               label="Echar del Dohyo"
               color="bg-cb-green-vibrant"
               textColor="text-cb-black-pure"
-              disabled={!match.isActive || match.scoreB >= 2 || match.scoreA >= 2}
+              disabled={!match.isActive || match.isFinished || match.scoreB >= 2 || match.scoreA >= 2}
               onClick={() => {
                 openConfirm(
                   "Victoria de Round",
@@ -483,7 +516,7 @@ export const SumoControl = ({
               label={`Violación (${violationsB}/2)`}
               color="bg-cb-yellow-neon"
               textColor="text-cb-black-pure"
-              disabled={!match.isActive}
+              disabled={!match.isActive || match.isFinished}
               onClick={() => addViolation("B")}
             />
 
@@ -493,17 +526,8 @@ export const SumoControl = ({
               label="Penalidad Grave"
               color="bg-red-500"
               textColor="text-white"
-              disabled={!match.isActive}
-              onClick={() => {
-                openConfirm(
-                  "Penalidad Grave",
-                  "Descalificación del combate por daño intencional, separación, líquidos o insultos. ¿Proceder?",
-                  () => {
-                    openConfirm("Combate Finalizado", "ROBOT B PIERDE EL COMBATE DIRECTAMENTE.", () => {}, "danger");
-                  },
-                  "danger",
-                );
-              }}
+              disabled={!match.isActive || match.isFinished}
+              onClick={() => handleGravePenalty("B")}
             />
           </div>
           {/* Immobilization */}
@@ -530,7 +554,7 @@ export const SumoControl = ({
                 disabled={!match.isActive || match.scoreB >= 2 || match.scoreA >= 2}
                 onClick={() => {
                   setImmobilizeTimerB(15);
-                  onControl(match.id, "PAUSE");
+                  onControl(match.id, "MS_IMMOBILIZATION_START", "B");
                 }}
               />
             )}
@@ -589,8 +613,9 @@ export const SumoControl = ({
             icon={Activity}
             label="Puntaje Final Combate"
             className="md:col-span-2 text-xs" // Allow span for better text fit
-            color="bg-white"
+            color="bg-cb-yellow-neon"
             textColor="text-cb-black-pure"
+            disabled={!match.isFinished && (match.scoreA < 2 && match.scoreB < 2)}
             onClick={() => {
               openConfirm(
                 "Puntuación Final Combate",

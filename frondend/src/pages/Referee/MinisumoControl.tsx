@@ -10,10 +10,7 @@ import {
   Wrench,
   AlertTriangle,
   XCircle,
-  Clock,
-  Activity,
   MoreVertical,
-  Zap,
   StopCircle,
   Timer,
 } from "lucide-react";
@@ -114,7 +111,7 @@ export const MinisumoControl = ({
 
   const handleRoundWin = (who: "A" | "B" | "NULL") => {
     if (who !== "NULL") {
-      onControl(match.id, `ADD_SCORE_${who}`, 1);
+      onControl(match.id, "MS_ROUND_WIN", who);
     }
     onControl(match.id, "PAUSE");
     onControl(match.id, "SET_TIME", 60);
@@ -190,8 +187,28 @@ export const MinisumoControl = ({
         "danger",
       );
     }
-    if (who === "A") setViolationsA((v) => v + 1);
-    else setViolationsB((v) => v + 1);
+    if (who === "A") {
+      setViolationsA((v) => v + 1);
+      onControl(match.id, "MS_VIOLATION", "A");
+    } else {
+      setViolationsB((v) => v + 1);
+      onControl(match.id, "MS_VIOLATION", "B");
+    }
+  };
+
+  const handleGravePenalty = (who: "A" | "B") => {
+    const robotName = who === "A" ? match.robotA?.name || "Robot A" : match.robotB?.name || "Robot B";
+    const opponentLabel = who === "A" ? (match.robotB?.name || "Robot B") : (match.robotA?.name || "Robot A");
+
+    openConfirm(
+      "Penalidad Grave",
+      `¿Aplicar penalidad grave a ${robotName}? Perderá el combate automáticamente y ${opponentLabel} será declarado ganador con puntaje ideal.`,
+      () => {
+        onControl(match.id, "PAUSE");
+        onControl(match.id, "MS_GRAVE_PENALTY", who);
+      },
+      "danger"
+    );
   };
 
   return (
@@ -295,6 +312,7 @@ export const MinisumoControl = ({
             label="Reparación (3m)"
             color="bg-white"
             textColor="text-cb-black-pure"
+            disabled={match.isFinished || !match.isActive}
             onClick={() => {
               openConfirm(
                 "Tiempo de Reparación",
@@ -343,17 +361,28 @@ export const MinisumoControl = ({
           </h2>
 
           <div className="flex gap-2 justify-center my-3 w-full bg-cb-white-tech border-3 border-cb-black-pure py-2">
-            {[1, 2, 3].map((r) => (
-              <CircleDot
-                key={r}
-                size={32}
-                className={
-                  r <= match.scoreA
-                    ? "text-cb-green-vibrant fill-cb-green-vibrant drop-shadow-[2px_2px_0_#000]"
-                    : "text-neutral-800"
-                }
-              />
-            ))}
+            {[1, 2, 3].map((r) => {
+              const winner = match.roundWinners?.[r - 1];
+              const isWon = winner === 'A';
+              const isLost = winner === 'B';
+              const isNull = winner === 'NULL';
+
+              return (
+                <CircleDot
+                  key={r}
+                  size={32}
+                  className={
+                    isWon
+                      ? "text-cb-green-vibrant fill-cb-green-vibrant drop-shadow-[2px_2px_0_#000]"
+                      : isLost
+                        ? "text-red-500 fill-red-500 drop-shadow-[2px_2px_0_#000]"
+                        : isNull
+                          ? "text-neutral-500 fill-neutral-500 opacity-50"
+                          : "text-neutral-400 opacity-20"
+                  }
+                />
+              );
+            })}
           </div>
 
           <div className="grid grid-cols-3 gap-2 w-full mb-3">
@@ -364,7 +393,7 @@ export const MinisumoControl = ({
               color="bg-cb-green-vibrant"
               textColor="text-cb-black-pure"
               disabled={
-                !match.isActive || match.scoreB >= 2 || match.scoreA >= 2
+                !match.isActive || match.isFinished || match.scoreB >= 2 || match.scoreA >= 2
               }
               onClick={() => {
                 openConfirm(
@@ -381,7 +410,7 @@ export const MinisumoControl = ({
               label={`Violación (${violationsA}/2)`}
               color="bg-cb-yellow-neon"
               textColor="text-cb-black-pure"
-              disabled={!match.isActive}
+              disabled={!match.isActive || match.isFinished}
               onClick={() => addViolation("A")}
             />
 
@@ -391,15 +420,8 @@ export const MinisumoControl = ({
               label="Penalidad Grave"
               color="bg-red-500"
               textColor="text-white"
-              disabled={!match.isActive}
-              onClick={() => {
-                openConfirm(
-                  "Penalidad Grave",
-                  "Descalificación del combate por daño intencional, separación, líquidos o insultos. ¿Proceder?",
-                  () => {},
-                  "danger",
-                );
-              }}
+              disabled={!match.isActive || match.isFinished}
+              onClick={() => handleGravePenalty("A")}
             />
           </div>
 
@@ -425,11 +447,11 @@ export const MinisumoControl = ({
                 color="bg-neutral-800"
                 textColor="text-cb-yellow-neon"
                 disabled={
-                  !match.isActive || match.scoreB >= 2 || match.scoreA >= 2
+                  !match.isActive || match.isFinished || match.scoreB >= 2 || match.scoreA >= 2
                 }
                 onClick={() => {
                   setImmobilizeTimerA(15);
-                  onControl(match.id, "PAUSE");
+                  onControl(match.id, "MS_IMMOBILIZATION_START", "A");
                 }}
               />
             )}
@@ -443,17 +465,28 @@ export const MinisumoControl = ({
           </h2>
 
           <div className="flex gap-2 justify-center my-3 w-full bg-cb-white-tech border-3 border-cb-black-pure py-2">
-            {[1, 2, 3].map((r) => (
-              <CircleDot
-                key={r}
-                size={32}
-                className={
-                  r <= match.scoreB
-                    ? "text-cb-green-vibrant fill-cb-green-vibrant drop-shadow-[2px_2px_0_#000]"
-                    : "text-neutral-800"
-                }
-              />
-            ))}
+            {[1, 2, 3].map((r) => {
+              const winner = match.roundWinners?.[r - 1];
+              const isWon = winner === 'B';
+              const isLost = winner === 'A';
+              const isNull = winner === 'NULL';
+
+              return (
+                <CircleDot
+                  key={r}
+                  size={32}
+                  className={
+                    isWon
+                      ? "text-cb-green-vibrant fill-cb-green-vibrant drop-shadow-[2px_2px_0_#000]"
+                      : isLost
+                        ? "text-red-500 fill-red-500 drop-shadow-[2px_2px_0_#000]"
+                        : isNull
+                          ? "text-neutral-500 fill-neutral-500 opacity-50"
+                          : "text-neutral-400 opacity-20"
+                  }
+                />
+              );
+            })}
           </div>
 
           <div className="grid grid-cols-3 gap-2 w-full mb-3">
@@ -464,7 +497,7 @@ export const MinisumoControl = ({
               color="bg-cb-green-vibrant"
               textColor="text-cb-black-pure"
               disabled={
-                !match.isActive || match.scoreB >= 2 || match.scoreA >= 2
+                !match.isActive || match.isFinished || match.scoreB >= 2 || match.scoreA >= 2
               }
               onClick={() => {
                 openConfirm(
@@ -481,7 +514,7 @@ export const MinisumoControl = ({
               label={`Violación (${violationsB}/2)`}
               color="bg-cb-yellow-neon"
               textColor="text-cb-black-pure"
-              disabled={!match.isActive}
+              disabled={!match.isActive || match.isFinished}
               onClick={() => addViolation("B")}
             />
 
@@ -491,15 +524,8 @@ export const MinisumoControl = ({
               label="Penalidad Grave"
               color="bg-red-500"
               textColor="text-white"
-              disabled={!match.isActive}
-              onClick={() => {
-                openConfirm(
-                  "Penalidad Grave",
-                  "Descalificación del combate por daño intencional, separación, líquidos o insultos. ¿Proceder?",
-                  () => {},
-                  "danger",
-                );
-              }}
+              disabled={!match.isActive || match.isFinished}
+              onClick={() => handleGravePenalty("B")}
             />
           </div>
           {/* Immobilization */}
@@ -524,11 +550,11 @@ export const MinisumoControl = ({
                 color="bg-neutral-800"
                 textColor="text-cb-yellow-neon"
                 disabled={
-                  !match.isActive || match.scoreB >= 2 || match.scoreA >= 2
+                  !match.isActive || match.isFinished || match.scoreB >= 2 || match.scoreA >= 2
                 }
                 onClick={() => {
                   setImmobilizeTimerB(15);
-                  onControl(match.id, "PAUSE");
+                  onControl(match.id, "MS_IMMOBILIZATION_START", "B");
                 }}
               />
             )}
@@ -537,70 +563,7 @@ export const MinisumoControl = ({
       </div>
 
       {/* 4. BOTTOM FIXED BAR: RESOLUTION */}
-      <div className="mt-4 px-2">
-        <div className="grid grid-cols-3 md:grid-cols-5 gap-2 md:gap-3">
-          <ActionButton
-            icon={StopCircle}
-            label="Round Nulo"
-            color="bg-white"
-            textColor="text-cb-black-pure"
-            disabled={!match.isActive}
-            onClick={() => {
-              openConfirm(
-                "Round Nulo",
-                "Ambos robots fallaron mutuamente, round descartado.",
-                () => handleRoundWin("NULL"),
-                "info",
-              );
-            }}
-          />
-          <ActionButton
-            icon={Zap}
-            label="Muerte Súbita"
-            color="bg-white"
-            textColor="text-cb-black-pure"
-            onClick={() => {
-              openConfirm(
-                "Muerte Súbita",
-                "¿Iniciar ronda de muerte súbita para desempate múltiple?",
-                () => {},
-                "info",
-              );
-            }}
-          />
-          <ActionButton
-            icon={Clock}
-            label="Punto Oro Previo"
-            color="bg-white"
-            textColor="text-cb-black-pure"
-            className="md:col-span-1 hidden md:flex"
-            onClick={() => {
-              openConfirm(
-                "Desempate de Historial",
-                "Revisar combate previo entre estos dos y dar punto al ganador anterior.",
-                () => {},
-                "info",
-              );
-            }}
-          />
-          <ActionButton
-            icon={Activity}
-            label="Puntaje (Ganador)"
-            className="md:col-span-2 text-xs" // Allow span for better text fit
-            color="bg-white"
-            textColor="text-cb-black-pure"
-            onClick={() => {
-              openConfirm(
-                "Puntuación Final Combate",
-                "Asigna puntos al ganador: 3-0 si ganó rounds seguidos, o 2-1 si el otro ganó solo 1 round.",
-                () => {},
-                "info",
-              );
-            }}
-          />
-        </div>
-      </div>
-
+      
       <ConfirmModal
         isOpen={modalConfig.isOpen}
         title={modalConfig.title}
