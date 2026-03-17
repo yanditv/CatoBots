@@ -369,7 +369,7 @@ export const MazeControl = ({
                 () => {
                   onControl(match.id, "PAUSE");
                   setShowMoreActions(false);
-                  alert("RETIRO REGISTRADO.");
+                  openConfirm("Retiro Confirmado", "RETIRO REGISTRADO EXITOSAMENTE.", () => {}, "info");
                 },
                 "danger",
               );

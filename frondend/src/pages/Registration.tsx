@@ -2,6 +2,7 @@ import { motion } from 'framer-motion'
 import { Bot, ShieldCheck, ArrowLeft, Terminal } from 'lucide-react'
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
+import { ConfirmModal } from '../components/ConfirmModal'
 
 const Registration = () => {
   const [formData, setFormData] = useState({
@@ -10,9 +11,31 @@ const Registration = () => {
     category: 'Heavyweight'
   });
 
+  const [modalConfig, setModalConfig] = useState<{
+    isOpen: boolean;
+    title: string;
+    message: string;
+    type?: 'warning' | 'info' | 'danger';
+    onConfirm: () => void;
+  }>({
+    isOpen: false,
+    title: '',
+    message: '',
+    onConfirm: () => {}
+  });
+
+  const openConfirm = (title: string, message: string, onConfirm: () => void, type: 'warning' | 'info' | 'danger' = 'warning') => {
+    setModalConfig({ isOpen: true, title, message, type, onConfirm });
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    alert(`Registrado: ${formData.robotName} de ${formData.institution} en ${formData.category}`);
+    openConfirm(
+      'Registro Realizado', 
+      `Registrado: ${formData.robotName} de ${formData.institution} en ${formData.category}. Se ha generado una entrada de terminal exitosa.`, 
+      () => {},
+      'info'
+    );
   };
 
   return (
@@ -123,6 +146,15 @@ const Registration = () => {
           </p>
         </motion.div>
       </main>
+
+      <ConfirmModal
+        isOpen={modalConfig.isOpen}
+        title={modalConfig.title}
+        message={modalConfig.message}
+        type={modalConfig.type}
+        onConfirm={modalConfig.onConfirm}
+        onCancel={() => setModalConfig({ ...modalConfig, isOpen: false })}
+      />
     </div>
   );
 };

@@ -401,7 +401,7 @@ export const SumoControl = ({
                   "Penalidad Grave",
                   "Descalificación del combate por daño intencional, separación, líquidos o insultos. ¿Proceder?",
                   () => {
-                    alert("ROBOT A PIERDE EL COMBATE DIRECTAMENTE.");
+                    openConfirm("Combate Finalizado", "ROBOT A PIERDE EL COMBATE DIRECTAMENTE.", () => {}, "danger");
                   },
                   "danger",
                 );
@@ -499,7 +499,7 @@ export const SumoControl = ({
                   "Penalidad Grave",
                   "Descalificación del combate por daño intencional, separación, líquidos o insultos. ¿Proceder?",
                   () => {
-                    alert("ROBOT B PIERDE EL COMBATE DIRECTAMENTE.");
+                    openConfirm("Combate Finalizado", "ROBOT B PIERDE EL COMBATE DIRECTAMENTE.", () => {}, "danger");
                   },
                   "danger",
                 );

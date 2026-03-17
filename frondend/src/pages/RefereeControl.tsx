@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState, type ElementType } from "react";
+import { ConfirmModal } from "../components/ConfirmModal";
 import {
   Play,
   Pause,
@@ -9,6 +10,7 @@ import {
   ChevronLeft,
   LogOut,
   Terminal,
+  Trophy,
 } from "lucide-react";
 import type { MatchState } from "../App";
 import { useAuth } from "../context/AuthContext";
@@ -114,6 +116,28 @@ const RefereeControl = ({ matches, onControl }: RefereeControlProps) => {
   const { user, logout } = useAuth();
   const [selectedMatchId, setSelectedMatchId] = useState<string | null>(null);
   const [phaseFilter, setPhaseFilter] = useState<string>("all");
+
+  const [modalConfig, setModalConfig] = useState<{
+    isOpen: boolean;
+    title: string;
+    message: string;
+    type?: "warning" | "info" | "danger";
+    onConfirm: () => void;
+  }>({
+    isOpen: false,
+    title: "",
+    message: "",
+    onConfirm: () => {},
+  });
+
+  const openConfirm = (
+    title: string,
+    message: string,
+    onConfirm: () => void,
+    type: "warning" | "info" | "danger" = "warning",
+  ) => {
+    setModalConfig({ isOpen: true, title, message, type, onConfirm });
+  };
 
   const myMatches = useMemo(
     () => matches.filter((m) => m.refereeId === user?.id),
@@ -512,12 +536,12 @@ const RefereeControl = ({ matches, onControl }: RefereeControlProps) => {
                 color="bg-cb-black-pure"
                 textColor="text-cb-white-tech"
                 onClick={() => {
-                  if (
-                    confirm(
-                      "¿Reiniciar encuentro? Todos los puntajes vuelven a cero.",
-                    )
-                  )
-                    onControl(selectedMatch.id, "RESET");
+                  openConfirm(
+                    "Reiniciar encuentro",
+                    "¿Estás seguro de reiniciar el encuentro? Todos los puntajes volverán a cero.",
+                    () => onControl(selectedMatch.id, "RESET"),
+                    "danger"
+                  );
                 }}
               />
             </div>
@@ -592,13 +616,16 @@ const RefereeControl = ({ matches, onControl }: RefereeControlProps) => {
         );
       })()}
 
-      {/* Finishing Status */}
-      {/* <div className="mt-4 md:mt-6">
+      <div className="mt-4 md:mt-6">
         {!selectedMatch.isFinished ? (
           <button
             onClick={() => {
-              if (confirm("¿Finalizar encuentro y declarar ganador?"))
-                onControl(selectedMatch.id, "FINISH");
+              openConfirm(
+                "Finalizar Encuentro",
+                "¿Finalizar encuentro y declarar ganador?",
+                () => onControl(selectedMatch.id, "FINISH"),
+                "warning"
+              );
             }}
             className="w-full bg-cb-yellow-neon text-cb-black-pure py-5 md:py-6 border-4 border-cb-black-pure font-tech font-black uppercase shadow-[6px_6px_0_#000] hover:translate-x-2 hover:translate-y-2 hover:shadow-none transition-all duration-150 flex items-center justify-center gap-3"
           >
@@ -628,7 +655,15 @@ const RefereeControl = ({ matches, onControl }: RefereeControlProps) => {
             </div>
           </div>
         )}
-      </div> */}
+      </div>
+      <ConfirmModal
+        isOpen={modalConfig.isOpen}
+        title={modalConfig.title}
+        message={modalConfig.message}
+        type={modalConfig.type}
+        onConfirm={modalConfig.onConfirm}
+        onCancel={() => setModalConfig({ ...modalConfig, isOpen: false })}
+      />
     </div>
   );
 };

@@ -29,6 +29,7 @@ import { useAuth } from '../../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { api, UPLOADS_URL } from '../../config/api';
 import DataTable from '../../components/DataTable';
+import { ConfirmModal } from '../../components/ConfirmModal';
 interface Institution {
   id: string;
   name: string;
@@ -257,6 +258,23 @@ const AdminPanel = () => {
   const [loadingLogs, setLoadingLogs] = useState(false);
   const [auditedMatch, setAuditedMatch] = useState<Match | null>(null);
 
+  const [confirmConfig, setConfirmConfig] = useState<{
+    isOpen: boolean;
+    title: string;
+    message: string;
+    type?: 'warning' | 'info' | 'danger';
+    onConfirm: () => void;
+  }>({
+    isOpen: false,
+    title: '',
+    message: '',
+    onConfirm: () => {}
+  });
+
+  const openConfirm = (title: string, message: string, onConfirm: () => void, type: 'warning' | 'info' | 'danger' = 'warning') => {
+    setConfirmConfig({ isOpen: true, title, message, onConfirm, type });
+  };
+
   const fetchData = async () => {
     try {
       const authHeader = { 'Authorization': `Bearer ${token}` };
@@ -311,7 +329,7 @@ const AdminPanel = () => {
         fetchData();
       } else {
         const errorData = await response.json();
-        alert(errorData.message || 'Error al procesar la solicitud');
+        openConfirm('Error', errorData.message || 'Error al procesar la solicitud', () => {}, 'danger');
       }
     } catch (err) {
       console.error('Error submitting form:', err);
@@ -326,17 +344,22 @@ const AdminPanel = () => {
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm('¿Estás seguro de eliminar este registro?')) return;
-    const tabEndpoint = activeTab === 'payments' ? 'registrations' : activeTab;
-    const endpoint = `/api/${tabEndpoint}/${id}`;
-
-    try {
-      const response = await api.del(endpoint, { headers: { 'Authorization': `Bearer ${token}` } });
-
-      if (response.ok) fetchData();
-    } catch (err) {
-      console.error('Error deleting record:', err);
-    }
+    openConfirm(
+      '¿Eliminar Registro?',
+      'Esta acción no se puede deshacer. ¿Estás seguro de continuar?',
+      async () => {
+        const tabEndpoint = activeTab === 'payments' ? 'registrations' : activeTab;
+        const endpoint = `/api/${tabEndpoint}/${id}`;
+        try {
+          const response = await api.del(endpoint, { headers: { 'Authorization': `Bearer ${token}` } });
+          if (response.ok) fetchData();
+        } catch (err) {
+          console.error('Error deleting record:', err);
+          openConfirm('Error', 'No se pudo eliminar el registro', () => {}, 'danger');
+        }
+      },
+      'danger'
+    );
   };
 
   const handleToggleDashboard = async (match: Match) => {
@@ -357,7 +380,7 @@ const AdminPanel = () => {
       const logs = await response.json();
       setSelectedMatchLogs(logs);
     } catch (err) {
-      alert('Error al cargar la auditoría');
+      openConfirm('Error', 'Error al cargar la auditoría', () => {}, 'danger');
     } finally {
       setLoadingLogs(false);
     }
@@ -385,7 +408,7 @@ const AdminPanel = () => {
 
   const handleGenerateBracket = async () => {
     if (!formData.category || !formData.level || selectedRobots.length < 2 || !formData.refereeId) {
-      alert('Completa Nivel, Categoría, Árbitro y selecciona al menos 2 robots');
+      openConfirm('Atención', 'Completa Nivel, Categoría, Árbitro y selecciona al menos 2 robots', () => {}, 'warning');
       return;
     }
     try {
@@ -398,9 +421,10 @@ const AdminPanel = () => {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       if (resp.ok) {
-        alert('Llave generada con éxito');
-        setActiveTab('matches');
-        fetchData();
+        openConfirm('Éxito', 'Llave generada con éxito', () => {
+          setActiveTab('matches');
+          fetchData();
+        }, 'info');
       }
     } catch (err) {
       console.error('Error generating bracket:', err);
@@ -422,11 +446,11 @@ const AdminPanel = () => {
         const body = await res.json();
         setFormData((prev: any) => ({ ...prev, logoUrl: `${UPLOADS_URL}/${body.filename}` }));
       } else {
-        alert('Error al subir imagen');
+        openConfirm('Error', 'Error al subir imagen', () => {}, 'danger');
       }
     } catch (err) {
       console.error('Error uploading file:', err);
-      alert('Error de conexión al subir imagen');
+      openConfirm('Error', 'Error de conexión al subir imagen', () => {}, 'danger');
     }
   };
 
@@ -445,11 +469,11 @@ const AdminPanel = () => {
         const body = await res.json();
         setFormData((prev: any) => ({ ...prev, payment_proof_filename: body.filename }));
       } else {
-        alert('Error al subir comprobante');
+        openConfirm('Error', 'Error al subir comprobante', () => {}, 'danger');
       }
     } catch (err) {
       console.error('Error uploading file:', err);
-      alert('Error de conexión al subir comprobante');
+      openConfirm('Error', 'Error de conexión al subir comprobante', () => {}, 'danger');
     }
   };
 
@@ -546,7 +570,7 @@ const AdminPanel = () => {
     }
 
     if (exportData.length === 0) {
-      alert('No hay datos para exportar en esta vista.');
+      openConfirm('Atención', 'No hay datos para exportar en esta vista.', () => {}, 'warning');
       return;
     }
 
@@ -1563,9 +1587,19 @@ const AdminPanel = () => {
             </motion.div>
           </div>
         )}
+
+        <ConfirmModal
+          isOpen={confirmConfig.isOpen}
+          title={confirmConfig.title}
+          message={confirmConfig.message}
+          type={confirmConfig.type}
+          onConfirm={confirmConfig.onConfirm}
+          onCancel={() => setConfirmConfig({ ...confirmConfig, isOpen: false })}
+        />
       </main>
     </div>
   );
 };
 
 export default AdminPanel;
+  

@@ -119,7 +119,7 @@ export const RobofutControl = ({
         `El Robot ${who} ha llegado a 3 infracciones. Pierde el partido por reglamento.`,
         () => {
            onControl(match.id, "PAUSE");
-           alert("PARTIDO FINALIZADO POR 3 PENALIZACIONES.");
+           openConfirm("Partido Finalizado", "PARTIDO FINALIZADO POR 3 PENALIZACIONES.", () => {}, "danger");
         },
         "danger",
       );
@@ -231,7 +231,7 @@ export const RobofutControl = ({
             textColor="text-cb-black-pure"
             onClick={() => {
                 setShowMoreActions(false);
-                alert("SALUDO REGISTRADO.");
+                openConfirm("Protocolo", "SALUDO REGISTRADO.", () => {}, "info");
             }}
           />
           <ActionButton
@@ -242,7 +242,7 @@ export const RobofutControl = ({
             textColor="text-cb-black-pure"
             onClick={() => {
                 const res = Math.random() > 0.5 ? "A" : "B";
-                alert(`SORTEO: Lado de Cancha preferente para el Robot ${res}`);
+                openConfirm("Sorteo de Cancha", `RESULTADO: Lado de Cancha preferente para el Robot ${res}`, () => {}, "info");
                 setShowMoreActions(false);
             }}
           />
@@ -477,7 +477,7 @@ export const RobofutControl = ({
             label="Balón al Centro"
             color="bg-white"
             textColor="text-cb-black-pure"
-            onClick={() => alert("BALÓN AL CENTRO. ROBOTS EN POSICIÓN.")}
+            onClick={() => openConfirm("Instrucción", "BALÓN AL CENTRO. ROBOTS EN POSICIÓN.", () => {}, "info")}
           />
           <ActionButton
             icon={Flag}
@@ -486,7 +486,7 @@ export const RobofutControl = ({
             textColor="text-cb-black-pure"
             onClick={() => {
                 onControl(match.id, "PAUSE");
-                alert("BALÓN FUERA. PAUSA PARA REPOSICIÓN.");
+                openConfirm("Balón Fuera", "BALÓN FUERA. PAUSA PARA REPOSICIÓN.", () => {}, "info");
             }}
           />
           <ActionButton
@@ -506,7 +506,7 @@ export const RobofutControl = ({
             className="md:col-span-1 hidden md:flex"
             color="bg-cb-green-vibrant"
             textColor="text-cb-black-pure"
-            onClick={() => alert("ESTADO DEL PARTIDO GUARDADO.")}
+            onClick={() => openConfirm("Sistema", "ESTADO DEL PARTIDO GUARDADO EN MEMORIA.", () => {}, "info")}
           />
         </div>
       </div>

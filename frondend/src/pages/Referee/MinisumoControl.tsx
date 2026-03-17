@@ -179,10 +179,12 @@ export const MinisumoControl = ({
         "Límite de Violaciones",
         `El Robot ${who} ha cometido 2 violaciones y pierde el combate completo automáticamente.`,
         () => {
-          onControl(who === "A" ? match.id : match.id, "PAUSE"); // Just pause
-          // Give opponent the remaining score to win the match (2-0) artificially, or just finalize.
-          alert(
+          onControl(match.id, "PAUSE");
+          openConfirm(
+            "Combate Finalizado",
             `Robot ${who === "A" ? "B" : "A"} GANA EL COMBATE LUEGO DE PENALIDAD.`,
+            () => {},
+            "info",
           );
         },
         "danger",

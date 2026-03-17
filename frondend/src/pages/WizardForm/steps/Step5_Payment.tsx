@@ -1,6 +1,7 @@
 import { Upload, X } from "lucide-react";
 import { useState } from "react";
 import { api } from "../../../config/api";
+import { ConfirmModal } from "../../../components/ConfirmModal";
 
 interface Step5Props {
     data: {
@@ -14,12 +15,33 @@ interface Step5Props {
 
 export default function Step5_Payment({ data, updateData, handleNext, handleBack, eventConfig }: Step5Props) {
     const [isUploading, setIsUploading] = useState(false);
+    const [modalConfig, setModalConfig] = useState<{
+        isOpen: boolean;
+        title: string;
+        message: string;
+        type?: "warning" | "info" | "danger";
+        onConfirm: () => void;
+    }>({
+        isOpen: false,
+        title: "",
+        message: "",
+        onConfirm: () => {},
+    });
+
+    const openConfirm = (
+        title: string,
+        message: string,
+        onConfirm: () => void,
+        type: "warning" | "info" | "danger" = "warning",
+    ) => {
+        setModalConfig({ isOpen: true, title, message, type, onConfirm });
+    };
 
     const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
         if (e.target.files && e.target.files[0]) {
             const file = e.target.files[0];
             if (file.size > 2 * 1024 * 1024) {
-                alert("CARGA RECHAZADA: ARCHIVO EXCEDE LÍMITE DE 2MB");
+                openConfirm("Carga Rechazada", "EL ARCHIVO EXCEDE EL LÍMITE DE 2MB PERMITIDO PARA TRASMISIONES.", () => {}, "danger");
                 return;
             }
 
@@ -35,7 +57,7 @@ export default function Step5_Payment({ data, updateData, handleNext, handleBack
                 }
             } catch (error) {
                 console.error("Upload failed", error);
-                alert("ERROR CRÍTICO AL TRANSFERIR ARCHIVO");
+                openConfirm("Error de Enlace", "ERROR CRÍTICO AL TRANSFERIR ARCHIVO AL SERVIDOR.", () => {}, "danger");
             } finally {
                 setIsUploading(false);
             }
@@ -162,6 +184,15 @@ export default function Step5_Payment({ data, updateData, handleNext, handleBack
                     AVANZAR COMANDO
                 </button>
             </div>
+
+            <ConfirmModal
+                isOpen={modalConfig.isOpen}
+                title={modalConfig.title}
+                message={modalConfig.message}
+                type={modalConfig.type}
+                onConfirm={modalConfig.onConfirm}
+                onCancel={() => setModalConfig({ ...modalConfig, isOpen: false })}
+            />
         </div>
     );
 }
