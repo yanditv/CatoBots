@@ -23,13 +23,15 @@ import {
   Upload,
   FileSearch,
   History,
-  Clock
+  Clock,
+  AlertTriangle
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { api, UPLOADS_URL } from '../../config/api';
 import DataTable from '../../components/DataTable';
 import { ConfirmModal } from '../../components/ConfirmModal';
+import CategoryDashboard from './CategoryDashboard';
 interface Institution {
   id: string;
   name: string;
@@ -261,6 +263,8 @@ const AdminPanel = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedRobots, setSelectedRobots] = useState<string[]>([]);
   const [processingPayments, setProcessingPayments] = useState<Set<string>>(new Set());
+  const [categoryDetailCat, setCategoryDetailCat] = useState<any | null>(null);
+  const [showRobotDashboard, setShowRobotDashboard] = useState(false);
   const [data, setData] = useState<{
     institutions: Institution[],
     robots: Robot[],
@@ -342,16 +346,29 @@ const AdminPanel = () => {
     const method = isEditMode ? 'PUT' : 'POST';
     if (isEditMode) endpoint += `/${editingId}`;
 
-    console.log('handleSubmit:', { endpoint, method, formData });
+    // Strip frontend-only fields before sending robot payload
+    const { _registrationId, _registrationData, advisorName, advisorPhone, members, ...robotPayload } = formData;
+
+    const payload = activeTab === 'robots' ? robotPayload : formData;
 
     try {
-      const response = method === 'PUT' 
-        ? await api.put(endpoint, formData, { headers: { 'Authorization': `Bearer ${token}` } })
-        : await api.post(endpoint, formData, { headers: { 'Authorization': `Bearer ${token}` } });
+      const response = method === 'PUT'
+        ? await api.put(endpoint, payload, { headers: { 'Authorization': `Bearer ${token}` } })
+        : await api.post(endpoint, payload, { headers: { 'Authorization': `Bearer ${token}` } });
 
-      console.log('response:', response.status);
-      
       if (response.ok) {
+        // If editing a robot with a linked registration, update registration.data
+        if (activeTab === 'robots' && isEditMode && _registrationId) {
+          const updatedData = {
+            ..._registrationData,
+            advisorName: advisorName || '',
+            advisorPhone: advisorPhone || '',
+            members: Array.isArray(members) ? members.join(', ') : (members || ''),
+          };
+          await api.put(`/api/registrations/${_registrationId}`, { data: updatedData }, {
+            headers: { 'Authorization': `Bearer ${token}` }
+          });
+        }
         setShowModal(false);
         setFormData({});
         fetchData();
@@ -367,7 +384,35 @@ const AdminPanel = () => {
   const handleEdit = (item: any) => {
     setIsEditMode(true);
     setEditingId(item.id);
-    setFormData(item);
+
+    // Base normalization — ensure institutionId is always set
+    const normalized: any = {
+      ...item,
+      institutionId: item.institutionId || item.Institution?.id || '',
+    };
+
+    // If editing a robot, find related registration to pre-load advisor/members
+    if (activeTab === 'robots') {
+      const relatedReg = data.registrations.find((r: Registration) =>
+        r.data?.robotName === item.name || r.data?.teamName === item.name
+      );
+      if (relatedReg) {
+        const membersRaw: string = relatedReg.data?.members || '';
+        normalized._registrationId = relatedReg.id;
+        normalized._registrationData = relatedReg.data;
+        normalized.advisorName = relatedReg.data?.advisorName || '';
+        normalized.advisorPhone = relatedReg.data?.advisorPhone || '';
+        normalized.members = membersRaw
+          ? membersRaw.split(',').map((m: string) => m.trim()).filter(Boolean)
+          : [];
+      } else {
+        normalized.advisorName = '';
+        normalized.advisorPhone = '';
+        normalized.members = [];
+      }
+    }
+
+    setFormData(normalized);
     setShowModal(true);
   };
 
@@ -520,15 +565,38 @@ const AdminPanel = () => {
         i.isPaid ? 'Si' : 'No'
       ]);
     } else if (activeTab === 'robots') {
-      headers = ['ID', 'Nombre', 'Nivel', 'Categoría', 'Homologado', 'Institución'];
-      exportData = data.robots.map(r => [
-        r.id,
-        `"${r.name}"`,
-        r.level,
-        `"${r.category}"`,
-        r.isHomologated ? 'Si' : 'No',
-        `"${r.Institution?.name || ''}"`
-      ]);
+      if (showRobotDashboard) {
+        // Export dashboard: category × level summary
+        filename = `dashboard_categorias_${new Date().toISOString().split('T')[0]}.csv`;
+        headers = ['Categoría', 'Nivel', 'Total', 'Homologados', 'Pendientes'];
+        const matchFn = (a: string, b: string) => a?.toLowerCase().trim() === b?.toLowerCase().trim();
+        data.categories.forEach((cat: any) => {
+          const catLevels: string[] = cat.levels && cat.levels.length > 0 ? cat.levels : [''];
+          catLevels.forEach((level: string) => {
+            const catRobots = level
+              ? data.robots.filter((r: Robot) => matchFn(r.category, cat.name) && matchFn(r.level, level))
+              : data.robots.filter((r: Robot) => matchFn(r.category, cat.name));
+            const ok = catRobots.filter((r: Robot) => r.isHomologated).length;
+            exportData.push([
+              `"${cat.name}"`,
+              `"${level}"`,
+              catRobots.length,
+              ok,
+              catRobots.length - ok
+            ]);
+          });
+        });
+      } else {
+        headers = ['ID', 'Nombre', 'Nivel', 'Categoría', 'Homologado', 'Institución'];
+        exportData = data.robots.map((r: Robot) => [
+          r.id,
+          `"${r.name}"`,
+          r.level,
+          `"${r.category}"`,
+          r.isHomologated ? 'Si' : 'No',
+          `"${r.Institution?.name || ''}"`
+        ]);
+      }
     } else if (activeTab === 'referees') {
       headers = ['ID', 'Usuario', 'Rol'];
       exportData = data.referees.map(r => [
@@ -724,7 +792,8 @@ const AdminPanel = () => {
                 className="bg-neutral-800 text-cb-white-tech hover:bg-neutral-700 px-4 py-3.5 font-tech font-black text-sm uppercase flex items-center gap-2 transition-all duration-75 border-3 border-neutral-700 hover:border-neutral-500 shadow-[4px_4px_0_#000] whitespace-nowrap"
                 title="Exportar a CSV compatible con Excel"
               >
-                <Download size={18} /> Exportar
+                <Download size={18} />
+                {activeTab === 'robots' && showRobotDashboard ? 'Exportar Dashboard' : 'Exportar'}
               </button>
             )}
 
@@ -779,36 +848,59 @@ const AdminPanel = () => {
             />
           )}
 
-          {/* ROBOTS TABLE */}
+          {/* ROBOTS TABLE / DASHBOARD */}
           {activeTab === 'robots' && (
-            <DataTable
-              data={data.robots.filter(r => r.name.toLowerCase().includes(searchQuery.toLowerCase()))}
-              keyField="id"
-              columns={[
-                { key: 'name', header: 'Robot', render: (r) => (
-                  <div className="flex items-center gap-2">
-                    <span className="font-tech font-black uppercase tracking-wider">{r.name}</span>
-                    {r.isHomologated && <span className="bg-cb-green-vibrant/20 text-cb-green-vibrant text-[9px] font-tech font-black uppercase px-1.5 py-0.5 border border-cb-green-vibrant/40">OK</span>}
-                  </div>
-                )},
-                { key: 'level', header: 'Nivel', render: (r) => (
-                  <span className="text-[10px] font-tech font-bold text-cb-yellow-neon px-2 py-0.5 bg-cb-yellow-neon/10 border border-cb-yellow-neon/30">{r.level}</span>
-                )},
-                { key: 'category', header: 'Categoría', render: (r) => (
-                  <span className="text-xs text-neutral-400 font-tech font-bold">{r.category}</span>
-                )},
-                { key: 'institution', header: 'Institución', render: (r) => (
-                  <span className="text-xs text-neutral-500 font-tech font-bold">{r.Institution?.name || '---'}</span>
-                )},
-              ]}
-              actions={(robot) => (
-                <>
-                  <button onClick={() => handleEdit(robot)} className="text-neutral-500 hover:text-cb-yellow-neon hover:bg-cb-yellow-neon/10 transition-all duration-75 p-2 border border-neutral-700 hover:border-cb-yellow-neon"><Edit2 size={15} /></button>
-                  <button onClick={() => handleDelete(robot.id)} className="text-neutral-500 hover:text-red-400 hover:bg-red-500/10 transition-all duration-75 p-2 border border-neutral-700 hover:border-red-500"><Trash2 size={15} /></button>
-                </>
+            <div>
+              {/* Toggle bar */}
+              <div className="flex justify-end px-4 py-2 border-b border-neutral-800">
+                <button
+                  onClick={() => setShowRobotDashboard(v => !v)}
+                  className={`flex items-center gap-2 text-[10px] font-tech font-black uppercase px-3 py-1.5 border transition-all duration-75 cursor-pointer ${showRobotDashboard ? 'bg-cb-yellow-neon text-black border-cb-yellow-neon' : 'text-cb-yellow-neon border-cb-yellow-neon/40 hover:border-cb-yellow-neon hover:bg-cb-yellow-neon/10'}`}
+                >
+                  <LayoutDashboard size={13} />
+                  {showRobotDashboard ? 'Ver Lista' : 'Ver Dashboard'}
+                </button>
+              </div>
+
+              {showRobotDashboard ? (
+                <div className="p-4 md:p-6">
+                  <CategoryDashboard
+                    categories={data.categories}
+                    robots={data.robots}
+                    maxRobotsPerCategory={Number(data.categories[0]?.maxRobotsPerCategory) || 0}
+                  />
+                </div>
+              ) : (
+                <DataTable
+                  data={data.robots.filter(r => r.name.toLowerCase().includes(searchQuery.toLowerCase()))}
+                  keyField="id"
+                  columns={[
+                    { key: 'name', header: 'Robot', render: (r) => (
+                      <div className="flex items-center gap-2">
+                        <span className="font-tech font-black uppercase tracking-wider">{r.name}</span>
+                        {r.isHomologated && <span className="bg-cb-green-vibrant/20 text-cb-green-vibrant text-[9px] font-tech font-black uppercase px-1.5 py-0.5 border border-cb-green-vibrant/40">OK</span>}
+                      </div>
+                    )},
+                    { key: 'level', header: 'Nivel', render: (r) => (
+                      <span className="text-[10px] font-tech font-bold text-cb-yellow-neon px-2 py-0.5 bg-cb-yellow-neon/10 border border-cb-yellow-neon/30">{r.level}</span>
+                    )},
+                    { key: 'category', header: 'Categoría', render: (r) => (
+                      <span className="text-xs text-neutral-400 font-tech font-bold">{r.category}</span>
+                    )},
+                    { key: 'institution', header: 'Institución', render: (r) => (
+                      <span className="text-xs text-neutral-500 font-tech font-bold">{r.Institution?.name || '---'}</span>
+                    )},
+                  ]}
+                  actions={(robot) => (
+                    <>
+                      <button onClick={() => handleEdit(robot)} className="text-neutral-500 hover:text-cb-yellow-neon hover:bg-cb-yellow-neon/10 transition-all duration-75 p-2 border border-neutral-700 hover:border-cb-yellow-neon"><Edit2 size={15} /></button>
+                      <button onClick={() => handleDelete(robot.id)} className="text-neutral-500 hover:text-red-400 hover:bg-red-500/10 transition-all duration-75 p-2 border border-neutral-700 hover:border-red-500"><Trash2 size={15} /></button>
+                    </>
+                  )}
+                  emptyMessage="Sin robots registrados"
+                />
               )}
-              emptyMessage="Sin robots registrados"
-            />
+            </div>
           )}
 
           {/* REFEREES TABLE */}
@@ -920,6 +1012,7 @@ const AdminPanel = () => {
             />
           )}
 
+
           {/* EVENTO CONFIG */}
           {activeTab === 'evento' && (
             <EventConfigPanel token={token} />
@@ -975,12 +1068,16 @@ const AdminPanel = () => {
                 { key: 'levels', header: 'Niveles', render: (c) => (
                   <div className="flex gap-1 flex-wrap">{(c.levels || []).map((l: string) => <span key={l} className="text-[10px] font-tech font-bold text-cb-yellow-neon px-2 py-0.5 bg-cb-yellow-neon/10 border border-cb-yellow-neon/30">{l}</span>)}</div>
                 )},
-                { key: 'icon', header: 'Icono', render: (c) => (
-                  <span className="text-xs text-neutral-400 font-tech font-bold">{c.icon || '---'}</span>
-                )},
-                { key: 'order', header: 'Orden', render: (c) => (
-                  <span className="text-xs text-neutral-500 font-tech font-bold">{c.order}</span>
-                )},
+                { key: 'robots', header: 'Robots', render: (c) => {
+                  const total = data.robots.filter((r: Robot) => r.category?.toLowerCase().trim() === c.name?.toLowerCase().trim()).length;
+                  const ok = data.robots.filter((r: Robot) => r.category?.toLowerCase().trim() === c.name?.toLowerCase().trim() && r.isHomologated).length;
+                  return (
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm font-tech font-black text-cb-white-tech">{total}</span>
+                      <span className="text-[9px] font-tech text-cb-green-vibrant border border-cb-green-vibrant/30 px-1.5 py-0.5">{ok} ✓</span>
+                    </div>
+                  );
+                }},
                 { key: 'isActive', header: 'Activa', render: (c) => (
                   c.isActive
                     ? <span className="bg-cb-green-vibrant/20 text-cb-green-vibrant text-[10px] font-tech font-black uppercase px-2 py-0.5 border border-cb-green-vibrant/40">Sí</span>
@@ -989,6 +1086,7 @@ const AdminPanel = () => {
               ]}
               actions={(cat) => (
                 <>
+                  <button onClick={() => setCategoryDetailCat(cat)} className="text-neutral-500 hover:text-cb-green-vibrant hover:bg-cb-green-vibrant/10 transition-all duration-75 p-2 border border-neutral-700 hover:border-cb-green-vibrant" title="Ver Detalles"><Bot size={15} /></button>
                   <button onClick={() => handleEdit(cat)} className="text-neutral-500 hover:text-cb-yellow-neon hover:bg-cb-yellow-neon/10 transition-all duration-75 p-2 border border-neutral-700 hover:border-cb-yellow-neon"><Edit2 size={15} /></button>
                   <button onClick={() => handleDelete(cat.id)} className="text-neutral-500 hover:text-red-400 hover:bg-red-500/10 transition-all duration-75 p-2 border border-neutral-700 hover:border-red-500"><Trash2 size={15} /></button>
                 </>
@@ -1246,7 +1344,8 @@ const AdminPanel = () => {
                 )}
 
                 {activeTab === 'robots' && (
-                  <div className="space-y-6">
+                  <div className="space-y-6 max-h-[65vh] overflow-y-auto pr-1 custom-scrollbar">
+                    {/* Nombre + Nivel */}
                     <div className="grid grid-cols-2 gap-4">
                       <div className="space-y-2">
                         <label className="text-[10px] font-tech font-black uppercase text-neutral-500 tracking-widest">Nombre del Robot</label>
@@ -1254,33 +1353,91 @@ const AdminPanel = () => {
                       </div>
                       <div className="space-y-2">
                         <label className="text-[10px] font-tech font-black uppercase text-neutral-500 tracking-widest">Nivel de Competencia</label>
-                        <select required value={formData.level || ''} className="w-full bg-[#0a0a0a] border-2 border-neutral-700 p-4 text-sm font-tech text-cb-white-tech focus:border-cb-yellow-neon outline-none transition-all duration-75 placeholder:text-neutral-600 appearance-none text-sm" onChange={e => setFormData({ ...formData, level: e.target.value, category: '' })}>
+                        <select required value={formData.level || ''} className="w-full bg-[#0a0a0a] border-2 border-neutral-700 p-4 text-sm font-tech text-cb-white-tech focus:border-cb-yellow-neon outline-none transition-all duration-75 appearance-none" onChange={e => setFormData({ ...formData, level: e.target.value, category: '' })}>
                           <option value="">Seleccionar...</option>
                           {COMPETITION_LEVELS.map(level => <option key={level} value={level}>{level}</option>)}
+                          {/* Fallback: show current value if not in list */}
+                          {formData.level && !COMPETITION_LEVELS.includes(formData.level as string) && (
+                            <option value={formData.level}>{formData.level}</option>
+                          )}
                         </select>
                       </div>
                     </div>
 
+                    {/* Categoría + Institución */}
                     <div className="grid grid-cols-2 gap-4">
                       <div className="space-y-2">
                         <label className="text-[10px] font-tech font-black uppercase text-neutral-500 tracking-widest">Categoría</label>
-                        <select required disabled={!formData.level} value={formData.category || ''} className="w-full bg-[#0a0a0a] border-2 border-neutral-700 p-4 text-sm font-tech text-cb-white-tech focus:border-cb-yellow-neon outline-none transition-all duration-75 placeholder:text-neutral-600 appearance-none text-sm" onChange={e => setFormData({ ...formData, category: e.target.value })}>
+                        <select required value={formData.category || ''} className="w-full bg-[#0a0a0a] border-2 border-neutral-700 p-4 text-sm font-tech text-cb-white-tech focus:border-cb-yellow-neon outline-none transition-all duration-75 appearance-none" onChange={e => setFormData({ ...formData, category: e.target.value })}>
                           <option value="">Seleccionar...</option>
-                          {formData.level && (CATEGORIES_BY_LEVEL[formData.level] || []).map(cat => <option key={cat} value={cat}>{cat}</option>)}
+                          {(CATEGORIES_BY_LEVEL[formData.level] || []).map(cat => <option key={cat} value={cat}>{cat}</option>)}
+                          {/* Fallback: show current category if not in level list */}
+                          {formData.category && !(CATEGORIES_BY_LEVEL[formData.level] || []).includes(formData.category) && (
+                            <option value={formData.category}>{formData.category}</option>
+                          )}
                         </select>
                       </div>
                       <div className="space-y-2">
                         <label className="text-[10px] font-tech font-black uppercase text-neutral-500 tracking-widest">Institución</label>
-                        <select required value={formData.institutionId || ''} className="w-full bg-[#0a0a0a] border-2 border-neutral-700 p-4 text-sm font-tech text-cb-white-tech focus:border-cb-yellow-neon outline-none transition-all duration-75 placeholder:text-neutral-600 appearance-none text-sm" onChange={e => setFormData({ ...formData, institutionId: e.target.value })}>
+                        <select required value={formData.institutionId || ''} className="w-full bg-[#0a0a0a] border-2 border-neutral-700 p-4 text-sm font-tech text-cb-white-tech focus:border-cb-yellow-neon outline-none transition-all duration-75 appearance-none" onChange={e => setFormData({ ...formData, institutionId: e.target.value })}>
                           <option value="">Seleccionar...</option>
                           {data.institutions.map(i => <option key={i.id} value={i.id}>{i.name}</option>)}
                         </select>
                       </div>
                     </div>
 
+                    {/* Homologado */}
                     <div className="flex items-center gap-4 p-4 bg-[#0a0a0a] border-2 border-neutral-700">
                       <input type="checkbox" id="homologated" checked={formData.isHomologated || false} onChange={e => setFormData({ ...formData, isHomologated: e.target.checked })} className="w-5 h-5 accent-[#10B961]" />
                       <label htmlFor="homologated" className="text-[10px] font-tech font-black uppercase text-neutral-400 cursor-pointer tracking-widest">Robot Homologado (Pasó revisión técnica)</label>
+                    </div>
+
+                    {/* Asesor */}
+                    <div className="border-t-2 border-neutral-800 pt-4 space-y-4">
+                      <p className="text-[10px] font-tech font-black uppercase text-cb-yellow-neon tracking-widest">Datos del Asesor</p>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                          <label className="text-[10px] font-tech font-black uppercase text-neutral-500 tracking-widest">Nombre del Asesor</label>
+                          <input value={formData.advisorName || ''} placeholder="ej. Ing. Juan Pérez" className="w-full bg-[#0a0a0a] border-2 border-neutral-700 p-4 text-sm font-tech text-cb-white-tech focus:border-cb-yellow-neon outline-none transition-all duration-75 placeholder:text-neutral-600" onChange={e => setFormData({ ...formData, advisorName: e.target.value })} />
+                        </div>
+                        <div className="space-y-2">
+                          <label className="text-[10px] font-tech font-black uppercase text-neutral-500 tracking-widest">Teléfono del Asesor</label>
+                          <input value={formData.advisorPhone || ''} placeholder="ej. 0987654321" className="w-full bg-[#0a0a0a] border-2 border-neutral-700 p-4 text-sm font-tech text-cb-white-tech focus:border-cb-yellow-neon outline-none transition-all duration-75 placeholder:text-neutral-600" onChange={e => setFormData({ ...formData, advisorPhone: e.target.value })} />
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Miembros del equipo */}
+                    <div className="border-t-2 border-neutral-800 pt-4 space-y-3">
+                      <div className="flex items-center justify-between">
+                        <p className="text-[10px] font-tech font-black uppercase text-cb-yellow-neon tracking-widest">Miembros del Equipo</p>
+                        <button type="button" onClick={() => setFormData({ ...formData, members: [...(formData.members || []), ''] })} className="text-[10px] font-tech font-black uppercase text-cb-green-vibrant border border-cb-green-vibrant/40 px-3 py-1 hover:bg-cb-green-vibrant/10 transition-all duration-75">
+                          + Agregar
+                        </button>
+                      </div>
+                      {(formData.members || []).length === 0 && (
+                        <p className="text-[10px] font-tech text-neutral-600 uppercase tracking-widest">Sin miembros registrados</p>
+                      )}
+                      {(formData.members || []).map((member: string, idx: number) => (
+                        <div key={idx} className="flex gap-2 items-center">
+                          <input
+                            value={member}
+                            placeholder={`Estudiante ${idx + 1}`}
+                            className="flex-1 bg-[#0a0a0a] border-2 border-neutral-700 p-3 text-sm font-tech text-cb-white-tech focus:border-cb-yellow-neon outline-none transition-all duration-75 placeholder:text-neutral-600"
+                            onChange={e => {
+                              const updated = [...(formData.members || [])];
+                              updated[idx] = e.target.value;
+                              setFormData({ ...formData, members: updated });
+                            }}
+                          />
+                          <button type="button" onClick={() => {
+                            const updated = (formData.members || []).filter((_: string, i: number) => i !== idx);
+                            setFormData({ ...formData, members: updated });
+                          }} className="w-9 h-9 border-2 border-neutral-700 flex items-center justify-center text-neutral-500 hover:text-red-400 hover:border-red-500 transition-all duration-75 shrink-0">
+                            <X size={14} />
+                          </button>
+                        </div>
+                      ))}
                     </div>
                   </div>
                 )}
@@ -1615,6 +1772,65 @@ const AdminPanel = () => {
             </motion.div>
           </div>
         )}
+
+        {/* CATEGORY DETAIL MODAL */}
+        {categoryDetailCat && (() => {
+          const catRobots = data.robots.filter((r: Robot) => r.category?.toLowerCase().trim() === categoryDetailCat.name?.toLowerCase().trim());
+          const homologated = catRobots.filter((r: Robot) => r.isHomologated);
+          const pending = catRobots.filter((r: Robot) => !r.isHomologated);
+          return (
+            <div className="fixed inset-0 bg-black/85 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+              <div className="bg-[#111] w-full max-w-2xl border-2 border-cb-yellow-neon shadow-[8px_8px_0_#000] overflow-hidden">
+                <div className="h-2 bg-warning-tape" />
+                <div className="p-5 border-b-2 border-neutral-800 flex justify-between items-center">
+                  <div>
+                    <h2 className="text-xl font-tech font-black uppercase text-cb-yellow-neon tracking-wider">{categoryDetailCat.name}</h2>
+                    <div className="flex gap-1 mt-1 flex-wrap">
+                      {(categoryDetailCat.levels || []).map((l: string) => (
+                        <span key={l} className="text-[9px] font-tech font-black text-cb-yellow-neon/70 border border-cb-yellow-neon/30 px-2 py-0.5 uppercase">{l}</span>
+                      ))}
+                    </div>
+                  </div>
+                  <button onClick={() => setCategoryDetailCat(null)} className="w-9 h-9 border-2 border-neutral-700 flex items-center justify-center text-neutral-500 hover:text-red-400 hover:border-red-500 transition-all duration-75 cursor-pointer">
+                    <X size={16} />
+                  </button>
+                </div>
+                <div className="grid grid-cols-3 divide-x-2 divide-neutral-800 border-b-2 border-neutral-800">
+                  {[
+                    { label: 'Total', value: catRobots.length, color: 'text-cb-white-tech' },
+                    { label: 'Homologados', value: homologated.length, color: 'text-cb-green-vibrant' },
+                    { label: 'Pendientes', value: pending.length, color: 'text-red-400' },
+                  ].map(({ label, value, color }) => (
+                    <div key={label} className="p-4 text-center">
+                      <p className={`text-3xl font-tech font-black ${color}`}>{value}</p>
+                      <p className="text-[9px] font-tech font-black uppercase text-neutral-500 tracking-widest mt-1">{label}</p>
+                    </div>
+                  ))}
+                </div>
+                <div className="p-4 max-h-72 overflow-y-auto space-y-2">
+                  {catRobots.length === 0 && (
+                    <p className="text-center text-xs font-tech text-neutral-600 uppercase py-6">Sin robots en esta categoría</p>
+                  )}
+                  {catRobots.map((robot: Robot) => (
+                    <div key={robot.id} className={`flex items-center justify-between p-3 border-2 ${robot.isHomologated ? 'border-cb-green-vibrant/30 bg-cb-green-vibrant/5' : 'border-neutral-800 bg-[#0a0a0a]'}`}>
+                      <div className="flex items-center gap-3">
+                        <Bot size={14} className={robot.isHomologated ? 'text-cb-green-vibrant' : 'text-neutral-600'} strokeWidth={2.5} />
+                        <div>
+                          <p className="text-xs font-tech font-black uppercase text-cb-white-tech">{robot.name}</p>
+                          <p className="text-[10px] font-tech text-neutral-500">{robot.level} · {robot.Institution?.name || '---'}</p>
+                        </div>
+                      </div>
+                      {robot.isHomologated
+                        ? <span className="flex items-center gap-1 text-[9px] font-tech font-black text-cb-green-vibrant border border-cb-green-vibrant/40 px-2 py-0.5 uppercase"><ShieldCheck size={10} /> Homologado</span>
+                        : <span className="flex items-center gap-1 text-[9px] font-tech font-black text-red-400 border border-red-500/40 px-2 py-0.5 uppercase"><AlertTriangle size={10} /> Pendiente</span>
+                      }
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          );
+        })()}
 
         <ConfirmModal
           isOpen={confirmConfig.isOpen}
