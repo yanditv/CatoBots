@@ -252,6 +252,9 @@ const EventConfigPanel = ({ token }: { token: string | null }) => {
     </div>
   );
 };
+const normalize = (str: string) =>
+  str.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+
 const generateSmartAbbreviation = (name: string): string => {
   const clean = name.trim().toUpperCase().replace(/[^A-Z0-9 ]/g, '');
   if (!clean) return '';
@@ -488,6 +491,8 @@ const AdminPanel = () => {
   const [processingPayments, setProcessingPayments] = useState<Set<string>>(new Set());
   const [categoryDetailCat, setCategoryDetailCat] = useState<any | null>(null);
   const [showRobotDashboard, setShowRobotDashboard] = useState(false);
+  const [robotFilterLevel, setRobotFilterLevel] = useState('ALL');
+  const [robotFilterHomologated, setRobotFilterHomologated] = useState('ALL');
   const [data, setData] = useState<{
     institutions: Institution[],
     robots: Robot[],
@@ -1037,7 +1042,7 @@ const AdminPanel = () => {
           {/* INSTITUTIONS TABLE */}
           {activeTab === 'institutions' && (
             <DataTable
-              data={data.institutions.filter(i => i.name.toLowerCase().includes(searchQuery.toLowerCase()))}
+              data={data.institutions.filter(i => normalize(i.name).includes(normalize(searchQuery)))}
               keyField="id"
               columns={[
                 { key: 'name', header: 'Institución', render: (i) => (
@@ -1074,8 +1079,24 @@ const AdminPanel = () => {
           {/* ROBOTS TABLE / DASHBOARD */}
           {activeTab === 'robots' && (
             <div>
-              {/* Toggle bar */}
-              <div className="flex justify-end px-4 py-2 border-b border-neutral-800">
+              {/* Toggle bar + filtros */}
+              <div className="flex flex-wrap items-center justify-between gap-3 px-4 py-3 border-b border-neutral-800">
+                {/* Chips filtro nivel */}
+                <div className="flex flex-wrap items-center gap-2">
+                  {['ALL', ...Array.from(new Set(data.robots.map(r => r.level)))].map(lvl => (
+                    <button key={lvl} onClick={() => setRobotFilterLevel(lvl)}
+                      className={`text-[10px] font-tech font-black uppercase px-3 py-1.5 border transition-all duration-75 ${robotFilterLevel === lvl ? 'bg-cb-yellow-neon text-black border-cb-yellow-neon' : 'text-neutral-400 border-neutral-700 hover:border-cb-yellow-neon hover:text-cb-yellow-neon'}`}>
+                      {lvl === 'ALL' ? 'Todos' : lvl}
+                    </button>
+                  ))}
+                  <div className="w-px h-5 bg-neutral-700 mx-1" />
+                  {[['ALL', 'Estado'], ['true', 'Homologados'], ['false', 'Pendientes']].map(([val, label]) => (
+                    <button key={val} onClick={() => setRobotFilterHomologated(val)}
+                      className={`text-[10px] font-tech font-black uppercase px-3 py-1.5 border transition-all duration-75 ${robotFilterHomologated === val ? (val === 'true' ? 'bg-cb-green-vibrant text-black border-cb-green-vibrant' : val === 'false' ? 'bg-red-500 text-white border-red-500' : 'bg-cb-yellow-neon text-black border-cb-yellow-neon') : 'text-neutral-400 border-neutral-700 hover:border-neutral-500 hover:text-neutral-300'}`}>
+                      {label}
+                    </button>
+                  ))}
+                </div>
                 <button
                   onClick={() => setShowRobotDashboard(v => !v)}
                   className={`flex items-center gap-2 text-[10px] font-tech font-black uppercase px-3 py-1.5 border transition-all duration-75 cursor-pointer ${showRobotDashboard ? 'bg-cb-yellow-neon text-black border-cb-yellow-neon' : 'text-cb-yellow-neon border-cb-yellow-neon/40 hover:border-cb-yellow-neon hover:bg-cb-yellow-neon/10'}`}
@@ -1093,43 +1114,102 @@ const AdminPanel = () => {
                     maxRobotsPerCategory={Number(data.categories[0]?.maxRobotsPerCategory) || 0}
                   />
                 </div>
-              ) : (
-                <DataTable
-                  data={data.robots.filter(r => r.name.toLowerCase().includes(searchQuery.toLowerCase()))}
-                  keyField="id"
-                  columns={[
-                    { key: 'name', header: 'Robot', render: (r) => (
-                      <div className="flex items-center gap-2">
-                        <span className="font-tech font-black uppercase tracking-wider">{r.name}</span>
-                        {r.isHomologated && <span className="bg-cb-green-vibrant/20 text-cb-green-vibrant text-[9px] font-tech font-black uppercase px-1.5 py-0.5 border border-cb-green-vibrant/40">OK</span>}
-                      </div>
-                    )},
-                    { key: 'level', header: 'Nivel', render: (r) => (
-                      <span className="text-[10px] font-tech font-bold text-cb-yellow-neon px-2 py-0.5 bg-cb-yellow-neon/10 border border-cb-yellow-neon/30">{r.level}</span>
-                    )},
-                    { key: 'category', header: 'Categoría', render: (r) => (
-                      <span className="text-xs text-neutral-400 font-tech font-bold">{r.category}</span>
-                    )},
-                    { key: 'institution', header: 'Institución', render: (r) => (
-                      <span className="text-xs text-neutral-500 font-tech font-bold">{r.Institution?.name || '---'}</span>
-                    )},
-                  ]}
-                  actions={(robot) => (
-                    <>
-                      <button onClick={() => handleEdit(robot)} className="text-neutral-500 hover:text-cb-yellow-neon hover:bg-cb-yellow-neon/10 transition-all duration-75 p-2 border border-neutral-700 hover:border-cb-yellow-neon"><Edit2 size={15} /></button>
-                      <button onClick={() => handleDelete(robot.id)} className="text-neutral-500 hover:text-red-400 hover:bg-red-500/10 transition-all duration-75 p-2 border border-neutral-700 hover:border-red-500"><Trash2 size={15} /></button>
-                    </>
-                  )}
-                  emptyMessage="Sin robots registrados"
-                />
-              )}
+              ) : (() => {
+                const q = normalize(searchQuery);
+                const filteredRobots = data.robots.filter(r => {
+                  // Buscar registro vinculado para acceder a integrantes y asesor
+                  const reg = data.registrations.find(
+                    (reg: Registration) => reg.data?.robotName === r.name || reg.data?.teamName === r.name
+                  );
+                  const members: string = reg?.data?.members || '';
+                  const advisorName: string = reg?.data?.advisorName || '';
+
+                  const matchesSearch = !q ||
+                    normalize(r.name).includes(q) ||
+                    normalize(r.Institution?.name || '').includes(q) ||
+                    normalize(r.category).includes(q) ||
+                    normalize(r.level).includes(q) ||
+                    normalize(members).includes(q) ||
+                    normalize(advisorName).includes(q);
+
+                  const matchesLevel = robotFilterLevel === 'ALL' || r.level === robotFilterLevel;
+                  const matchesHomologated =
+                    robotFilterHomologated === 'ALL' ||
+                    (robotFilterHomologated === 'true' && r.isHomologated) ||
+                    (robotFilterHomologated === 'false' && !r.isHomologated);
+
+                  return matchesSearch && matchesLevel && matchesHomologated;
+                });
+
+                return (
+                  <DataTable
+                    data={filteredRobots}
+                    keyField="id"
+                    columns={[
+                      { key: 'name', header: 'Robot', render: (r) => (
+                        <div className="flex items-center gap-2">
+                          <span className="font-tech font-black uppercase tracking-wider">{r.name}</span>
+                          {r.isHomologated
+                            ? <span className="bg-cb-green-vibrant/20 text-cb-green-vibrant text-[9px] font-tech font-black uppercase px-1.5 py-0.5 border border-cb-green-vibrant/40">✓ OK</span>
+                            : <span className="bg-red-500/10 text-red-400 text-[9px] font-tech font-black uppercase px-1.5 py-0.5 border border-red-500/30">Pendiente</span>}
+                        </div>
+                      )},
+                      { key: 'level', header: 'Nivel', render: (r) => (
+                        <span className="text-[10px] font-tech font-bold text-cb-yellow-neon px-2 py-0.5 bg-cb-yellow-neon/10 border border-cb-yellow-neon/30">{r.level}</span>
+                      )},
+                      { key: 'category', header: 'Categoría', render: (r) => (
+                        <span className="text-xs text-neutral-400 font-tech font-bold">{r.category}</span>
+                      )},
+                      { key: 'institution', header: 'Institución', render: (r) => (
+                        <span className="text-xs text-neutral-500 font-tech font-bold">{r.Institution?.name || '---'}</span>
+                      )},
+                    ]}
+                    actions={(robot) => (
+                      <>
+                        <button onClick={() => handleEdit(robot)} className="text-neutral-500 hover:text-cb-yellow-neon hover:bg-cb-yellow-neon/10 transition-all duration-75 p-2 border border-neutral-700 hover:border-cb-yellow-neon"><Edit2 size={15} /></button>
+                        <button onClick={() => handleDelete(robot.id)} className="text-neutral-500 hover:text-red-400 hover:bg-red-500/10 transition-all duration-75 p-2 border border-neutral-700 hover:border-red-500"><Trash2 size={15} /></button>
+                      </>
+                    )}
+                    expandedContent={(robot) => {
+                      const reg = data.registrations.find(
+                        (reg: Registration) => reg.data?.robotName === robot.name || reg.data?.teamName === robot.name
+                      );
+                      const members: string[] = reg?.data?.members
+                        ? reg.data.members.split(',').map((m: string) => m.trim()).filter(Boolean)
+                        : [];
+                      const advisorName: string = reg?.data?.advisorName || '';
+                      const advisorPhone: string = reg?.data?.advisorPhone || '';
+                      return (
+                        <div className="flex flex-wrap gap-6">
+                          <div>
+                            <p className="text-[10px] font-tech font-black uppercase tracking-widest text-cb-yellow-neon mb-2">Integrantes</p>
+                            <div className="flex flex-wrap gap-2">
+                              {members.length > 0
+                                ? members.map((m, i) => <span key={i} className="text-xs font-tech font-bold text-cb-white-tech px-3 py-1.5 bg-black/50 border border-neutral-700">{m}</span>)
+                                : <span className="text-xs text-neutral-500 font-tech">Sin datos</span>}
+                            </div>
+                          </div>
+                          {advisorName && (
+                            <div>
+                              <p className="text-[10px] font-tech font-black uppercase tracking-widest text-cb-yellow-neon mb-2">Asesor</p>
+                              <span className="text-xs font-tech font-bold text-cb-white-tech px-3 py-1.5 bg-black/50 border border-neutral-700">{advisorName}</span>
+                              {advisorPhone && <span className="text-xs font-tech text-neutral-400 ml-2">{advisorPhone}</span>}
+                            </div>
+                          )}
+                        </div>
+                      );
+                    }}
+                    emptyMessage="Sin robots registrados"
+                  />
+                );
+              })()}
             </div>
           )}
 
           {/* REFEREES TABLE */}
           {activeTab === 'referees' && (
             <DataTable
-              data={data.referees.filter(u => u.username.toLowerCase().includes(searchQuery.toLowerCase()))}
+              data={data.referees.filter(u => normalize(u.username).includes(normalize(searchQuery)))}
               keyField="id"
               columns={[
                 { key: 'username', header: 'Usuario', render: (u) => (
@@ -1152,7 +1232,7 @@ const AdminPanel = () => {
           {/* MATCHES TABLE */}
           {activeTab === 'matches' && (
             <DataTable
-              data={data.matches.filter(m => m.robotA?.name.toLowerCase().includes(searchQuery.toLowerCase()) || m.robotB?.name.toLowerCase().includes(searchQuery.toLowerCase()))}
+              data={data.matches.filter(m => normalize(m.robotA?.name || '').includes(normalize(searchQuery)) || normalize(m.robotB?.name || '').includes(normalize(searchQuery)))}
               keyField="id"
               columns={[
                 { key: 'category', header: 'Categoría', render: (m) => (
@@ -1207,7 +1287,7 @@ const AdminPanel = () => {
           {/* SPONSORS TABLE */}
           {activeTab === 'sponsors' && (
             <DataTable
-              data={data.sponsors.filter(s => s.name.toLowerCase().includes(searchQuery.toLowerCase()))}
+              data={data.sponsors.filter(s => normalize(s.name).includes(normalize(searchQuery)))}
               keyField="id"
               columns={[
                 { key: 'name', header: 'Sponsor', render: (s) => (
@@ -1323,15 +1403,16 @@ const AdminPanel = () => {
             <DataTable
               data={data.registrations.filter(r => {
                 if (!searchQuery) return true;
-                const q = searchQuery.toLowerCase();
+                const q = normalize(searchQuery);
                 return (
-                  r.google_email?.toLowerCase().includes(q) ||
-                  r.data?.category?.toLowerCase().includes(q) ||
-                  r.data?.robotName?.toLowerCase().includes(q) ||
-                  r.data?.teamName?.toLowerCase().includes(q) ||
-                  r.data?.advisorName?.toLowerCase().includes(q) ||
-                  r.data?.institution?.toLowerCase().includes(q) ||
-                  r.data?.level?.toLowerCase().includes(q)
+                  normalize(r.google_email || '').includes(q) ||
+                  normalize(r.data?.category || '').includes(q) ||
+                  normalize(r.data?.robotName || '').includes(q) ||
+                  normalize(r.data?.teamName || '').includes(q) ||
+                  normalize(r.data?.advisorName || '').includes(q) ||
+                  normalize(r.data?.institution || '').includes(q) ||
+                  normalize(r.data?.members || '').includes(q) ||
+                  normalize(r.data?.level || '').includes(q)
                 );
               })}
               keyField="id"
