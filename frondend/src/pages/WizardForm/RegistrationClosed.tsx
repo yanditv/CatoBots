@@ -17,9 +17,34 @@ export default function RegistrationClosed({ contactEmail }: { contactEmail?: st
           backgroundSize: '48px 48px',
         }} />
 
+      {/* Horizontal speed lines */}
+      <div className="absolute inset-0 pointer-events-none overflow-hidden">
+        {[4, 10, 16, 22, 28, 34, 40, 46, 52, 58, 64, 70, 76, 82, 88, 94].map((top) => (
+          <div key={top} className="absolute left-0 right-0"
+            style={{
+              top: `${top}%`,
+              height: '1px',
+              background: 'linear-gradient(90deg, transparent 0%, rgba(255,240,0,0.1) 15%, rgba(255,240,0,0.2) 50%, rgba(255,240,0,0.1) 85%, transparent 100%)',
+            }} />
+        ))}
+      </div>
+
+      {/* Diagonal accent lines */}
+      <div className="absolute inset-0 pointer-events-none overflow-hidden">
+        {[-30, -15, 0, 15, 30, 45, 60, 75, 90, 105].map((left) => (
+          <div key={left} className="absolute top-0 bottom-0"
+            style={{
+              left: `${left}%`,
+              width: '1px',
+              transform: 'rotate(15deg) scaleY(1.6)',
+              background: 'linear-gradient(180deg, transparent 0%, rgba(16,185,97,0.07) 25%, rgba(16,185,97,0.14) 50%, rgba(16,185,97,0.07) 75%, transparent 100%)',
+            }} />
+        ))}
+      </div>
+
       {/* Radial dark overlay so center pops */}
       <div className="absolute inset-0 pointer-events-none"
-        style={{ background: 'radial-gradient(ellipse 70% 70% at 50% 50%, rgba(0,0,0,0.3) 0%, rgba(0,0,0,0.9) 100%)' }} />
+        style={{ background: 'radial-gradient(ellipse 70% 70% at 50% 50%, rgba(0,0,0,0.2) 0%, rgba(0,0,0,0.88) 100%)' }} />
 
       {/* ── Content ── */}
       <div className="relative z-10 flex flex-col items-center w-full max-w-md text-center gap-5">
