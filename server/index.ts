@@ -538,6 +538,41 @@ app.get('/api/registrations', authenticateJWT, isAdmin, async (req, res) => {
   res.json(registrations);
 });
 
+app.post('/api/registrations', authenticateJWT, isAdmin, async (req, res) => {
+  const { google_email, paymentStatus, payment_proof_filename, data } = req.body;
+  if (!google_email) return res.status(400).json({ message: 'Email required' });
+  try {
+    const isPaid = paymentStatus === 'APPROVED';
+    const registration = await Registration.create({
+      google_email,
+      step: 8,
+      status: 'SUBMITTED',
+      data: data || {},
+      payment_proof_filename: payment_proof_filename || null,
+      isPaid,
+      paymentStatus: paymentStatus || 'PENDING'
+    });
+    res.status(201).json(registration);
+
+    // Send email non-blocking after response
+    const targetEmail = (data?.email) || google_email;
+    setImmediate(async () => {
+      try {
+        if (paymentStatus === 'APPROVED') {
+          await sendStatusEmail(targetEmail, 'APPROVED', data);
+        } else {
+          await sendWelcomeEmail(targetEmail, data);
+        }
+      } catch (err) {
+        console.error('[Admin create] Error sending email:', err);
+      }
+    });
+  } catch (err) {
+    console.error('Error creating registration (admin):', err);
+    res.status(500).json({ message: 'Error creating registration' });
+  }
+});
+
 app.put('/api/registrations/:id', authenticateJWT, isAdmin, async (req, res) => {
   const { paymentStatus, google_email, payment_proof_filename, data } = req.body;
 

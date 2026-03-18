@@ -252,6 +252,229 @@ const EventConfigPanel = ({ token }: { token: string | null }) => {
     </div>
   );
 };
+const generateSmartAbbreviation = (name: string): string => {
+  const clean = name.trim().toUpperCase().replace(/[^A-Z0-9 ]/g, '');
+  if (!clean) return '';
+  if (clean.length <= 4) return clean;
+  const words = clean.split(' ').filter((w: string) => w.length > 0);
+  if (words.length > 1) {
+    let abbr = words.map((w: string) => w[0]).join('');
+    if (abbr.length < 3) {
+      const lastWord = words[words.length - 1];
+      const consonants = lastWord.slice(1).replace(/[AEIOU]/g, '');
+      abbr += consonants.substring(0, 4 - abbr.length);
+    }
+    return abbr.substring(0, 5);
+  }
+  const word = words[0];
+  const first = word[0];
+  const last = word[word.length - 1];
+  const middle = word.slice(1, -1);
+  const distinctConsonants = Array.from(new Set(middle.replace(/[AEIOU]/g, '').split(''))).join('');
+  if (distinctConsonants.length >= 2) return (first + distinctConsonants.substring(0, 2) + last).substring(0, 4);
+  const distinctChars = Array.from(new Set(middle.split(''))).join('');
+  return (first + distinctChars.substring(0, 2) + last).substring(0, 4);
+};
+
+interface PaymentFormProps {
+  formData: any;
+  setFormData: (updater: any) => void;
+  levelsData: any[];
+  categoriesData: any[];
+  isEditMode: boolean;
+  handlePaymentProofUpload: (e: React.ChangeEvent<HTMLInputElement>) => void;
+}
+
+const PaymentRegistrationForm = ({ formData, setFormData, levelsData, categoriesData, isEditMode, handlePaymentProofUpload }: PaymentFormProps) => {
+  const [isEditingAbbreviation, setIsEditingAbbreviation] = useState(false);
+
+  const selectedLevel = formData.data?.category || '';
+  const subCatKey = selectedLevel === 'Junior' ? 'juniorCategory' : selectedLevel === 'Senior' ? 'seniorCategory' : 'masterCategory';
+  const selectedSubCat = formData.data?.[subCatKey] || '';
+  const isScratch = selectedSubCat.includes('Scratch');
+  const isBioBot = selectedSubCat.includes('BioBot');
+  const isRobotica = !isScratch && !isBioBot; // true por defecto si no hay subcategoría o no es Scratch/BioBot
+  const filteredCategories = categoriesData.filter((c: any) => c.levels?.includes(selectedLevel));
+
+  const updateData = (patch: any) => setFormData((prev: any) => ({ ...prev, data: { ...prev.data, ...patch } }));
+
+  // Auto-generate abbreviation exactly like Step4_Details
+  useEffect(() => {
+    if (!isEditingAbbreviation && isRobotica && formData.data?.robotName) {
+      const abbr = generateSmartAbbreviation(formData.data.robotName);
+      if (formData.data?.robotAbbreviation !== abbr) {
+        updateData({ robotAbbreviation: abbr });
+      }
+    }
+  }, [formData.data?.robotName, isEditingAbbreviation, isRobotica]);
+
+  // Reset abbreviation edit mode when category changes
+  useEffect(() => {
+    setIsEditingAbbreviation(false);
+  }, [selectedSubCat]);
+
+  // Members helpers
+  const rawMembers = formData.data?.members || '';
+  const membersList: string[] = rawMembers ? rawMembers.split(',').map((m: string) => m.trim()) : [''];
+  const members = membersList.length > 0 ? membersList : [''];
+  const updateMember = (index: number, value: string) => {
+    const updated = [...members];
+    updated[index] = value;
+    updateData({ members: updated.join(', ') });
+  };
+  const addMember = () => updateData({ members: [...members, ''].join(', ') });
+  const removeMember = (index: number) => {
+    const updated = members.filter((_: string, i: number) => i !== index);
+    updateData({ members: updated.join(', ') });
+  };
+
+  return (
+    <div className="space-y-6">
+      {/* Email + Estado de Pago */}
+      <div className="grid grid-cols-2 gap-4">
+        <div className="space-y-2">
+          <label className="text-[10px] font-tech font-black uppercase text-neutral-500 tracking-widest">Email (Google)</label>
+          <input required value={formData.google_email || ''} placeholder="correo@ejemplo.com" className="w-full bg-[#0a0a0a] border-2 border-neutral-700 p-4 text-sm font-tech text-cb-white-tech focus:border-cb-yellow-neon outline-none transition-all duration-75" onChange={e => setFormData((prev: any) => ({ ...prev, google_email: e.target.value, data: { ...prev.data, email: e.target.value } }))} />
+        </div>
+        <div className="space-y-2">
+          <label className="text-[10px] font-tech font-black uppercase text-neutral-500 tracking-widest">Estado de Pago</label>
+          <select required value={formData.paymentStatus || 'PENDING'} className="w-full bg-[#0a0a0a] border-2 border-neutral-700 p-4 text-sm font-tech text-cb-white-tech focus:border-cb-yellow-neon outline-none transition-all duration-75 appearance-none" onChange={e => setFormData((prev: any) => ({ ...prev, paymentStatus: e.target.value }))}>
+            <option value="PENDING">Pendiente</option>
+            <option value="APPROVED">Aprobado</option>
+            {isEditMode && <option value="REJECTED">Rechazado</option>}
+          </select>
+        </div>
+      </div>
+
+      {/* Institución */}
+      <div className="space-y-2">
+        <label className="text-[10px] font-tech font-black uppercase text-neutral-500 tracking-widest">Institución</label>
+        <input required value={formData.data?.institution || ''} placeholder="Nombre de la institución" className="w-full bg-[#0a0a0a] border-2 border-neutral-700 p-4 text-sm font-tech text-cb-white-tech focus:border-cb-yellow-neon outline-none transition-all duration-75" onChange={e => updateData({ institution: e.target.value.toUpperCase() })} />
+      </div>
+
+      {/* Nivel + Categoría */}
+      <div className="grid grid-cols-2 gap-4">
+        <div className="space-y-2">
+          <label className="text-[10px] font-tech font-black uppercase text-neutral-500 tracking-widest">Nivel</label>
+          <select required value={selectedLevel} className="w-full bg-[#0a0a0a] border-2 border-neutral-700 p-4 text-sm font-tech text-cb-white-tech focus:border-cb-yellow-neon outline-none transition-all duration-75 appearance-none" onChange={e => updateData({ category: e.target.value, juniorCategory: '', seniorCategory: '', masterCategory: '', robotName: '', teamName: '', robotAbbreviation: '' })}>
+            <option value="">Seleccionar nivel...</option>
+            {levelsData.map((l: any) => <option key={l.name} value={l.name}>{l.name}</option>)}
+          </select>
+        </div>
+        <div className="space-y-2">
+          <label className="text-[10px] font-tech font-black uppercase text-neutral-500 tracking-widest">Categoría / Modalidad</label>
+          <select required value={selectedSubCat} disabled={!selectedLevel} className="w-full bg-[#0a0a0a] border-2 border-neutral-700 p-4 text-sm font-tech text-cb-white-tech focus:border-cb-yellow-neon outline-none transition-all duration-75 appearance-none disabled:opacity-40" onChange={e => updateData({ [subCatKey]: e.target.value, robotName: '', teamName: '', robotAbbreviation: '' })}>
+            <option value="">Seleccionar categoría...</option>
+            {filteredCategories.map((c: any) => <option key={c.name} value={c.name}>{c.name}</option>)}
+          </select>
+        </div>
+      </div>
+
+      {/* Robot / Equipo */}
+      {(
+        <div className="grid grid-cols-2 gap-4">
+          {isRobotica ? (
+            <>
+              <div className="space-y-2">
+                <label className="text-[10px] font-tech font-black uppercase text-neutral-500 tracking-widest">Nombre del Robot</label>
+                <input required value={formData.data?.robotName || ''} placeholder="Ej. TERMINATOR" className="w-full bg-[#0a0a0a] border-2 border-neutral-700 p-4 text-sm font-tech text-cb-white-tech focus:border-cb-yellow-neon outline-none transition-all duration-75" onChange={e => updateData({ robotName: e.target.value.toUpperCase() })} />
+              </div>
+              <div className="space-y-2">
+                <div className="flex items-center justify-between mb-1">
+                  <label className="text-[10px] font-tech font-black uppercase text-neutral-500 tracking-widest">
+                    <span className="bg-neutral-800 text-cb-yellow-neon px-1.5 py-0.5 border border-cb-yellow-neon/40 mr-1">ABR</span>
+                    Scoreboard
+                  </label>
+                  <label className="flex items-center gap-1.5 cursor-pointer select-none">
+                    <div
+                      className={`w-4 h-4 border-2 flex items-center justify-center transition-all ${isEditingAbbreviation ? 'bg-cb-yellow-neon border-cb-yellow-neon' : 'bg-transparent border-neutral-600'}`}
+                      onClick={() => setIsEditingAbbreviation(v => !v)}
+                    >
+                      {isEditingAbbreviation && <span className="text-black text-[10px] font-black leading-none">✓</span>}
+                    </div>
+                    <span className="text-[10px] font-tech font-black uppercase text-neutral-500">Manual</span>
+                  </label>
+                </div>
+                <input
+                  value={formData.data?.robotAbbreviation || ''}
+                  maxLength={5}
+                  disabled={!isEditingAbbreviation}
+                  placeholder="TRMN"
+                  className={`w-full border-2 p-4 text-sm font-tech outline-none transition-all duration-75 uppercase tracking-widest text-center font-black ${isEditingAbbreviation ? 'bg-[#0a0a0a] border-neutral-700 text-cb-yellow-neon focus:border-cb-yellow-neon' : 'bg-neutral-900 border-neutral-800 text-neutral-500 cursor-not-allowed'}`}
+                  onChange={e => updateData({ robotAbbreviation: e.target.value.toUpperCase() })}
+                />
+                {!isEditingAbbreviation && formData.data?.robotAbbreviation && (
+                  <p className="text-[10px] font-tech font-bold text-neutral-500 uppercase">⚡ Cálculo automático activo</p>
+                )}
+              </div>
+            </>
+          ) : (
+            <div className="space-y-2 col-span-2">
+              <label className="text-[10px] font-tech font-black uppercase text-neutral-500 tracking-widest">Nombre del Equipo</label>
+              <input required value={formData.data?.teamName || ''} placeholder="Ej. COMANDOS CIBERNÉTICOS" className="w-full bg-[#0a0a0a] border-2 border-neutral-700 p-4 text-sm font-tech text-cb-white-tech focus:border-cb-yellow-neon outline-none transition-all duration-75" onChange={e => updateData({ teamName: e.target.value.toUpperCase() })} />
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Integrantes */}
+      <div className="space-y-3">
+        <div className="flex items-center justify-between">
+          <label className="text-[10px] font-tech font-black uppercase text-neutral-500 tracking-widest">Integrantes</label>
+          <button type="button" onClick={addMember} className="flex items-center gap-1.5 px-3 py-1.5 bg-[#1a1a1a] border-2 border-neutral-700 text-cb-yellow-neon text-[10px] font-tech font-black uppercase tracking-widest hover:border-cb-yellow-neon transition-all duration-75">
+            <Plus size={12} /> Agregar
+          </button>
+        </div>
+        {members.map((member: string, index: number) => (
+          <div key={index} className="flex gap-2 items-center">
+            <span className="text-[10px] font-tech font-black text-neutral-600 w-5 text-right shrink-0">{index + 1}</span>
+            <input
+              required={index === 0}
+              value={member}
+              placeholder={`Nombre del integrante ${index + 1}`}
+              className="flex-1 bg-[#0a0a0a] border-2 border-neutral-700 p-4 text-sm font-tech text-cb-white-tech focus:border-cb-yellow-neon outline-none transition-all duration-75"
+              onChange={e => updateMember(index, e.target.value)}
+            />
+            {members.length > 1 && (
+              <button type="button" onClick={() => removeMember(index)} className="w-10 h-10 flex items-center justify-center border-2 border-neutral-700 text-neutral-500 hover:text-red-400 hover:border-red-500 transition-all duration-75 shrink-0">
+                <X size={14} />
+              </button>
+            )}
+          </div>
+        ))}
+      </div>
+
+      {/* Asesor */}
+      <div className="grid grid-cols-2 gap-4">
+        <div className="space-y-2">
+          <label className="text-[10px] font-tech font-black uppercase text-neutral-500 tracking-widest">Nombre del Asesor / Docente</label>
+          <input required value={formData.data?.advisorName || ''} placeholder="Nombre completo" className="w-full bg-[#0a0a0a] border-2 border-neutral-700 p-4 text-sm font-tech text-cb-white-tech focus:border-cb-yellow-neon outline-none transition-all duration-75" onChange={e => updateData({ advisorName: e.target.value.toUpperCase() })} />
+        </div>
+        <div className="space-y-2">
+          <label className="text-[10px] font-tech font-black uppercase text-neutral-500 tracking-widest">Teléfono Asesor (WhatsApp)</label>
+          <input required value={formData.data?.advisorPhone || ''} placeholder="09XXXXXXXX" maxLength={10} className="w-full bg-[#0a0a0a] border-2 border-neutral-700 p-4 text-sm font-tech text-cb-white-tech focus:border-cb-yellow-neon outline-none transition-all duration-75" onChange={e => updateData({ advisorPhone: e.target.value.replace(/\D/g, '') })} />
+        </div>
+      </div>
+
+      {/* Comprobante */}
+      <div className="space-y-2">
+        <label className="text-[10px] font-tech font-black uppercase text-neutral-500 tracking-widest">Comprobante (Archivo / URL)</label>
+        <div className="flex gap-4 items-center">
+          <div className="flex-1">
+            <input value={formData.payment_proof_filename || ''} placeholder="URL o subir archivo..." className="w-full bg-[#0a0a0a] border-2 border-neutral-700 p-4 text-sm font-tech text-cb-white-tech focus:border-cb-yellow-neon outline-none transition-all duration-75" onChange={e => setFormData((prev: any) => ({ ...prev, payment_proof_filename: e.target.value }))} />
+          </div>
+          <div className="relative w-48 shrink-0">
+            <input type="file" accept="image/*,application/pdf" onChange={handlePaymentProofUpload} className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10" />
+            <div className="bg-[#1a1a1a] border-2 border-neutral-700 p-4 flex items-center justify-center text-cb-yellow-neon hover:border-cb-yellow-neon transition-all duration-75 cursor-pointer text-center">
+              <span className="text-[10px] font-tech font-black uppercase tracking-widest">Subir Archivo</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 const AdminPanel = () => {
   const { logout, token } = useAuth();
   const navigate = useNavigate();
@@ -797,12 +1020,12 @@ const AdminPanel = () => {
               </button>
             )}
 
-            {activeTab !== 'payments' && activeTab !== 'brackets' && (
+            {activeTab !== 'brackets' && (
               <button
-                onClick={() => { setIsEditMode(false); setFormData({}); setShowModal(true); }}
+                onClick={() => { setIsEditMode(false); setFormData(activeTab === 'payments' ? { paymentStatus: 'PENDING', data: {} } : {}); setShowModal(true); }}
                 className="bg-cb-yellow-neon text-cb-black-pure hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-none px-6 py-3.5 font-tech font-black text-sm uppercase flex items-center gap-2 transition-all duration-75 border-3 border-cb-black-pure shadow-[4px_4px_0_#10B961] whitespace-nowrap"
               >
-                <Plus size={18} /> Agregar
+                <Plus size={18} /> {activeTab === 'payments' ? 'Registrar Equipo' : 'Agregar'}
               </button>
             )}
           </div>
@@ -1631,51 +1854,14 @@ const AdminPanel = () => {
                 )}
 
                 {activeTab === 'payments' && (
-                  <div className="space-y-6">
-                    <div className="grid grid-cols-2 gap-4">
-                      <div className="space-y-2">
-                        <label className="text-[10px] font-tech font-black uppercase text-neutral-500 tracking-widest">Email (Google)</label>
-                        <input required value={formData.google_email || ''} className="w-full bg-[#0a0a0a] border-2 border-neutral-700 p-4 text-sm font-tech text-cb-white-tech focus:border-cb-yellow-neon outline-none transition-all duration-75" onChange={e => setFormData({ ...formData, google_email: e.target.value })} />
-                      </div>
-                      <div className="space-y-2">
-                        <label className="text-[10px] font-tech font-black uppercase text-neutral-500 tracking-widest">Estado de Pago</label>
-                        <select required value={formData.paymentStatus || 'PENDING'} className="w-full bg-[#0a0a0a] border-2 border-neutral-700 p-4 text-sm font-tech text-cb-white-tech focus:border-cb-yellow-neon outline-none transition-all duration-75 appearance-none" onChange={e => setFormData({ ...formData, paymentStatus: e.target.value })}>
-                          <option value="PENDING">PENDING</option>
-                          <option value="APPROVED">APPROVED</option>
-                          <option value="REJECTED">REJECTED</option>
-                        </select>
-                      </div>
-                    </div>
-                    
-                    <div className="grid grid-cols-2 gap-4">
-                      <div className="space-y-2">
-                        <label className="text-[10px] font-tech font-black uppercase text-neutral-500 tracking-widest">Robot/Equipo</label>
-                        <input value={formData.data?.robotName || formData.data?.teamName || ''} className="w-full bg-[#0a0a0a] border-2 border-neutral-700 p-4 text-sm font-tech text-cb-white-tech focus:border-cb-yellow-neon outline-none transition-all duration-75" onChange={e => {
-                          const isTeam = formData.data?.teamName !== undefined;
-                          setFormData({ ...formData, data: { ...formData.data, [isTeam ? 'teamName' : 'robotName']: e.target.value } });
-                        }} />
-                      </div>
-                      <div className="space-y-2">
-                        <label className="text-[10px] font-tech font-black uppercase text-neutral-500 tracking-widest">Institución</label>
-                        <input value={formData.data?.institution || ''} className="w-full bg-[#0a0a0a] border-2 border-neutral-700 p-4 text-sm font-tech text-cb-white-tech focus:border-cb-yellow-neon outline-none transition-all duration-75" onChange={e => setFormData({ ...formData, data: { ...formData.data, institution: e.target.value } })} />
-                      </div>
-                    </div>
-
-                    <div className="space-y-2">
-                      <label className="text-[10px] font-tech font-black uppercase text-neutral-500 tracking-widest">Comprobante (Archivo / URL)</label>
-                      <div className="flex gap-4 items-center">
-                        <div className="flex-1">
-                          <input value={formData.payment_proof_filename || ''} placeholder="URL o subir archivo..." className="w-full bg-[#0a0a0a] border-2 border-neutral-700 p-4 text-sm font-tech text-cb-white-tech focus:border-cb-yellow-neon outline-none transition-all duration-75" onChange={e => setFormData({ ...formData, payment_proof_filename: e.target.value })} />
-                        </div>
-                        <div className="relative w-48 shrink-0">
-                          <input type="file" accept="image/*,application/pdf" onChange={handlePaymentProofUpload} className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10" />
-                          <div className="bg-[#1a1a1a] border-2 border-neutral-700 p-4 flex items-center justify-center text-cb-yellow-neon hover:border-cb-yellow-neon transition-all duration-75 cursor-pointer text-center">
-                            <span className="text-[10px] font-tech font-black uppercase tracking-widest">Subir Archivo</span>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
+                  <PaymentRegistrationForm
+                    formData={formData}
+                    setFormData={setFormData}
+                    levelsData={data.levels}
+                    categoriesData={data.categories}
+                    isEditMode={isEditMode}
+                    handlePaymentProofUpload={handlePaymentProofUpload}
+                  />
                 )}
 
                 <button type="submit" className="w-full bg-cb-yellow-neon text-cb-black-pure font-tech font-black py-5 border-3 border-cb-black-pure shadow-[4px_4px_0_#10B961] hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-none transition-all duration-75 mt-6 text-sm uppercase tracking-widest">{isEditMode ? 'Guardar Cambios' : 'Desplegar Cambios'}</button>
