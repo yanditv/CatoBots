@@ -8,13 +8,11 @@ import {
   AlertTriangle,
   Flag,
   TimerReset,
-  Clock,
   MoreVertical,
-  Trophy,
   XCircle,
-  Save,
-  Wrench,
   Ban,
+  ArrowRight,
+  CheckCircle,
 } from "lucide-react";
 import type { MatchState } from "../../App";
 
@@ -24,62 +22,66 @@ interface MazeControlProps {
   formatTime: (seconds: number) => string;
 }
 
-
-
 export const MazeControl = ({
   match,
   onControl,
-  formatTime,
 }: MazeControlProps) => {
-  const MAX_TIME = 180; // 3 minutes per attempt
   const [showMoreActions, setShowMoreActions] = useState(false);
+  // Local precision timer
+  const [localTime, setLocalTime] = useState(0); // milliseconds
+  const [isRunning, setIsRunning] = useState(false);
 
-  // Intentos tracking: Maze is usually single-robot evaluation over 3 attempts.
-  // We'll manage attempts internally so judges can record and select the best one.
+  // Intentos tracking
   const [currentAttempt, setCurrentAttempt] = useState<1 | 2 | 3>(1);
+  const [globalRestarts, setGlobalRestarts] = useState(0);
   const [attemptScores, setAttemptScores] = useState<{
-    [key: number]: { time: number; restarts: number; faults: number };
+    [key: number]: { time: number; restarts: number; graveFaults: number; zone: number; isFinished: boolean };
   }>({
-    1: { time: 0, restarts: 0, faults: 0 },
-    2: { time: 0, restarts: 0, faults: 0 },
-    3: { time: 0, restarts: 0, faults: 0 },
+    1: { time: 0, restarts: 0, graveFaults: 0, zone: 0, isFinished: false },
+    2: { time: 0, restarts: 0, graveFaults: 0, zone: 0, isFinished: false },
+    3: { time: 0, restarts: 0, graveFaults: 0, zone: 0, isFinished: false },
   });
 
-  // Repair time state
-  const [repairTimer, setRepairTimer] = useState<number | null>(null);
-  const [isRepairRunning, setIsRepairRunning] = useState(false);
+  const [penaltyHistory, setPenaltyHistory] = useState<{
+    type: "Reaparición" | "Falta Grave";
+    seconds: number;
+    timestamp: number;
+    attempt: number;
+  }[]>([]);
 
-  // Initialize time
+  // Format precisely
+  const formatMazeTime = (ms: number) => {
+      const totalSeconds = ms / 1000;
+      const mins = Math.floor(totalSeconds / 60);
+      const secs = Math.floor(totalSeconds % 60);
+      const millis = Math.floor((ms % 1000) / 10);
+      return `${mins}:${secs.toString().padStart(2, '0')}.${millis.toString().padStart(2, '0')}`;
+  };
+
+  // Timer Hook
   useEffect(() => {
-    if (
-      match.timeLeft === 180 &&
-      !match.isActive &&
-      match.scoreA === 0 &&
-      match.scoreB === 0
-    ) {
-      onControl(match.id, "SET_TIME", MAX_TIME);
+    let interval: any;
+    if (isRunning) {
+        interval = setInterval(() => {
+            setLocalTime(prev => prev + 10);
+        }, 10);
     }
-  }, [
-    match.timeLeft,
-    match.isActive,
-    onControl,
-    match.id,
-    match.scoreA,
-    match.scoreB,
-  ]);
+    return () => clearInterval(interval);
+  }, [isRunning]);
 
-  // Alerta tiempo superado
+  // Alerta tiempo superado (3 min = 180000 ms)
   useEffect(() => {
-    if (match.timeLeft === 0 && match.isActive) {
+    if (localTime >= 180000 && isRunning) {
+      setIsRunning(false);
       onControl(match.id, "PAUSE");
       openConfirm(
         "Tiempo Agotado",
-        "El robot superó los 3 minutos máximos permitidos. El intento ha sido descalificado (Sin tiempo base).",
+        "El robot superó los 3 minutos máximos permitidos.",
         () => {},
-        "danger",
+        "danger"
       );
     }
-  }, [match.timeLeft, match.isActive, onControl, match.id]);
+  }, [localTime, isRunning, onControl, match.id]);
 
   const [modalConfig, setModalConfig] = useState<{
     isOpen: boolean;
@@ -103,121 +105,126 @@ export const MazeControl = ({
     setModalConfig({ isOpen: true, title, message, type, onConfirm });
   };
 
-  // Repair Timer Hook
-  useEffect(() => {
-    let interval: any;
-    if (isRepairRunning && repairTimer !== null && repairTimer > 0) {
-      interval = setInterval(() => setRepairTimer((prev) => prev! - 1), 1000);
-    } else if (isRepairRunning && repairTimer === 0) {
-      setIsRepairRunning(false);
-    }
-    return () => clearInterval(interval);
-  }, [isRepairRunning, repairTimer]);
-
-  const handleRestartEvent = () => {
-    const currentRestarts = attemptScores[currentAttempt].restarts;
-    if (currentRestarts >= 2) {
+   const handleRestartEvent = () => {
+    if (globalRestarts >= 2) {
       openConfirm(
-        "Límite de Rearranques",
-        "Solo se permiten 2 rearranques por intento.",
+        "Límite de Reapariciones",
+        "Ya se han utilizado las 2 reapariciones permitidas para este robot en todos sus intentos.",
         () => {},
         "warning",
       );
       return;
     }
 
+    const penalty = globalRestarts === 0 ? 5 : 10;
+    
+    // Stop local timer for recolocation? User didn't specify, 
+    // but usually time keeps running unless it's a "total pause".
+    // I will Pause to be safe as per previous logic.
+    setIsRunning(false);
     onControl(match.id, "PAUSE");
-    onControl(match.id, "MAZE_RESTART", { attemptId: currentAttempt });
-    openConfirm(
-      "Rearranque (+15s)",
-      "El robot será recolocado en la zona de rearranque anterior más cercana. El cronómetro está pausado, reanúdalo cuando estés listo.",
-      () => {
+
+        setLocalTime(prev => prev + (penalty * 1000));
+        setPenaltyHistory(prev => [
+            ...prev,
+            { type: "Reaparición", seconds: penalty, timestamp: Date.now(), attempt: currentAttempt }
+        ]);
         setAttemptScores((prev) => ({
           ...prev,
           [currentAttempt]: {
             ...prev[currentAttempt],
-            restarts: prev[currentAttempt].restarts + 1,
-            faults: prev[currentAttempt].faults + 1,
+            restarts: prev[currentAttempt].restarts + penalty,
           },
         }));
-      },
-      "info",
-    );
+        setGlobalRestarts(v => v + 1);
   };
 
-  const handleFault = (reason: string) => {
-    openConfirm(
-      "Registrar Falta",
-      `¿Registrar falta por: ${reason}? Esto afectará la calificación final del intento.`,
-      () => {
-        onControl(match.id, "MAZE_FAULT", { reason });
+  const handleGraveFault = () => {
+    const currentFaults = attemptScores[currentAttempt].graveFaults;
+    if (currentFaults >= 3) {
+        // descalificación automática
+        openConfirm(
+            "DESCALIFICACIÓN",
+            "4ta Falta Grave. El robot queda descalificado de la ronda.",
+            () => {
+              onControl(match.id, "MAZE_DISQUALIFY", { reason: "4 Faltas Graves" });
+              onControl(match.id, "FINISH");
+            },
+            "danger"
+          );
+        return;
+    }
+    
+    const penalties = [5, 10, 15];
+    const penaltyValue = penalties[currentFaults];
+
+        setLocalTime(prev => prev + (penaltyValue * 1000));
+        setPenaltyHistory(prev => [
+            ...prev,
+            { type: "Falta Grave", seconds: penaltyValue, timestamp: Date.now(), attempt: currentAttempt }
+        ]);
         setAttemptScores((prev) => ({
           ...prev,
           [currentAttempt]: {
             ...prev[currentAttempt],
-            faults: prev[currentAttempt].faults + 1,
+            graveFaults: prev[currentAttempt].graveFaults + penaltyValue,
           },
         }));
-      },
-      "warning",
-    );
   };
+
+  const setZone = (z: number) => {
+      setAttemptScores(prev => ({
+          ...prev,
+          [currentAttempt]: { ...prev[currentAttempt], zone: z }
+      }));
+  };
+
+  // Removed handleFault in favor of handleGraveFault according to new rules
 
 
 
   const finishAttempt = () => {
+    setIsRunning(false);
     onControl(match.id, "PAUSE");
-    const baseTime = MAX_TIME - match.timeLeft;
-    const penaltyTime = attemptScores[currentAttempt].restarts * 15;
-    const finalTotalTime = baseTime + penaltyTime;
+    
+    const totalSeconds = localTime / 1000;
+    const penaltyTimeSum = attemptScores[currentAttempt].restarts + attemptScores[currentAttempt].graveFaults;
+    const baseSeconds = totalSeconds - penaltyTimeSum;
 
     onControl(match.id, "MAZE_FINISH", {
       attemptId: currentAttempt,
-      baseTime: baseTime,
-      penaltyTime: penaltyTime,
-      timeTaken: finalTotalTime,
+      baseTime: baseSeconds,
+      penaltyTime: penaltyTimeSum,
+      timeTaken: totalSeconds,
+      zone: attemptScores[currentAttempt].zone
     });
 
     setAttemptScores((prev) => ({
       ...prev,
       [currentAttempt]: {
         ...prev[currentAttempt],
-        time: finalTotalTime,
+        time: totalSeconds,
+        isFinished: true,
       },
     }));
   };
 
   const formatScoreAsTimeStr = (scoreSeconds: number) => {
     if (scoreSeconds === 0) return "---";
-    const m = Math.floor(scoreSeconds / 60);
-    const s = scoreSeconds % 60;
-    return `${m > 0 ? `${m}m ` : ""}${s}s`;
+    return formatMazeTime(scoreSeconds * 1000);
   };
 
-  const switchToAttempt = (attemptNum: 1 | 2 | 3) => {
-    if (match.isActive) {
-      openConfirm(
-        "Carrera en curso",
-        "Pausa la carrera actual antes de cambiar de intento.",
-        () => {},
-        "warning",
-      );
-      return;
-    }
-
-    openConfirm(
-      `Cambiar al Intento ${attemptNum}`,
-      `¿Preparar el sistema para el intento ${attemptNum}? Se reiniciará el tiempo actual de la pantalla para listos.`,
-      () => {
-        setCurrentAttempt(attemptNum);
-        onControl(match.id, "SET_TIME", MAX_TIME);
-        // Reset local attempt state if they want to override it? usually they keep what was there until they run it again.
-      },
-      "info",
-    );
+  const nextAttempt = () => {
+      if (currentAttempt < 3) {
+          setCurrentAttempt((currentAttempt + 1) as any);
+          setLocalTime(0);
+          setIsRunning(false);
+          setPenaltyHistory([]);
+          onControl(match.id, "SET_TIME", 0);
+      }
   };
 
-  const setBestAttemptAsFinal = () => {
+  const saveBestAndFinish = () => {
     // Busca el tiempo más bajo mayor a 0
     let bestTime = Infinity;
     for (let i = 1; i <= 3; i++) {
@@ -226,18 +233,16 @@ export const MazeControl = ({
         }
     }
     
-    if (bestTime === Infinity) {
-        openConfirm("Sin Intentos Validos", "No hay intentos terminados validos para guardar.", () => {}, "warning");
-        return;
-    }
+    const finalTime = bestTime === Infinity ? 180 : bestTime;
 
     openConfirm(
-      "Guardar Mejor Intento",
-      `¿Guardar ${formatScoreAsTimeStr(bestTime)} como el puntaje oficial final para el Robot A?`,
+      "Declarar y Guardar",
+      `¿Finalizar evaluación? El mejor tiempo registrado es ${formatScoreAsTimeStr(finalTime)}.`,
       () => {
-        onControl(match.id, "SET_SCORE_A", bestTime);
+        onControl(match.id, "SET_SCORE_A", finalTime);
+        onControl(match.id, "FINISH");
       },
-      "info",
+      "success" as any
     );
   };
 
@@ -246,30 +251,32 @@ export const MazeControl = ({
       {/* 1. STICKY HEADER: Timer & Primary Controls */}
       <div className="sticky top-0 z-50 bg-neutral-100 border-4 border-cb-black-pure shadow-md p-2 flex items-center justify-between gap-2">
         <button
-          className={`flex-shrink-0 w-16 h-12 flex items-center justify-center border-2 border-cb-black-pure shadow-[2px_2px_0_#000] active:scale-95 transition-all ${match.isActive ? "bg-cb-yellow-neon text-cb-black-pure" : "bg-cb-green-vibrant text-cb-black-pure"}`}
+          className={`flex-shrink-0 w-16 h-12 flex items-center justify-center border-2 border-cb-black-pure shadow-[2px_2px_0_#000] active:scale-95 transition-all ${isRunning ? "bg-cb-yellow-neon text-cb-black-pure" : "bg-cb-green-vibrant text-cb-black-pure"}`}
           onClick={() => {
-            if (repairTimer !== null && isRepairRunning) return;
-            if (!match.isActive) {
-              onControl(match.id, "MAZE_START", { attemptId: currentAttempt });
+            if (!isRunning) {
+              onControl(match.id, "START");
+              setIsRunning(true);
             } else {
               onControl(match.id, "PAUSE");
+              setIsRunning(false);
             }
           }}
         >
-          {match.isActive ? (
+          {isRunning ? (
             <Pause size={24} strokeWidth={3} />
           ) : (
             <Play size={24} strokeWidth={3} />
           )}
         </button>
 
-        <div className="flex-1 h-12 flex items-center justify-center bg-cb-white-tech relative">
+        <div className="flex-1 h-12 flex items-center justify-center bg-cb-black-pure border-2 border-cb-black-pure relative shadow-[inset_0_2px_4px_rgba(0,0,0,0.5)]">
           <span className="absolute top-0 left-1 text-[10px] text-cb-green-vibrant font-tech">
+             INTENTO {currentAttempt} / LABERINTO
           </span>
           <div
-            className={`font-mono font-black text-3xl tracking-widest ${match.timeLeft <= 10 ? "text-red-500 animate-pulse" : "text-cb-black-pure"}`}
+            className={`font-mono font-black text-3xl tracking-widest ${localTime >= 150000 ? "text-red-500 animate-pulse" : "text-cb-white-tech"}`}
           >
-            {formatTime(match.timeLeft)}
+            {formatMazeTime(localTime)}
           </div>
         </div>
 
@@ -281,45 +288,18 @@ export const MazeControl = ({
         </button>
       </div>
 
-      {/* REPAIR TIMER BANNER */}
-      {repairTimer !== null && (
-        <div className="bg-red-500 text-white font-tech font-bold uppercase p-3 border-4 border-cb-black-pure flex justify-between items-center text-sm">
-          <div className="flex items-center gap-2">
-            <Wrench size={20} /> PIDIÓ PAUSA: {formatTime(repairTimer)}
-          </div>
-          <div className="flex gap-2">
-            <button
-              onClick={() => setIsRepairRunning(!isRepairRunning)}
-              className="bg-cb-black-pure px-3 py-1 hover:bg-neutral-800 transition shadow-[2px_2px_0_#000]"
-            >
-              {isRepairRunning ? "PAUSAR" : "INICIAR"}
-            </button>
-            <button
-              onClick={() => {
-                setRepairTimer(null);
-                setIsRepairRunning(false);
-              }}
-              className="bg-white text-cb-black-pure px-3 py-1 hover:bg-neutral-200 transition shadow-[2px_2px_0_#000]"
-            >
-              X
-            </button>
-          </div>
-        </div>
-      )}
-
-      {/* ATTEMPTS TABS */}
+      {/* ATTEMPTS PROGRESS */}
       <div className="flex w-full mt-2 gap-1 px-2">
         {([1, 2, 3] as (1 | 2 | 3)[]).map((num) => (
-          <button
+          <div
             key={num}
-            onClick={() => switchToAttempt(num)}
-            className={`flex-1 py-2 font-tech font-black border-3 border-cb-black-pure uppercase text-xs md:text-sm transition-all ${currentAttempt === num ? "bg-cb-black-pure text-white shadow-[2px_2px_0_#000]" : "bg-cb-white-tech text-cb-black-pure hover:bg-neutral-400"}`}
+            className={`flex-1 py-1 px-2 border-3 border-cb-black-pure text-center ${currentAttempt === num ? 'bg-cb-yellow-neon' : 'bg-cb-white-tech'} shadow-[2px_2px_0_#000]`}
           >
-            Intento {num}
-            <div className="text-[10px] font-mono leading-none mt-1 text-cb-black-pure">
-              {formatScoreAsTimeStr(attemptScores[num].time)}
-            </div>
-          </button>
+             <div className="text-[9px] font-tech font-black text-cb-black-pure uppercase opacity-60">Intento {num}</div>
+             <div className="text-xs font-mono font-black text-cb-black-pure">
+               {attemptScores[num].time > 0 ? formatScoreAsTimeStr(attemptScores[num].time) : "---"}
+             </div>
+          </div>
         ))}
       </div>
 
@@ -334,36 +314,19 @@ export const MazeControl = ({
             textColor="text-cb-black-pure"
             onClick={() => {
               openConfirm(
-                "Anular Intento Actual",
-                "¿Limpiar tiempo y faltas del intento actual para rehacerlo? (El robot aún no estaba listo)",
+                "Anular Intento",
+                "¿Limpiar el progreso del intento actual?",
                 () => {
-                  onControl(match.id, "SET_TIME", MAX_TIME);
+                  setLocalTime(0);
+                  setIsRunning(false);
+                  setPenaltyHistory([]);
                   setAttemptScores((prev) => ({
                     ...prev,
-                    [currentAttempt]: { time: 0, restarts: 0, faults: 0 },
+                    [currentAttempt]: { time: 0, restarts: 0, graveFaults: 0, zone: 0, isFinished: false },
                   }));
                   setShowMoreActions(false);
                 },
                 "warning",
-              );
-            }}
-          />
-          <ActionButton
-            icon={Clock}
-            size="py-3"
-            label="Pausa Solicitada"
-            color="bg-white"
-            textColor="text-cb-black-pure"
-            onClick={() => {
-              openConfirm(
-                "Pausa de 3 Minutos",
-                "El capitán solicitó pausa (solo válida antes de Iniciar Recorrido).",
-                () => {
-                  setRepairTimer(180);
-                  setIsRepairRunning(false);
-                  setShowMoreActions(false);
-                },
-                "info",
               );
             }}
           />
@@ -399,21 +362,21 @@ export const MazeControl = ({
           </div>
 
           {/* ACTIVE ATTEMPT INFO PANEL */}
-          <div className="w-full grid grid-cols-2 gap-2 mb-4 bg-cb-white-tech border-3 border-cb-black-pure p-3 text-white">
-            <div className="flex flex-col items-center border-r-2 border-dashed border-neutral-600">
-              <span className="text-xs font-tech text-cb-black-pure">
-                REARRANQUES (-15s c/u)
+          <div className="w-full grid grid-cols-2 gap-2 mb-4 bg-cb-white-tech border-3 border-cb-black-pure p-3">
+            <div className="flex flex-col items-center border-r-2 border-dashed border-cb-black-pure/20">
+              <span className="text-[10px] font-tech text-cb-black-pure/70 uppercase">
+                REAPARICIÓN (GLOBAL)
               </span>
               <span className="text-3xl font-tech font-black text-cb-black-pure">
-                {attemptScores[currentAttempt].restarts}/2
+                {globalRestarts}/2
               </span>
             </div>
             <div className="flex flex-col items-center">
-              <span className="text-xs font-tech text-cb-black-pure">
-                FALTAS TOTALES
+              <span className="text-[10px] font-tech text-cb-black-pure/70 uppercase">
+                PENALIZACIÓN ACUM.
               </span>
-              <span className="text-3xl font-tech font-black text-cb-black-pure">
-                {attemptScores[currentAttempt].faults}
+              <span className="text-3xl font-tech font-black text-cb-red-alert">
+                 +{attemptScores[currentAttempt].restarts + attemptScores[currentAttempt].graveFaults}s
               </span>
             </div>
           </div>
@@ -426,40 +389,54 @@ export const MazeControl = ({
               <ActionButton
                 size="py-2"
                 icon={TimerReset}
-                label="Rearranque"
+                label="Reaparición"
                 color="bg-cb-green-vibrant"
                 textColor="text-cb-black-pure"
-                disabled={!match.isActive || attemptScores[currentAttempt].restarts >= 2}
+                disabled={!isRunning || globalRestarts >= 2}
                 onClick={handleRestartEvent}
               />
               <ActionButton
                 size="py-2"
                 icon={AlertTriangle}
-                label="Salida de Pista"
-                color="bg-cb-green-vibrant"
+                label="Falta Grave"
+                color="bg-cb-yellow-neon"
                 textColor="text-cb-black-pure"
-                disabled={!match.isActive}
-                onClick={() => handleFault("Salida de Pista")}
-              />
-              <ActionButton
-                size="py-2"
-                icon={AlertTriangle}
-                label="Dirección Mal"
-                color="bg-cb-green-vibrant"
-                textColor="text-cb-black-pure"
-                disabled={!match.isActive}
-                onClick={() => handleFault("Sentido Contrario")}
-              />
-              <ActionButton
-                size="py-2"
-                icon={Wrench}
-                label="Violación Genérica"
-                color="bg-cb-green-vibrant"
-                textColor="text-cb-black-pure"
-                disabled={!match.isActive}
-                onClick={() => handleFault("Violación General")}
+                disabled={!isRunning}
+                onClick={handleGraveFault}
               />
             </div>
+
+            <div className="font-tech font-black text-xs text-left mb-1 mt-2 text-cb-black-pure">
+              ZONAS ALCANZADAS
+            </div>
+            <div className="flex gap-1 w-full overflow-x-auto pb-2">
+                {[1, 2, 3, 4, 5].map(z => (
+                    <button
+                        key={z}
+                        onClick={() => setZone(z)}
+                        className={`flex-1 min-w-[40px] py-2 border-2 border-cb-black-pure font-tech font-black ${attemptScores[currentAttempt].zone === z ? 'bg-cb-black-pure text-white' : 'bg-white text-cb-black-pure'}`}
+                    >
+                        Z{z}
+                    </button>
+                ))}
+              </div>
+          </div>
+
+          {/* PENALTY HISTORY PANEL */}
+          <div className="w-full mt-4 bg-cb-black-pure/5 border-2 border-dashed border-cb-black-pure p-3 text-left">
+             <div className="text-[10px] font-tech font-black text-cb-black-pure uppercase mb-2">Historial de Penalizaciones:</div>
+             <div className="space-y-1 max-h-32 overflow-y-auto pr-1">
+                {penaltyHistory.length > 0 ? penaltyHistory.map((entry, idx) => (
+                    <div key={idx} className="flex justify-between items-center text-[10px] font-tech font-bold py-1 border-b border-black/10">
+                        <span className={entry.type === "Reaparición" ? "text-cb-green-vibrant bg-cb-black-pure px-1" : "text-cb-black-pure bg-cb-yellow-neon px-1"}>
+                           {entry.type}
+                        </span>
+                        <span className="text-cb-black-pure">+{entry.seconds}s</span>
+                    </div>
+                )) : (
+                    <p className="text-[9px] text-neutral-400 italic">No hay penalizaciones registradas.</p>
+                )}
+             </div>
           </div>
 
           <div className="w-full mt-2 border-t-2 border-black border-dashed pt-4">
@@ -468,14 +445,17 @@ export const MazeControl = ({
                 size="py-2"
                 icon={Flag}
                 label="¡LLEGÓ A META!"
-                color="bg-cb-yellow-neon"
+                color="bg-cb-green-vibrant"
                 textColor="text-cb-black-pure"
-                disabled={!match.isActive}
+                disabled={!isRunning}
                 onClick={() => {
                   openConfirm(
                     "Registro de Llegada",
-                    "¿Robot llegó a la meta? Se detendrá el tiempo automáticamente y guardará para el intento atual.",
-                    () => finishAttempt(),
+                    "¿Robot llegó a la meta? Se detendrá el tiempo automáticamente.",
+                    () => {
+                        setZone(5);
+                        finishAttempt();
+                    },
                     "info",
                   );
                 }}
@@ -505,31 +485,23 @@ export const MazeControl = ({
       </div>
 
       {/* 4. BOTTOM FIXED BAR: RESOLUTION */}
-      <div className="mt-4 px-2">
+      <div className="mt-4 px-2 pb-6">
         <div className="grid grid-cols-2 gap-2 md:gap-3">
           <ActionButton
-            icon={Save}
-            label="Guardar Mejor Intento"
-            color="bg-white"
-            textColor="text-cb-black-pure"
-            onClick={() => setBestAttemptAsFinal()}
+            icon={ArrowRight}
+            label="Siguiente Intento"
+            color="bg-cb-black-pure"
+            textColor="text-white"
+            disabled={currentAttempt >= 3 || !attemptScores[currentAttempt].isFinished}
+            onClick={nextAttempt}
           />
           <ActionButton
-            icon={Trophy}
-            label="Declarar Listo"
-            color="bg-white"
+            icon={CheckCircle}
+            label="Declarar y Guardar"
+            color="bg-cb-yellow-neon"
+            size="py-4"
             textColor="text-cb-black-pure"
-            onClick={() => {
-              openConfirm(
-                "Finalizar Evaluación",
-                "¿Guardar y finalizar este participante?",
-                () => {
-                    setBestAttemptAsFinal();
-                    onControl(match.id, "FINISH");
-                },
-                "warning",
-              );
-            }}
+            onClick={saveBestAndFinish}
           />
         </div>
       </div>

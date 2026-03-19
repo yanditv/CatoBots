@@ -8,6 +8,8 @@ import RefereeControl from './pages/RefereeControl'
 import Login from './pages/Login'
 import AdminPanel from './pages/Admin/AdminPanel'
 import Brackets from './pages/Brackets'
+import { RoundControl } from './pages/Referee/RoundControl'
+import RoundDashboard from './pages/RoundDashboard'
 import NotFound from './pages/NotFound'
 import { AuthProvider, useAuth } from './context/AuthContext'
 import { SOCKET_URL } from './config/api'
@@ -32,6 +34,7 @@ export interface MatchState {
   isFinished: boolean;
   round: string;
   category: string;
+  level?: string;
   showInDashboard: boolean;
   winnerId: string | null;
   refereeId: string | null;
@@ -84,6 +87,7 @@ function AppContent() {
 
         {/* Public Scoreboard */}
         <Route path="/dashboard" element={<Dashboard matches={matches} revealWinnerEvent={revealWinnerEvent} onClearReveal={() => setRevealWinnerEvent(null)} />} />
+        <Route path="/dashboard-rondas" element={<RoundDashboard matches={matches} />} />
         <Route path="/keys" element={<Brackets />} />
 
         {/* Auth */}
@@ -93,6 +97,11 @@ function AppContent() {
         <Route path="/referee" element={
           <ProtectedRoute role="REFEREE">
             <RefereeControl matches={matches} onControl={sendControl} />
+          </ProtectedRoute>
+        } />
+        <Route path="/referee/rounds" element={
+          <ProtectedRoute role="REFEREE">
+            <RoundControl matches={matches} />
           </ProtectedRoute>
         } />
 

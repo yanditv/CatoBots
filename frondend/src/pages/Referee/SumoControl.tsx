@@ -10,12 +10,8 @@ import {
   Wrench,
   AlertTriangle,
   XCircle,
-  Clock,
-  Activity,
   MoreVertical,
-  Zap,
   StopCircle,
-  Flag,
 } from "lucide-react";
 import type { MatchState } from "../../App";
 
@@ -25,15 +21,12 @@ interface SumoControlProps {
   formatTime: (seconds: number) => string;
 }
 
-
-
 export const SumoControl = ({
   match,
   onControl,
   formatTime,
 }: SumoControlProps) => {
   const [showMoreActions, setShowMoreActions] = useState(false);
-  const [isFinalPhase, setIsFinalPhase] = useState(false);
 
   // Specific Sumo timers
   const [immobilizeTimerA, setImmobilizeTimerA] = useState<number | null>(null);
@@ -43,16 +36,13 @@ export const SumoControl = ({
   const [repairTimer, setRepairTimer] = useState<number | null>(null);
   const [isRepairRunning, setIsRepairRunning] = useState(false);
 
-  // Violations (2 = round loss in SUMO)
-  const [violationsA, setViolationsA] = useState(0);
-  const [violationsB, setViolationsB] = useState(0);
-
-  // Extra round / Sudden death state
-  const [isExtraRound, setIsExtraRound] = useState(false);
-
+  // Helper values
   const totalRoundsPlayed = match.scoreA + match.scoreB;
   const currentRound = Math.min(totalRoundsPlayed + 1, 3);
-  const displayRound = isExtraRound ? "EXTRA" : currentRound;
+
+  // Violations derived from server state (Match penalties)
+  const violationsA = (match.penaltiesA || []).filter((p: any) => p === 'Violación').length % 2;
+  const violationsB = (match.penaltiesB || []).filter((p: any) => p === 'Violación').length % 2;
 
   const [modalConfig, setModalConfig] = useState<{
     isOpen: boolean;
@@ -103,8 +93,6 @@ export const SumoControl = ({
     onControl(match.id, "SET_TIME", 60);
     setImmobilizeTimerA(null);
     setImmobilizeTimerB(null);
-    setViolationsA(0); // reset violations for the new round
-    setViolationsB(0);
   };
 
   // Immobilize Timer Hook
@@ -158,25 +146,7 @@ export const SumoControl = ({
   }, [isRepairRunning, repairTimer]);
 
   const addViolation = (who: "A" | "B") => {
-    const current = who === "A" ? violationsA : violationsB;
-    if (current + 1 === 2) {
-      openConfirm(
-        "Límite de Violaciones",
-        `El Robot ${who} ha cometido 2 violaciones y pierde este ROUND.`,
-        () => {
-          handleRoundWin(who === "A" ? "B" : "A");
-        },
-        "danger",
-      );
-    } else {
-      if (who === "A") {
-        setViolationsA((v) => v + 1);
-        onControl(match.id, "MS_VIOLATION", "A");
-      } else {
-        setViolationsB((v) => v + 1);
-        onControl(match.id, "MS_VIOLATION", "B");
-      }
-    }
+    onControl(match.id, "MS_VIOLATION", who);
   };
 
   const handleGravePenalty = (who: "A" | "B") => {
@@ -196,12 +166,11 @@ export const SumoControl = ({
 
   return (
     <div className="flex flex-col gap-2 relative">
-      {/* 1. STICKY HEADER: Timer & Primary Controls */}
       <div className="sticky top-0 z-50 bg-neutral-100 border-4 border-cb-black-pure shadow-md p-2 flex items-center justify-between gap-2">
         <button
           className={`flex-shrink-0 w-16 h-12 flex items-center justify-center border-2 border-cb-black-pure shadow-[2px_2px_0_#000] active:scale-95 transition-all ${match.isActive ? "bg-cb-yellow-neon text-cb-black-pure" : "bg-cb-green-vibrant text-cb-black-pure"}`}
           onClick={() => {
-            if (repairTimer !== null && isRepairRunning) return; // Prevent starting if repair is running
+            if (repairTimer !== null && isRepairRunning) return; 
             onControl(match.id, match.isActive ? "PAUSE" : "START");
           }}
         >
@@ -214,7 +183,7 @@ export const SumoControl = ({
 
         <div className="flex-1 h-12 flex items-center justify-center border-2 border-cb-black-pure bg-cb-black-pure shadow-[2px_2px_0_#CBFF00] relative">
           <span className="absolute top-0 left-1 text-[10px] text-cb-green-vibrant font-tech">
-            {isFinalPhase ? "FINAL DE SUMO" : "SUMO"} / ROUND {displayRound}
+             {match.category.toUpperCase()} / ROUND {currentRound}
           </span>
           <div
             className={`font-mono font-black text-3xl tracking-widest ${match.timeLeft <= 10 ? "text-red-500 animate-pulse" : "text-cb-white-tech"}`}
@@ -231,7 +200,6 @@ export const SumoControl = ({
         </button>
       </div>
 
-      {/* REPAIR TIMER BANNER */}
       {repairTimer !== null && (
         <div className="bg-red-500 text-white font-tech font-bold uppercase p-3 border-4 border-cb-black-pure flex justify-between items-center text-sm">
           <div className="flex items-center gap-2">
@@ -257,20 +225,8 @@ export const SumoControl = ({
         </div>
       )}
 
-      {/* 2. EXPANDABLE "MORE ACTIONS" PANEL */}
       {showMoreActions && (
         <div className="bg-neutral-200 border-b-4 border-cb-black-pure p-2 grid grid-cols-3 gap-2 shadow-inner">
-          <ActionButton
-            icon={Flag}
-            size="py-3"
-            label={isFinalPhase ? "Quitar Final" : "Marcar Final"}
-            color={isFinalPhase ? "bg-white" : "bg-cb-yellow-neon"}
-            textColor="text-cb-black-pure"
-            onClick={() => {
-              setIsFinalPhase(!isFinalPhase);
-              setShowMoreActions(false);
-            }}
-          />
           <ActionButton
             icon={RotateCcw}
             size="py-3"
@@ -286,8 +242,6 @@ export const SumoControl = ({
                   onControl(match.id, "PAUSE");
                   setImmobilizeTimerA(null);
                   setImmobilizeTimerB(null);
-                  setViolationsA(0);
-                  setViolationsB(0);
                   setShowMoreActions(false);
                 },
                 "warning",
@@ -328,41 +282,16 @@ export const SumoControl = ({
                   onControl(match.id, "RESET", 60);
                   setImmobilizeTimerA(null);
                   setImmobilizeTimerB(null);
-                  setViolationsA(0);
-                  setViolationsB(0);
-                  setIsExtraRound(false);
                   setShowMoreActions(false);
                 },
                 "danger",
               );
             }}
           />
-          <ActionButton
-            icon={Zap}
-            size="py-3"
-            label="Round Extra / Empate"
-            color="bg-white"
-            textColor="text-cb-black-pure"
-            onClick={() => {
-              openConfirm(
-                "Round Extra",
-                "¿Iniciar round de desempate (muerte súbita)?",
-                () => {
-                  setIsExtraRound(true);
-                  onControl(match.id, "SET_TIME", 60);
-                  onControl(match.id, "PAUSE");
-                  setShowMoreActions(false);
-                },
-                "info",
-              );
-            }}
-          />
         </div>
       )}
 
-      {/* 3. ROBOT CARDS */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-5 px-2 mt-2">
-        {/* Robot A */}
         <div className="flex-1 p-3 bg-cb-white-tech border-4 border-cb-black-pure text-center shadow-block-sm relative flex flex-col items-center">
           <h2 className="text-xl font-tech font-black uppercase text-cb-black-pure truncate mt-2">
             {match.robotA?.name || "---"}
@@ -431,7 +360,6 @@ export const SumoControl = ({
             />
           </div>
 
-          {/* Immobilization */}
           <div className="w-full mt-auto">
             {immobilizeTimerA !== null ? (
               <ActionButton
@@ -462,7 +390,6 @@ export const SumoControl = ({
           </div>
         </div>
 
-        {/* Robot B */}
         <div className="flex-1 p-3 bg-cb-white-tech border-4 border-cb-black-pure text-center shadow-block-sm relative flex flex-col items-center">
           <h2 className="text-xl font-tech font-black uppercase text-cb-black-pure truncate mt-2">
             {match.robotB?.name || "---"}
@@ -530,7 +457,6 @@ export const SumoControl = ({
               onClick={() => handleGravePenalty("B")}
             />
           </div>
-          {/* Immobilization */}
           <div className="w-full mt-auto">
             {immobilizeTimerB !== null ? (
               <ActionButton
@@ -559,72 +485,6 @@ export const SumoControl = ({
               />
             )}
           </div>
-        </div>
-      </div>
-
-      {/* 4. BOTTOM FIXED BAR: RESOLUTION */}
-      <div className="mt-4 px-2">
-        <div className="grid grid-cols-3 md:grid-cols-5 gap-2 md:gap-3">
-          <ActionButton
-            icon={StopCircle}
-            label="Round Empatado"
-            color="bg-white"
-            textColor="text-cb-black-pure"
-            disabled={!match.isActive}
-            onClick={() => {
-              openConfirm(
-                "Round Sin Ganador",
-                "Ambos robots fallaron mutuamente, límite de tiempo superado, round empatado sin punto.",
-                () => handleRoundWin("NULL"),
-                "info",
-              );
-            }}
-          />
-          <ActionButton
-            icon={Zap}
-            label="Muerte Súbita Mult."
-            color="bg-white"
-            textColor="text-cb-black-pure"
-            onClick={() => {
-              openConfirm(
-                "Muerte Súbita",
-                "¿Iniciar ronda de muerte súbita para desempate con 3 o más equipos?",
-                () => {},
-                "info",
-              );
-            }}
-          />
-          <ActionButton
-            icon={Clock}
-            label="Punto Oro Previo"
-            color="bg-white"
-            textColor="text-cb-black-pure"
-            className="md:col-span-1 hidden md:flex"
-            onClick={() => {
-              openConfirm(
-                "Desempate de Historial",
-                "Revisar combate previo entre estos dos y dar punto al ganador anterior.",
-                () => {},
-                "info",
-              );
-            }}
-          />
-          <ActionButton
-            icon={Activity}
-            label="Puntaje Final Combate"
-            className="md:col-span-2 text-xs" // Allow span for better text fit
-            color="bg-cb-yellow-neon"
-            textColor="text-cb-black-pure"
-            disabled={!match.isFinished && (match.scoreA < 2 && match.scoreB < 2)}
-            onClick={() => {
-              openConfirm(
-                "Puntuación Final Combate",
-                "Anota el resultado: 3-0 si ganó directo, 2-1 si cedió 1 round, o 1-1 en caso de empates mutuos.",
-                () => {},
-                "info",
-              );
-            }}
-          />
         </div>
       </div>
 

@@ -1,10 +1,14 @@
 import { Category } from './models/Category';
-import { Match } from './models/Match';
 import { Robot } from './models/Robot';
 import { Institution } from './models/Institution';
 import { User } from './models/User';
+import { CATEGORY_MATCH_MODELS, ALL_CATEGORY_MATCH_MODELS } from './models/CategoryMatches';
 import sequelize from './config/db';
 import bcrypt from 'bcryptjs';
+
+const getMatchModel = (category: string) => {
+  return CATEGORY_MATCH_MODELS[category];
+};
 
 const seedRefereeBattles = async () => {
   try {
@@ -23,8 +27,10 @@ const seedRefereeBattles = async () => {
 
     console.log(`Referee found/created: ${referee.username} (ID: ${referee.id})`);
 
-    // 2. Clear old matches that might conflict if needed (Optional, we'll just clear matches for this referee)
-    await Match.destroy({ where: { refereeId: referee.id } });
+    // 2. Clear old matches that might conflict if needed
+    for (const model of ALL_CATEGORY_MATCH_MODELS) {
+      await (model as any).destroy({ where: { refereeId: referee.id } });
+    }
     console.log(`Cleared previous matches for referee: ${referee.username}`);
 
     // 3. Get all categories
@@ -66,7 +72,8 @@ const seedRefereeBattles = async () => {
         robots = [r1, r2];
       }
 
-      await Match.create({
+      const TargetModel = getMatchModel(cat.name) as any;
+      await TargetModel.create({
         category: cat.name,
         level: 'SENIOR', 
         refereeId: referee.id,

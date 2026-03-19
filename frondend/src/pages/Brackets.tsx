@@ -28,12 +28,12 @@ interface Match {
 
 // Phase color palette — aggresssive grunge
 const PHASE_COLORS: Record<string, { bg: string; border: string; text: string; accent: string; glow: string }> = {
-  '32VOS':    { bg: 'bg-[#0d1117]', border: 'border-cyan-500',    text: 'text-cyan-400',    accent: 'bg-cyan-500',    glow: 'shadow-[0_0_20px_rgba(6,182,212,0.3)]' },
-  '16VOS':    { bg: 'bg-[#0d1117]', border: 'border-blue-500',    text: 'text-blue-400',    accent: 'bg-blue-500',    glow: 'shadow-[0_0_20px_rgba(59,130,246,0.3)]' },
-  'OCTAVOS':  { bg: 'bg-[#0d1117]', border: 'border-indigo-500',  text: 'text-indigo-400',  accent: 'bg-indigo-500',  glow: 'shadow-[0_0_20px_rgba(99,102,241,0.3)]' },
-  'QUARTERS': { bg: 'bg-[#0d1117]', border: 'border-purple-500',  text: 'text-purple-400',  accent: 'bg-purple-500',  glow: 'shadow-[0_0_20px_rgba(168,85,247,0.3)]' },
-  'SEMIS':    { bg: 'bg-[#0d1117]', border: 'border-orange-500',  text: 'text-orange-400',  accent: 'bg-orange-500',  glow: 'shadow-[0_0_20px_rgba(249,115,22,0.3)]' },
-  'FINAL':    { bg: 'bg-[#0d1117]', border: 'border-cb-yellow-neon', text: 'text-cb-yellow-neon', accent: 'bg-cb-yellow-neon', glow: 'shadow-[0_0_30px_rgba(255,234,0,0.4)]' },
+  '32VOS':    { bg: 'bg-[#000]', border: 'border-white',          text: 'text-white',          accent: 'bg-white',          glow: 'shadow-[4px_4px_0_#000]' },
+  '16VOS':    { bg: 'bg-[#000]', border: 'border-cyan-400',       text: 'text-cyan-400',       accent: 'bg-cyan-400',       glow: 'shadow-[4px_4px_0_#000]' },
+  'OCTAVOS':  { bg: 'bg-[#000]', border: 'border-blue-500',       text: 'text-blue-500',       accent: 'bg-blue-500',       glow: 'shadow-[4px_4px_0_#000]' },
+  'QUARTERS': { bg: 'bg-[#000]', border: 'border-purple-600',     text: 'text-purple-600',     accent: 'bg-purple-600',     glow: 'shadow-[4px_4px_0_#000]' },
+  'SEMIS':    { bg: 'bg-[#000]', border: 'border-red-600',        text: 'text-red-600',        accent: 'bg-red-600',        glow: 'shadow-[4px_4px_0_#000]' },
+  'FINAL':    { bg: 'bg-[#000]', border: 'border-cb-yellow-neon', text: 'text-cb-yellow-neon', accent: 'bg-cb-yellow-neon', glow: 'shadow-[6px_6px_0_#10B961]' },
 };
 
 const getPhaseColor = (round: string) => PHASE_COLORS[round] || PHASE_COLORS['OCTAVOS'];
@@ -43,6 +43,7 @@ let socket: Socket;
 const Brackets = () => {
   const [matches, setMatches] = useState<Match[]>([]);
   const [selectedCategory, setSelectedCategory] = useState<string>('');
+  const [selectedLevel, setSelectedLevel] = useState<string>('');
 
   useEffect(() => {
     socket = io(SOCKET_URL, {
@@ -54,13 +55,29 @@ const Brackets = () => {
 
   const categories = useMemo(() => [...new Set(matches.map(m => m.category))], [matches]);
 
+  const levels = useMemo(() => {
+    if (!selectedCategory) return [];
+    return [...new Set(matches.filter(m => m.category === selectedCategory).map(m => m.level).filter(Boolean))];
+  }, [matches, selectedCategory]);
+
   useEffect(() => {
     if (!selectedCategory && categories.length > 0) setSelectedCategory(categories[0]);
   }, [categories, selectedCategory]);
 
+  useEffect(() => {
+    if (levels.length > 0 && (!selectedLevel || !levels.includes(selectedLevel))) {
+      setSelectedLevel(levels[0]);
+    } else if (levels.length === 0) {
+      setSelectedLevel('');
+    }
+  }, [levels, selectedLevel]);
+
   const filteredMatches = useMemo(() =>
-    matches.filter(m => !selectedCategory || m.category === selectedCategory),
-    [matches, selectedCategory]);
+    matches.filter(m => 
+      (!selectedCategory || m.category === selectedCategory) &&
+      (!selectedLevel || m.level === selectedLevel)
+    ),
+    [matches, selectedCategory, selectedLevel]);
 
   const matchMap = useMemo(() => {
     const map = new Map<string, Match>();
@@ -104,6 +121,50 @@ const Brackets = () => {
   }, [rootMatch, childrenMap]);
 
   const roundOrder = ['32VOS', '16VOS', 'OCTAVOS', 'QUARTERS', 'SEMIS'];
+
+  const isRoundBased = useMemo(() => {
+    const c = selectedCategory.toLowerCase();
+    return c.includes("laberinto") || c.includes("seguidor") || c.includes("biobot") || c.includes("innovaci");
+  }, [selectedCategory]);
+
+  const roundsData = useMemo(() => {
+    if (!isRoundBased) return [];
+    const rnds = [...new Set(filteredMatches.map(m => m.round))].sort();
+    return rnds;
+  }, [filteredMatches, isRoundBased]);
+
+  const winnerRobot = useMemo(() => {
+    if (!isRoundBased) return null;
+    const finalMatch = filteredMatches.find(m => m.round.toUpperCase().includes('FINAL') || m.round.includes('2')) || null;
+    if (finalMatch && finalMatch.isFinished && finalMatch.winnerId) {
+      return finalMatch.winnerId === finalMatch.robotA?.id ? finalMatch.robotA : finalMatch.robotB;
+    }
+    return null;
+  }, [filteredMatches, isRoundBased]);
+
+  // === ROUND CARD (Single Participant) ===
+  const RoundCard = ({ match }: { match: Match }) => {
+    const isWinner = match.isFinished && match.winnerId === match.robotA?.id;
+    return (
+      <motion.div
+        layout
+        className={`w-48 sm:w-56 bg-[#111] border-2 ${isWinner ? 'border-cb-yellow-neon shadow-[3px_3px_0_#FFF]' : 'border-neutral-800'} p-2 relative overflow-hidden group`}
+      >
+        <div className="flex justify-between items-center gap-2">
+           <div className="min-w-0 flex-1">
+              <p className={`text-xs font-tech font-black uppercase truncate ${isWinner ? 'text-cb-yellow-neon' : 'text-cb-white-tech'}`}>
+                {match.robotA?.name || 'Inscrito'}
+              </p>
+              <p className="text-[9px] font-tech text-neutral-500 truncate">{match.robotA?.institution || '-'}</p>
+           </div>
+           <div className={`px-2 py-0.5 font-tech font-black text-xs ${isWinner ? 'bg-cb-yellow-neon text-cb-black-pure' : 'bg-neutral-900 text-neutral-400'}`}>
+              {match.scoreA}
+           </div>
+        </div>
+        {isWinner && <Crown size={12} className="absolute top-1 right-1 text-cb-black-pure z-10" fill="currentColor" />}
+      </motion.div>
+    );
+  };
 
   // === MATCH NODE ===
   const MatchNode = ({ match, side }: { match: Match, side: 'left' | 'right' }) => {
@@ -231,27 +292,93 @@ const Brackets = () => {
         <div className="flex items-center gap-4">
           <PhaseLegend />
           <div className="w-px h-8 bg-neutral-700" />
-          <div className="flex gap-2">
-            {categories.map(cat => (
-              <button
-                key={cat}
-                onClick={() => setSelectedCategory(cat)}
-                className={`px-5 py-2 font-tech font-black text-[10px] uppercase tracking-widest transition-all duration-75 border-2 ${
-                  selectedCategory === cat
-                    ? 'bg-cb-yellow-neon text-cb-black-pure border-cb-black-pure shadow-[3px_3px_0_#10B961]'
-                    : 'text-neutral-500 border-neutral-700 hover:text-cb-yellow-neon hover:border-cb-yellow-neon'
-                }`}
-              >
-                {cat}
-              </button>
-            ))}
+          <div className="flex flex-col items-end gap-2">
+            <div className="flex gap-2">
+              {categories.map(cat => (
+                <button
+                  key={cat}
+                  onClick={() => setSelectedCategory(cat)}
+                  className={`px-5 py-2 font-tech font-black text-[10px] uppercase tracking-widest transition-all duration-75 border-2 ${
+                    selectedCategory === cat
+                      ? 'bg-cb-yellow-neon text-cb-black-pure border-cb-black-pure shadow-[3px_3px_0_#10B961]'
+                      : 'text-neutral-500 border-neutral-700 hover:text-cb-yellow-neon hover:border-cb-yellow-neon'
+                  }`}
+                >
+                  {cat}
+                </button>
+              ))}
+            </div>
+            {levels.length > 1 && (
+              <div className="flex gap-1.5 backdrop-blur-sm bg-cb-black-pure/40 p-1 border border-neutral-800">
+                {levels.map(lvl => (
+                  <button
+                    key={lvl}
+                    onClick={() => setSelectedLevel(lvl)}
+                    className={`px-3 py-1 font-tech font-black text-[9px] uppercase tracking-widest transition-all duration-75 ${
+                      selectedLevel === lvl
+                        ? 'bg-cb-green-vibrant text-cb-black-pure shadow-[2px_2px_0_#000]'
+                        : 'text-neutral-500 hover:text-cb-white-tech'
+                    }`}
+                  >
+                    {lvl}
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
         </div>
       </header>
 
       {/* Main Bracket Area */}
       <main className="flex-1 relative flex items-center justify-center p-6 overflow-hidden">
-        {rootMatch ? (
+        {selectedCategory && isRoundBased ? (
+          <div className="w-full h-full flex items-start justify-center gap-12 overflow-x-auto custom-scrollbar py-8">
+            {roundsData.map((rnd) => (
+              <div key={rnd} className="flex flex-col gap-6 items-center min-w-[220px]">
+                <h3 className="text-cb-yellow-neon font-tech font-black uppercase text-sm tracking-[0.4em] mb-4 bg-cb-black-pure px-4 py-1 border border-cb-yellow-neon/20 shadow-[4px_4px_0_rgba(255,240,0,0.1)]">
+                  {rnd}
+                </h3>
+                <div className="flex flex-col gap-3">
+                  {filteredMatches.filter(m => m.round === rnd).map(m => (
+                    <RoundCard key={m.id} match={m} />
+                  ))}
+                </div>
+              </div>
+            ))}
+
+            {/* Winner Box */}
+            <div className="flex flex-col gap-6 items-center min-w-[220px]">
+                <h3 className="text-cb-white-tech font-tech font-black uppercase text-sm tracking-[0.4em] mb-4 opacity-50">
+                  Ganador
+                </h3>
+                <motion.div 
+                  initial={{ scale: 0.9, opacity: 0 }}
+                  animate={{ scale: 1, opacity: 1 }}
+                  className={`w-64 p-6 border-4 flex flex-col items-center justify-center text-center gap-4 relative overflow-hidden ${winnerRobot ? 'bg-cb-yellow-neon border-cb-black-pure shadow-[8px_8px_0_#FFF]' : 'bg-[#111] border-neutral-800 opacity-40'}`}
+                >
+                   {winnerRobot ? (
+                     <>
+                       <div className="absolute top-0 left-0 w-full h-2 bg-warning-tape" />
+                       <Trophy size={48} className="text-cb-black-pure mb-2 animate-bounce" />
+                       <div>
+                         <p className="text-[10px] font-tech font-black text-cb-black-pure/60 uppercase">Campeón de la Arena</p>
+                         <h2 className="text-2xl font-tech font-black uppercase text-cb-black-pure leading-tight mt-1">{winnerRobot.name}</h2>
+                         <p className="text-[10px] font-tech font-bold text-cb-black-pure/80 uppercase mt-2">{winnerRobot.institution}</p>
+                       </div>
+                       <div className="absolute -bottom-6 -right-6 opacity-10">
+                          <Crown size={120} />
+                       </div>
+                     </>
+                   ) : (
+                     <>
+                       <Trophy size={48} className="text-neutral-700" />
+                       <p className="text-xs font-tech font-black text-neutral-600 uppercase tracking-widest mt-2">En proceso...</p>
+                     </>
+                   )}
+                </motion.div>
+            </div>
+          </div>
+        ) : rootMatch ? (
           <div className="w-full h-full flex items-center justify-between gap-0 max-w-[1920px] mx-auto overflow-hidden">
 
             {/* LEFT SIDE BRACKET */}

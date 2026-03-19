@@ -12,7 +12,9 @@ import {
   Terminal,
   Trophy,
   Clock,
+  Layers,
 } from "lucide-react";
+import { useSearchParams, Link } from "react-router-dom";
 import type { MatchState } from "../App";
 import { useAuth } from "../context/AuthContext";
 import { MinisumoControl } from "./Referee/MinisumoControl";
@@ -112,9 +114,10 @@ const ActionButton = ({
   </button>
 );
 
-const RefereeControl = ({ matches, onControl }: RefereeControlProps) => {
+ const RefereeControl = ({ matches, onControl }: RefereeControlProps) => {
   const { user, logout } = useAuth();
-  const [selectedMatchId, setSelectedMatchId] = useState<string | null>(null);
+  const [searchParams] = useSearchParams();
+  const [selectedMatchId, setSelectedMatchId] = useState<string | null>(searchParams.get("match") || null);
   const [phaseFilter, setPhaseFilter] = useState<string>("all");
 
   const [modalConfig, setModalConfig] = useState<{
@@ -178,6 +181,11 @@ const RefereeControl = ({ matches, onControl }: RefereeControlProps) => {
     [groupedMatches, phaseFilter],
   );
 
+   useEffect(() => {
+    const mId = searchParams.get("match");
+    if (mId) setSelectedMatchId(mId);
+  }, [searchParams]);
+
   useEffect(() => {
     if (
       phaseFilter !== "all" &&
@@ -226,13 +234,22 @@ const RefereeControl = ({ matches, onControl }: RefereeControlProps) => {
               </p>
             </div>
           </div>
-          <button
-            onClick={logout}
-            className="w-full sm:w-auto px-6 py-3 bg-cb-black-pure border-3 border-cb-black-pure text-cb-white-tech hover:bg-red-600 hover:text-white transition-all flex items-center justify-center gap-2 font-tech font-black uppercase text-xs shadow-block-sm active:translate-x-1 active:translate-y-1 active:shadow-none"
-          >
-            <LogOut size={16} strokeWidth={2.5} />
-            Cerrar Sesión
-          </button>
+           <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
+             <Link
+               to="/referee/rounds"
+               className="w-full sm:w-auto px-6 py-3 bg-cb-yellow-neon border-3 border-cb-black-pure text-cb-black-pure hover:bg-white transition-all flex items-center justify-center gap-2 font-tech font-black uppercase text-xs shadow-block-sm active:translate-x-1 active:translate-y-1 active:shadow-none"
+             >
+               <Layers size={16} strokeWidth={2.5} />
+               Gestión de Rondas
+             </Link>
+             <button
+               onClick={logout}
+               className="w-full sm:w-auto px-6 py-3 bg-cb-black-pure border-3 border-cb-black-pure text-cb-white-tech hover:bg-red-600 hover:text-white transition-all flex items-center justify-center gap-2 font-tech font-black uppercase text-xs shadow-block-sm active:translate-x-1 active:translate-y-1 active:shadow-none"
+             >
+               <LogOut size={16} strokeWidth={2.5} />
+               Cerrar Sesión
+             </button>
+           </div>
         </header>
 
         <div className="w-full max-w-4xl flex-1 flex flex-col">

@@ -1,8 +1,10 @@
 import { motion, AnimatePresence } from 'framer-motion'
-import { Trophy, Pin, Activity } from 'lucide-react'
-import { useState, useEffect, useMemo, useRef } from 'react'
+import { Trophy, Pin, Activity, Zap } from 'lucide-react'
+import React, { useState, useEffect, useMemo, useRef } from 'react'
 import type { MatchState } from '../App'
 import { api } from '../config/api'
+import { Link } from 'react-router-dom';
+
 interface MatchCardProps {
   match: MatchState;
   isPinned?: boolean;
@@ -10,18 +12,21 @@ interface MatchCardProps {
   onPin: () => void;
 }
 
-const MatchCard = ({ match, isPinned, canPin = true, onPin }: MatchCardProps) => {
-  const formatTime = (seconds: number) => {
-    const mins = Math.floor(seconds / 60);
-    const secs = seconds % 60;
-    return `${mins}:${secs.toString().padStart(2, '0')}`;
-  };
+const formatTime = (seconds: number) => {
+  const mins = Math.floor(seconds / 60);
+  const secs = seconds % 60;
+  return `${mins}:${secs.toString().padStart(2, '0')}`;
+};
 
-  const timerColor = match.timeLeft < 30 ? 'text-red-500' : 'text-cb-yellow-neon';
-  const progressColor = match.timeLeft < 30 ? 'bg-red-500 shadow-[0_0_20px_rgba(239,68,68,0.4)]' : 'bg-cb-yellow-neon shadow-[0_0_20px_rgba(255,240,0,0.4)]';
-  const headerTextColor = isPinned ? 'text-cb-black-pure' : 'text-cb-white-tech';
-  const robotNameColor = isPinned ? 'text-cb-black-pure' : 'text-cb-white-tech';
-  const institutionColor = isPinned ? 'text-neutral-600' : 'text-neutral-400';
+const MatchCard = React.memo(({ match, isPinned, canPin = true, onPin }: MatchCardProps) => {
+
+  const { timerColor, progressColor, headerTextColor, robotNameColor, institutionColor } = useMemo(() => ({
+    timerColor: match.timeLeft < 30 ? 'text-red-500' : 'text-cb-yellow-neon',
+    progressColor: match.timeLeft < 30 ? 'bg-red-500 shadow-[0_0_20px_rgba(239,68,68,0.4)]' : 'bg-cb-yellow-neon shadow-[0_0_20px_rgba(255,240,0,0.4)]',
+    headerTextColor: isPinned ? 'text-cb-black-pure' : 'text-cb-white-tech',
+    robotNameColor: isPinned ? 'text-cb-black-pure' : 'text-cb-white-tech',
+    institutionColor: isPinned ? 'text-neutral-600' : 'text-neutral-400'
+  }), [match.timeLeft, isPinned]);
 
   return (
     <motion.div
@@ -31,10 +36,14 @@ const MatchCard = ({ match, isPinned, canPin = true, onPin }: MatchCardProps) =>
       exit={{ scale: 0.9, opacity: 0 }}
       whileHover={{ y: -4 }}
       className={`relative rounded-none flex flex-col items-center justify-between overflow-hidden transition-all duration-150 border-4 h-full w-full ${isPinned
-        ? 'bg-cb-white-tech border-cb-black-pure p-8 shadow-block-lg'
-        : 'bg-cb-gray-industrial border-cb-black-pure p-4 opacity-90 hover:opacity-100'
+        ? 'bg-cb-white-tech border-cb-black-pure p-8 shadow-[8px_8px_0_#000]'
+        : 'bg-cb-gray-industrial border-cb-black-pure p-4 opacity-90 hover:opacity-100 shadow-[4px_4px_0_#000]'
         }`}
     >
+      {/* Hazard Tape Decoration for Robofut */}
+      {match.category?.toUpperCase() === 'ROBOFUT' && (
+        <div className="absolute top-0 left-0 w-full h-1 bg-warning-tape z-30" />
+      )}
       {/* Background Accent */}
       {isPinned && (
         <div className="absolute top-0 right-0 w-64 h-64 bg-cb-yellow-neon/10 blur-[100px] -mr-32 -mt-32 rounded-full" />
@@ -133,9 +142,9 @@ const MatchCard = ({ match, isPinned, canPin = true, onPin }: MatchCardProps) =>
                   initial={{ opacity: 0, scale: 0.5, x: -20, rotate: -15 }}
                   animate={{ opacity: 1, scale: 1, x: 0, rotate: 0 }}
                   exit={{ opacity: 0, scale: 0.5, x: -20 }}
-                  className="w-5 h-8 bg-red-600 border-2 border-cb-black-pure flex items-center justify-center"
+                  className="w-5 h-8 bg-cb-black-pure border-2 border-cb-white-tech flex items-center justify-center p-0.5"
                 >
-                  <div className="w-1 h-4 bg-white/30 rounded-full" />
+                   <div className="w-full h-full bg-red-600" />
                 </motion.div>
               ))}
             </AnimatePresence>
@@ -153,9 +162,9 @@ const MatchCard = ({ match, isPinned, canPin = true, onPin }: MatchCardProps) =>
                   initial={{ opacity: 0, scale: 0.5, x: 20, rotate: 15 }}
                   animate={{ opacity: 1, scale: 1, x: 0, rotate: 0 }}
                   exit={{ opacity: 0, scale: 0.5, x: 20 }}
-                  className="w-5 h-8 bg-red-600 border-2 border-cb-black-pure flex items-center justify-center"
+                  className="w-5 h-8 bg-cb-black-pure border-2 border-cb-white-tech flex items-center justify-center p-0.5"
                 >
-                  <div className="w-1 h-4 bg-white/30 rounded-full" />
+                   <div className="w-full h-full bg-red-600" />
                 </motion.div>
               ))}
             </AnimatePresence>
@@ -195,7 +204,11 @@ const MatchCard = ({ match, isPinned, canPin = true, onPin }: MatchCardProps) =>
       </div>
     </motion.div>
   );
-};
+}, (prev, next) => {
+  return prev.match === next.match && 
+         prev.isPinned === next.isPinned && 
+         prev.canPin === next.canPin;
+});
 
 const Dashboard = ({ matches, revealWinnerEvent, onClearReveal }: { matches: MatchState[], revealWinnerEvent?: { matchId: string } | null, onClearReveal?: () => void }) => {
   const [viewMode, setViewMode] = useState<'zoom' | 'mosaico'>('zoom');
@@ -258,7 +271,17 @@ const Dashboard = ({ matches, revealWinnerEvent, onClearReveal }: { matches: Mat
   const activeMatches = useMemo(
     () =>
       matches
-        .filter(m => m.isActive || m.showInDashboard)
+        .filter(m => {
+          const isShown = m.isActive || m.showInDashboard;
+          const cat = (m.category || "").toLowerCase();
+          const isRoundBased = cat.includes("laberinto") || 
+                             cat.includes("seguidor") || 
+                             cat.includes("biobot") || 
+                             cat.includes("innovaci");
+          // Requisito: Solo mostrar match si tiene ambos contrincantes asignados
+          const isComplete = m.robotA && m.robotB;
+          return isShown && !isRoundBased && isComplete;
+        })
         .sort((a, b) =>
           Number(b.isActive) - Number(a.isActive) ||
           getStartSequence(b.id) - getStartSequence(a.id) ||
@@ -267,9 +290,9 @@ const Dashboard = ({ matches, revealWinnerEvent, onClearReveal }: { matches: Mat
     [matches]
   );
 
-  const liveMatches = activeMatches.filter(match => match.isActive);
-  const categories = [...new Set(activeMatches.map(match => match.category).filter(Boolean))];
-  const currentPool = liveMatches.length > 0 ? liveMatches : activeMatches;
+  const liveMatches = useMemo(() => activeMatches.filter(match => match.isActive), [activeMatches]);
+  const categories = useMemo(() => [...new Set(activeMatches.map(match => match.category).filter(Boolean))], [activeMatches]);
+  const currentPool = useMemo(() => liveMatches.length > 0 ? liveMatches : activeMatches, [liveMatches, activeMatches]);
 
   const smartFocusedId = useMemo(() => {
     if (currentPool.length === 0) return null;
@@ -277,27 +300,23 @@ const Dashboard = ({ matches, revealWinnerEvent, onClearReveal }: { matches: Mat
     const newestStarted = [...currentPool].sort(
       (a, b) => getStartSequence(b.id) - getStartSequence(a.id)
     )[0];
-    const closestToFinish = [...currentPool]
-      .filter(match => match.timeLeft > 0)
-      .sort((a, b) => a.timeLeft - b.timeLeft)[0] || currentPool[0];
     const currentFocused = currentPool.find(match => match.id === focusedMatchId);
 
     if (manualFocusId && currentPool.some(match => match.id === manualFocusId)) {
       return manualFocusId;
     }
 
-    if (!currentFocused) {
-      return newestStarted?.id || closestToFinish.id;
+    // Estabilización: Si el foco actual sigue "vivo" (activo y no terminado), mantenerlo.
+    if (currentFocused && currentFocused.isActive && !currentFocused.isFinished) {
+      return currentFocused.id;
     }
 
-    const hasNewerMatch = newestStarted && getStartSequence(newestStarted.id) > getStartSequence(currentFocused.id);
-    if (hasNewerMatch) return newestStarted.id;
-
-    if ((currentFocused.isFinished || !currentFocused.isActive || currentFocused.timeLeft <= 5) && closestToFinish.id !== currentFocused.id) {
-      return closestToFinish.id;
+    // Lógica de cambio: Solo si el actual terminó o no hay foco:
+    if (newestStarted && (!currentFocused || getStartSequence(newestStarted.id) > getStartSequence(currentFocused.id))) {
+      return newestStarted.id;
     }
 
-    return currentFocused.id;
+    return newestStarted?.id || currentPool[0]?.id || null;
   }, [currentPool, focusedMatchId, manualFocusId]);
 
   useEffect(() => {
@@ -315,8 +334,8 @@ const Dashboard = ({ matches, revealWinnerEvent, onClearReveal }: { matches: Mat
     }
   }, [smartFocusedId, focusedMatchId]);
 
-  const focusedMatch = activeMatches.find(match => match.id === focusedMatchId) || activeMatches[0] || null;
-  const sideMatches = activeMatches.filter(match => match.id !== focusedMatch?.id);
+  const focusedMatch = useMemo(() => activeMatches.find(match => match.id === focusedMatchId) || activeMatches[0] || null, [activeMatches, focusedMatchId]);
+  const sideMatches = useMemo(() => activeMatches.filter(match => match.id !== focusedMatch?.id), [activeMatches, focusedMatch]);
 
   const toggleManualFocus = (matchId: string) => {
     if (manualFocusId === matchId) {
@@ -353,6 +372,13 @@ const Dashboard = ({ matches, revealWinnerEvent, onClearReveal }: { matches: Mat
             >
               Vista Mosaico
             </button>
+            <div className="w-px h-6 bg-cb-black-pure/20 mx-2" />
+            <Link 
+              to="/dashboard-rondas"
+              className="px-3 py-1 border-2 border-cb-black-pure bg-cb-black-pure text-cb-yellow-neon font-tech font-black uppercase text-[10px] md:text-xs hover:bg-cb-yellow-neon hover:text-cb-black-pure transition-all shadow-block-sm text-center"
+            >
+              Vista Rondas
+            </Link>
             {categories.map((category) => (
               <span
                 key={category}
@@ -363,69 +389,81 @@ const Dashboard = ({ matches, revealWinnerEvent, onClearReveal }: { matches: Mat
             ))}
           </div>
 
-          {viewMode === 'zoom' ? (
-            <div className="flex-1 min-h-0 grid grid-cols-1 xl:grid-cols-[minmax(0,2fr)_minmax(360px,1fr)] gap-3 md:gap-5">
-              <div className="min-h-0">
-                {focusedMatch ? (
-                  <div className="h-full">
-                    <MatchCard
-                      match={focusedMatch}
-                      isPinned={true}
-                      canPin={true}
-                      onPin={() => toggleManualFocus(focusedMatch.id)}
-                    />
+          <div className="flex-1 min-h-0">
+            <AnimatePresence mode="wait">
+              {viewMode === 'zoom' ? (
+                <motion.div
+                  key="zoom"
+                  initial={{ opacity: 0, scale: 0.95 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0, scale: 1.05 }}
+                  transition={{ duration: 0.4 }}
+                  className="h-full grid grid-cols-1 xl:grid-cols-[minmax(0,2fr)_minmax(360px,1fr)] gap-3 md:gap-5"
+                >
+                  <div className="min-h-0">
+                    {focusedMatch && (
+                      <div className="h-full">
+                        <MatchCard
+                          match={focusedMatch}
+                          isPinned={true}
+                          canPin={true}
+                          onPin={() => toggleManualFocus(focusedMatch.id)}
+                        />
+                      </div>
+                    )}
                   </div>
-                ) : null}
-              </div>
-
-              <div className="min-h-0 overflow-y-auto pr-1">
-                <div className="grid grid-cols-1 gap-3 md:gap-4 auto-rows-[minmax(200px,1fr)]">
-                  {sideMatches.map((match) => (
-                    <div
-                      key={match.id}
-                      className="cursor-pointer"
-                      onClick={() => setFocusedMatchId(match.id)}
-                    >
-                      <MatchCard
-                        match={match}
-                        isPinned={false}
-                        canPin={true}
-                        onPin={() => toggleManualFocus(match.id)}
-                      />
+                  <div className="min-h-0 overflow-y-auto custom-scrollbar pr-1">
+                    <div className="grid grid-cols-1 gap-3 md:gap-4 auto-rows-[minmax(200px,1fr)]">
+                      {sideMatches.map(match => (
+                        <div key={match.id} className="cursor-pointer" onClick={() => setFocusedMatchId(match.id)}>
+                          <MatchCard
+                            match={match}
+                            isPinned={false}
+                            onPin={() => toggleManualFocus(match.id)}
+                          />
+                        </div>
+                      ))}
                     </div>
-                  ))}
-                </div>
-              </div>
-            </div>
-          ) : (
-            <div className="flex-1 overflow-y-auto pr-1">
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4 auto-rows-[minmax(260px,1fr)] gap-3 md:gap-5">
-                {activeMatches.map((match) => (
-                  <div key={match.id} className={`transition-all duration-150 ease-in-out ${match.id === focusedMatch?.id ? 'ring-4 ring-cb-yellow-neon/70' : ''}`}>
-                    <MatchCard
-                      match={match}
-                      isPinned={false}
-                      canPin={true}
-                      onPin={() => toggleManualFocus(match.id)}
-                    />
                   </div>
-                ))}
-              </div>
-            </div>
-          )}
+                </motion.div>
+              ) : (
+                <motion.div
+                  key="mosaico"
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="h-full overflow-y-auto custom-scrollbar pr-1"
+                >
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4 auto-rows-[minmax(260px,1fr)] gap-3 md:gap-5">
+                    {activeMatches.map(match => (
+                      <div key={match.id} className={`transition-all duration-150 ease-in-out ${match.id === focusedMatch?.id ? 'ring-4 ring-cb-yellow-neon/70' : ''}`}>
+                        <MatchCard
+                          match={match}
+                          isPinned={false}
+                          onPin={() => toggleManualFocus(match.id)}
+                        />
+                      </div>
+                    ))}
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
         </main>
       ) : (
-        <div className="flex-1 flex flex-col items-center justify-center p-8 md:p-20 z-10 relative">
+        <div className="flex-1 flex flex-col items-center justify-center p-8 md:p-20 z-10 relative text-center">
           <motion.div
-            initial={{ scale: 0.8, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1, rotate: [0, -3, 3, 0] }}
-            transition={{ duration: 0.6, repeat: Infinity, repeatDelay: 5 }}
-            className="p-8 md:p-16 mb-8 md:mb-12 flex items-center justify-center"
+             initial={{ scale: 0.8, opacity: 0 }}
+             animate={{ scale: 1, opacity: 1, rotate: [0, -3, 3, 0] }}
+             transition={{ duration: 0.6, repeat: Infinity, repeatDelay: 5 }}
+             className="p-8 md:p-16 mb-8 md:mb-12 flex items-center justify-center"
           >
-            <img src="/logo-yellow.png" alt="CatoBots Logo" className="h-32 md:h-48 w-auto object-contain drop-shadow-[8px_8px_0_#000]" />
+             <img src="/logo-yellow.png" alt="CatoBots Logo" className="h-32 md:h-48 w-auto object-contain drop-shadow-[8px_8px_0_#000]" />
           </motion.div>
           <h2 className="text-4xl md:text-6xl lg:text-7xl font-tech font-black text-cb-black-pure mb-4 md:mb-6 uppercase drop-shadow-[4px_4px_0_#FFF]">Arena en Reposo</h2>
-          <p className="font-tech font-bold uppercase text-sm md:text-lg bg-cb-black-pure text-cb-yellow-neon px-6 md:px-8 py-2 md:py-3 border-4 border-cb-black-pure shadow-block-sm">Esperando el inicio de la competencia</p>
+          <p className="font-tech font-bold uppercase text-sm md:text-lg bg-cb-black-pure text-cb-yellow-neon px-6 md:px-8 py-2 md:py-3 border-4 border-cb-black-pure shadow-block-sm mb-6">Esperando la activación de nodos de combate...</p>
+          <Link to="/dashboard-rondas" className="btn-primary inline-flex items-center gap-2">
+             Ver Dashboard de Rondas <Zap size={20} />
+          </Link>
         </div>
       )}
 
@@ -434,7 +472,6 @@ const Dashboard = ({ matches, revealWinnerEvent, onClearReveal }: { matches: Mat
         <div className="absolute left-0 top-0 bottom-0 w-32 md:w-64 bg-gradient-to-r from-cb-black-pure to-transparent z-10" />
         <div className="absolute right-0 top-0 bottom-0 w-32 md:w-64 bg-gradient-to-l from-cb-black-pure to-transparent z-10" />
         
-        {/* Warning tape decoration */}
         <div className="absolute top-0 left-0 right-0 h-1 bg-warning-tape" />
 
         {sponsors.length > 0 ? (
@@ -444,25 +481,21 @@ const Dashboard = ({ matches, revealWinnerEvent, onClearReveal }: { matches: Mat
             transition={{ duration: 60, repeat: Infinity, ease: "linear" }}
             className="flex items-center gap-16 md:gap-24 px-8 md:px-12 whitespace-nowrap"
           >
-            {[...sponsors, ...sponsors, ...sponsors, ...sponsors].map((sponsor, idx) => (
+            {[...sponsors, ...sponsors].map((sponsor, idx) => (
               <div key={`${sponsor.id}-${idx}`} className="flex items-center gap-4 md:gap-6 group">
                 <div className="w-12 md:w-16 h-12 md:h-16 flex items-center justify-center transition-transform group-hover:scale-110">
-                  {sponsor.logoUrl ? (
-                    <img
-                      src={sponsor.logoUrl}
-                      alt={sponsor.name}
-                      className="w-full h-full object-contain filter drop-shadow-sm"
-                      onError={(e) => (e.currentTarget.style.display = 'none')}
-                    />
-                  ) : (
-                    <Trophy size={24} className="text-neutral-600" />
-                  )}
+                   {sponsor.logo ? (
+                     <img 
+                       src={sponsor.logo} 
+                       alt={sponsor.name} 
+                       className="h-10 md:h-12 w-auto grayscale brightness-200 group-hover:grayscale-0 group-hover:brightness-100 transition-all opacity-80" 
+                     />
+                   ) : <Trophy size={24} className="text-cb-white-tech/20" />}
                 </div>
                 <div className="flex flex-col">
-                  <span className="text-sm md:text-md font-tech font-black uppercase text-cb-white-tech leading-tight">{sponsor.name}</span>
-                  <span className={`text-xs font-tech font-bold ${sponsor.tier === 'GOLD' ? 'text-cb-yellow-neon' :
-                    sponsor.tier === 'SILVER' ? 'text-neutral-400' : 'text-orange-500'
-                    }`}>{sponsor.tier}</span>
+                  <span className="text-cb-white-tech font-tech font-black text-sm md:text-xl uppercase tracking-tighter opacity-50 group-hover:opacity-100">
+                    {sponsor.name}
+                  </span>
                 </div>
               </div>
             ))}
@@ -479,44 +512,38 @@ const Dashboard = ({ matches, revealWinnerEvent, onClearReveal }: { matches: Mat
               <div className="w-2 h-2 bg-cb-yellow-neon" />
               <span>Transmisión en Vivo</span>
             </div>
-            <div className="hidden lg:flex items-center gap-8 md:gap-12">
-              <span>CatoBots IV</span>
-              <div className="w-2 h-2 bg-cb-yellow-neon" />
-              <span>Patrocinadores</span>
-            </div>
           </div>
         )}
       </footer>
 
       {/* Reveal Winner Overlay */}
       <AnimatePresence>
-        {revealedMatch && countdown !== null && (
-          <motion.div 
+        {revealedMatch && (
+          <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 z-50 flex items-center justify-center bg-cb-black-pure/90 backdrop-blur-sm"
+            className="fixed inset-0 z-[100] bg-cb-black-pure/95 backdrop-blur-xl flex items-center justify-center p-6 overflow-hidden bg-noise"
           >
-            <div className="text-center p-8 w-full max-w-4xl relative">
-              
-              {countdown > 0 ? (
-                <>
-                  <h2 className="text-4xl md:text-6xl font-tech font-black text-cb-white-tech mb-8 uppercase drop-shadow-[4px_4px_0_#FFF]">Revelando Ganador...</h2>
-                  <motion.div 
-                    key={countdown}
-                    initial={{ scale: 2, opacity: 0 }}
-                    animate={{ scale: 1, opacity: 1 }}
-                    exit={{ scale: 0.5, opacity: 0 }}
-                    transition={{ duration: 0.5 }}
-                    className="text-[15rem] md:text-[20rem] font-tech font-black text-cb-yellow-neon tabular-nums leading-none drop-shadow-[0_0_50px_rgba(255,240,0,0.6)]"
-                  >
-                    {countdown}
-                  </motion.div>
-                </>
+            <div className="absolute top-0 left-0 w-full h-24 bg-warning-tape -rotate-2 scale-110 shadow-block-lg z-0" />
+            <div className="absolute bottom-0 left-0 w-full h-24 bg-warning-tape rotate-2 scale-110 shadow-block-lg z-0" />
+
+            <div className="relative z-10 text-center max-w-4xl w-full">
+              {countdown !== null && countdown > 0 ? (
+                <motion.div
+                  key="countdown"
+                  initial={{ scale: 0.5, opacity: 0 }}
+                  animate={{ scale: 1, opacity: 1 }}
+                  exit={{ scale: 2, opacity: 0 }}
+                  className="text-[15rem] md:text-[25rem] font-tech font-black text-cb-yellow-neon drop-shadow-[0_0_50px_rgba(255,240,0,0.5)]"
+                >
+                  {countdown}
+                </motion.div>
               ) : (
-                <motion.div 
-                  initial={{ scale: 0.5, opacity: 0, y: 50 }}
-                  animate={{ scale: 1, opacity: 1, y: 0 }}
+                <motion.div
+                  key="winner"
+                  initial={{ scale: 0.8, opacity: 0, rotate: -5 }}
+                  animate={{ scale: 1, opacity: 1, rotate: 0 }}
                   transition={{ type: "spring", bounce: 0.6 }}
                   className="bg-cb-yellow-neon p-8 md:p-16 border-8 border-cb-white-tech shadow-[0_0_80px_rgba(255,240,0,0.9)] relative overflow-hidden"
                 >

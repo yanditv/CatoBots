@@ -9,14 +9,13 @@ import sequelize from './config/db';
 import { User } from './models/User';
 import { Institution } from './models/Institution';
 import { Robot } from './models/Robot';
-import { Match } from './models/Match';
 import { Sponsor } from './models/Sponsor';
 import { Registration } from './models/Registration';
 import { Category } from './models/Category';
 import { Level } from './models/Level';
 import { CategoryLevel } from './models/CategoryLevel';
 import { EventConfig } from './models/EventConfig';
-import { MatchLog } from './models/MatchLog';
+import { CATEGORY_MATCH_MODELS, ALL_CATEGORY_MATCH_MODELS } from './models/CategoryMatches';
 
 // Associations: Category <-> Level (many-to-many through CategoryLevel)
 Category.belongsToMany(Level, { through: CategoryLevel, foreignKey: 'categoryId', otherKey: 'levelId' });
@@ -117,6 +116,25 @@ const authenticateJWT = (req: any, res: any, next: any) => {
 const isAdmin = (req: any, res: any, next: any) => {
   if (req.user.role === 'ADMIN') next();
   else res.status(403).send({ message: 'Require Admin Role!' });
+};
+
+// --- Helpers for Category-Specific Matches ---
+
+const getMatchModel = (category: string) => {
+  if (!category) return null;
+  const normalized = category.trim();
+  // Find key in CATEGORY_MATCH_MODELS that matches
+  const key = Object.keys(CATEGORY_MATCH_MODELS).find(k => k.toLowerCase() === normalized.toLowerCase());
+  return key ? CATEGORY_MATCH_MODELS[key] : null;
+};
+
+const findMatchInAllTables = async (id: string, options: any = {}) => {
+  // Priority order: Category-specific tables
+  for (const model of ALL_CATEGORY_MATCH_MODELS) {
+    const match = await (model as any).findByPk(id, options);
+    if (match) return { match, model };
+  }
+  return null;
 };
 
 // --- Auth Routes ---
@@ -344,92 +362,162 @@ app.delete('/api/sponsors/:id', authenticateJWT, isAdmin, async (req, res) => {
   res.sendStatus(204);
 });
 
-app.get('/api/matches', async (req, res) => res.json(await Match.findAll({ include: ['robotA', 'robotB', 'referee'] })));
+app.get('/api/matches', async (req, res) => {
+  try {
+    let allMatches: any[] = [];
+    const include = ['robotA', 'robotB', 'referee'];
+    
+    // Fetch from all category tables
+    for (const model of ALL_CATEGORY_MATCH_MODELS) {
+      const ms = await (model as any).findAll({ include });
+      allMatches = [...allMatches, ...ms];
+    }
+    
+    res.json(allMatches);
+  } catch (err) {
+    res.status(500).send(err);
+  }
+});
+
 app.post('/api/matches', authenticateJWT, isAdmin, async (req, res) => {
-  const newMatch = await Match.create(req.body);
+  const model = getMatchModel(req.body.category);
+  if (!model) return res.status(400).json({ message: 'Categoría no válida' });
+  const newMatch = await (model as any).create(req.body);
   broadcastState();
   res.json(newMatch);
 });
+
 app.put('/api/matches/:id', authenticateJWT, isAdmin, async (req, res) => {
-  await Match.update(req.body, { where: { id: req.params.id } });
+  const found = await findMatchInAllTables(req.params.id);
+  if (!found) return res.status(404).json({ message: 'Match not found' });
+  
+  await found.match.update(req.body);
   broadcastState();
-  res.json(await Match.findByPk(req.params.id, { include: ['robotA', 'robotB', 'referee'] }));
+  
+  const updated = await (found.model as any).findByPk(req.params.id, { include: ['robotA', 'robotB', 'referee'] });
+  res.json(updated);
 });
+
 app.delete('/api/matches/:id', authenticateJWT, isAdmin, async (req, res) => {
-  await Match.destroy({ where: { id: req.params.id } });
-  broadcastState();
+  const found = await findMatchInAllTables(req.params.id);
+  if (found) {
+    await found.match.destroy();
+    broadcastState();
+  }
   res.sendStatus(204);
 });
 
-app.get('/api/matches/:id/logs', authenticateJWT, async (req, res) => {
-  const logs = await MatchLog.findAll({
-    where: { matchId: req.params.id },
-    order: [['createdAt', 'ASC']],
-    include: [{ model: Robot, attributes: ['name'] }]
-  });
-  res.json(logs);
-});
+// Match routes... (logs removed)
 
 // --- Bracket Generation ---
 
 app.post('/api/brackets/generate', authenticateJWT, isAdmin, async (req, res) => {
-  const { category, level, robotIds, refereeId } = req.body;
+  const { category: catName, level: lvlName, robotIds, refereeId: refId } = req.body;
   if (!robotIds || robotIds.length < 2) return res.status(400).send({ message: 'At least 2 robots required' });
 
-  // Shuffle robots for fair seeding
-  const shuffled = [...robotIds].sort(() => Math.random() - 0.5);
+  const isRoundBased = (name: string) => {
+    const c = name.toLowerCase();
+    return c.includes("laberinto") || c.includes("seguidor") || c.includes("biobot") || c.includes("innovaci");
+  };
 
-  // Calculate depth
+  if (isRoundBased(catName)) {
+    try {
+      const numRobots = robotIds.length;
+      const TargetModel = getMatchModel(catName) as any;
+      if (!TargetModel) return res.status(400).json({ message: 'Categoría no válida para rondas' });
+      
+      // RONDA 1: All participants
+      for (const robotId of robotIds) {
+        await TargetModel.create({
+          category: catName, 
+          level: lvlName, 
+          refereeId: refId,
+          robotAId: robotId,
+          robotBId: null as any,
+          round: 'RONDA 1',
+          isActive: false, 
+          isFinished: false, 
+          showInDashboard: false,
+          scoreA: 0, 
+          scoreB: 0, 
+          timeLeft: 180
+        });
+      }
+
+      // RONDA 2: Only if count >= 10 (per user's latest request)
+      if (numRobots >= 10) {
+        const slotsR2 = Math.floor(numRobots / 2);
+        for (let i = 0; i < slotsR2; i++) {
+          await TargetModel.create({
+            category: catName, 
+            level: lvlName, 
+            refereeId: refId,
+            robotAId: null as any, 
+            robotBId: null as any,
+            round: 'RONDA 2',
+            isActive: false, 
+            isFinished: false, 
+            showInDashboard: false,
+            scoreA: 0, 
+            scoreB: 0, 
+            timeLeft: 180
+          });
+        }
+      }
+
+      broadcastState();
+      return res.json({ message: 'Rounds generated correctly' });
+    } catch (err) {
+      console.error('Round gen error:', err);
+      return res.status(500).send({ message: 'Error generating rounds' });
+    }
+  }
+
+  // Bracket logic (existing)
+  const shuffled = [...robotIds].sort(() => Math.random() - 0.5);
   const numRobots = shuffled.length;
   const powerOf2 = Math.ceil(Math.log2(numRobots));
   const totalSlots = Math.pow(2, powerOf2);
 
-  // Fill with nulls if not power of 2
   const filledRobots = [...shuffled];
   while (filledRobots.length < totalSlots) filledRobots.push(null as any);
 
   try {
-    const rounds = []; // To keep track of matches created per round
-    let currentRoundSlots = totalSlots;
-    let currentRoundMatches: any[] = [];
-    let prevRoundMatches: any[] = [];
-    let roundLevel = 0;
-
-    // We build from the bottom up? No, top down is easier to link nextMatchId
-    // Let's create the final first, then semis, then quarters...
-
+    const roundsList = []; 
     const roundNames = ['FINAL', 'SEMIS', 'QUARTERS', 'OCTAVOS', '16VOS', '32VOS'];
+    let lastMatches: any[] = [];
+    const TargetModel = getMatchModel(catName) as any;
+    if (!TargetModel) return res.status(400).json({ message: 'Categoría no válida para llaves' });
 
-    let nextRoundMatches: any[] = [];
-
-    // Total matches to create: totalSlots - 1
-    // Loop from level 0 (Final) to level powerOf2 - 1
-    for (let level = 0; level < powerOf2; level++) {
-      const numMatchesInRound = Math.pow(2, level);
-      const roundName = roundNames[level] || `ROUND_${level}`;
+    for (let currentLevel = 0; currentLevel < powerOf2; currentLevel++) {
+      const numMatchesInRound = Math.pow(2, currentLevel);
+      const roundName = roundNames[currentLevel] || `ROUND_${currentLevel}`;
       const matchesInThisRound: any[] = [];
 
       for (let i = 0; i < numMatchesInRound; i++) {
-        const nextMatch = nextRoundMatches[Math.floor(i / 2)];
-        const match = await Match.create({
-          category,
-          level,
-          refereeId,
+        const nextMatch = lastMatches[Math.floor(i / 2)];
+        const match = await TargetModel.create({
+          category: catName,
+          level: lvlName,
+          refereeId: refId,
           round: roundName,
           nextMatchId: nextMatch ? nextMatch.id : null,
           positionInNextMatch: nextMatch ? (i % 2 === 0 ? 'A' : 'B') : null,
-          scoreA: 0, scoreB: 0, timeLeft: 180,
-          robotAId: null, robotBId: null
+          scoreA: 0, 
+          scoreB: 0, 
+          timeLeft: 180,
+          robotAId: null as any, 
+          robotBId: null as any,
+          showInDashboard: false
         });
         matchesInThisRound.push(match);
       }
 
-      rounds.push(matchesInThisRound);
-      nextRoundMatches = matchesInThisRound;
+      roundsList.push(matchesInThisRound);
+      lastMatches = matchesInThisRound;
     }
 
-    // Now initialize the first round (the deepest one) with the robots
-    const firstRoundMatches = rounds[rounds.length - 1];
+    const firstRoundMatches = roundsList[roundsList.length - 1];
     for (let i = 0; i < firstRoundMatches.length; i++) {
       const match = firstRoundMatches[i];
       match.robotAId = filledRobots[i * 2];
@@ -653,13 +741,18 @@ app.delete('/api/registrations/:id', authenticateJWT, isAdmin, async (req, res) 
 
 const broadcastState = async () => {
   try {
-    const allMatches = await Match.findAll({
-      include: [
-        { model: Robot, as: 'robotA', include: [Institution] },
-        { model: Robot, as: 'robotB', include: [Institution] },
-      ]
-    });
+    let allMatches: any[] = [];
+    const include = [
+      { model: Robot, as: 'robotA', include: [Institution] },
+      { model: Robot, as: 'robotB', include: [Institution] },
+    ];
 
+    // Fetch from all category tables
+    for (const model of ALL_CATEGORY_MATCH_MODELS) {
+      const ms = await (model as any).findAll({ include });
+      allMatches = [...allMatches, ...ms];
+    }
+    
     const fullMatches = allMatches.map(m => {
       const json = m.toJSON() as any;
       if (json.robotA) json.robotA.institution = json.robotA.Institution?.name;
@@ -673,47 +766,19 @@ const broadcastState = async () => {
   }
 };
 
-// Global Timer
-setInterval(async () => {
-  const activeMatches = await Match.findAll({ where: { isActive: true } });
-  if (activeMatches.length === 0) return;
-
-  for (const match of activeMatches) {
-    if (match.timeLeft > 0) {
-      match.timeLeft -= 1;
-      await match.save();
-    } else {
-      match.isActive = false;
-      await match.save();
-    }
-  }
-  broadcastState();
-}, 1000);
 
 io.on('connection', (socket) => {
   broadcastState();
   socket.on('control_match', async (data: { matchId: string, action: string, payload?: any }) => {
     const { matchId, action, payload } = data;
-    const match = await Match.findByPk(matchId, { include: ['robotA', 'robotB'] });
-    if (!match) return;
-
-    let logType: 'POINT' | 'PENALTY' | 'TIMER' | 'STATE_CHANGE' | 'SYSTEM_EVENT' = 'SYSTEM_EVENT';
-    let logDescription = '';
-    let logRobotId = null;
-    let logPoints = 0;
-    let logMetadata = payload;
+    const found = await findMatchInAllTables(matchId, { include: ['robotA', 'robotB'] });
+    if (!found) return;
+    
+    const { match, model } = found;
 
     switch (action) {
-      case 'START': 
-        match.isActive = true; 
-        logType = 'STATE_CHANGE';
-        logDescription = 'Combate Iniciado/Reanudado';
-        break;
-      case 'PAUSE': 
-        match.isActive = false; 
-        logType = 'STATE_CHANGE';
-        logDescription = 'Combate Pausado';
-        break;
+      case 'START': match.isActive = true; break;
+      case 'PAUSE': match.isActive = false; break;
       case 'RESET':
         match.scoreA = 0; match.scoreB = 0;
         match.penaltiesA = []; match.penaltiesB = [];
@@ -722,65 +787,28 @@ io.on('connection', (socket) => {
         match.isActive = false;
         match.isFinished = false;
         match.winnerId = null as any;
-        logType = 'SYSTEM_EVENT';
-        logDescription = 'Encuentro Reiniciado';
         break;
-      case 'SET_TIME':
-        match.timeLeft = Number(payload) || 0;
-        logType = 'TIMER';
-        logDescription = `Tiempo ajustado a ${payload}s`;
-        break;
+      case 'SET_TIME': match.timeLeft = Number(payload) || 0; break;
       case 'ADD_SCORE_A': {
         const p = typeof payload === 'object' ? payload.points : (payload || 1);
         match.scoreA += p; 
-        logType = 'POINT';
-        logRobotId = match.robotAId;
-        logPoints = p;
-        logDescription = `Puntos para Robot A: ${p > 0 ? '+' : ''}${p} (${typeof payload === 'object' ? payload.reason : 'Manual'})`;
         break;
       }
       case 'ADD_SCORE_B': {
         const p = typeof payload === 'object' ? payload.points : (payload || 1);
         match.scoreB += p; 
-        logType = 'POINT';
-        logRobotId = match.robotBId;
-        logPoints = p;
-        logDescription = `Puntos para Robot B: ${p > 0 ? '+' : ''}${p} (${typeof payload === 'object' ? payload.reason : 'Manual'})`;
         break;
       }
       case 'SET_SCORE_A': match.scoreA = Number(payload); break;
       case 'SET_SCORE_B': match.scoreB = Number(payload); break;
-      case 'ADD_PENALTY_A': 
-        match.penaltiesA = [...match.penaltiesA, payload || 'Warning']; 
-        logType = 'PENALTY';
-        logRobotId = match.robotAId;
-        logDescription = `Amonestación para Robot A: ${payload}`;
-        break;
-      case 'ADD_PENALTY_B': 
-        match.penaltiesB = [...match.penaltiesB, payload || 'Warning']; 
-        logType = 'PENALTY';
-        logRobotId = match.robotBId;
-        logDescription = `Amonestación para Robot B: ${payload}`;
-        break;
+      case 'ADD_PENALTY_A': match.penaltiesA = [...match.penaltiesA, payload || 'Warning']; break;
+      case 'ADD_PENALTY_B': match.penaltiesB = [...match.penaltiesB, payload || 'Warning']; break;
       case 'ADD_TIME': match.timeLeft += Number(payload) || 30; break;
       
-      // BATTLEBOTS SPECIFIC AUDIT ACTIONS
-      case 'BB_LOOSE_PARTS':
-        match.isActive = false;
-        logType = 'SYSTEM_EVENT';
-        logDescription = 'PAUSA: Piezas sueltas en la arena';
-        break;
-      case 'BB_ACCIDENT_START':
-        match.isActive = false;
-        logType = 'TIMER';
-        logDescription = 'PAUSA: Iniciado tiempo de accidente (60s)';
-        break;
+      case 'BB_LOOSE_PARTS': match.isActive = false; break;
+      case 'BB_ACCIDENT_START': match.isActive = false; break;
       case 'BB_PROLONGATION_START':
         match.isActive = false;
-        logType = 'PENALTY';
-        const pRobot = payload === 'A' ? 'Robot A' : 'Robot B';
-        logRobotId = payload === 'A' ? match.robotAId : match.robotBId;
-        logDescription = `PRÓRROGA: ${pRobot} solicita tiempo técnico (-5 pts)`;
         if (payload === 'A') {
           match.scoreA -= 5;
           match.penaltiesA = [...match.penaltiesA, 'Prórroga'];
@@ -790,94 +818,61 @@ io.on('connection', (socket) => {
         }
         break;
       
-      // MINISUMO & SUMO SPECIFIC AUDIT ACTIONS
-      case 'MS_ROUND_WIN': {
-        const winner = payload === 'A' ? 'Robot A' : (payload === 'B' ? 'Robot B' : 'Nadie');
+      case 'MS_ROUND_WIN':
         if (payload === 'A') match.scoreA += 1;
         if (payload === 'B') match.scoreB += 1;
         match.roundWinners = [...match.roundWinners, payload];
-        logType = 'POINT';
-        logRobotId = payload === 'A' ? match.robotAId : (payload === 'B' ? match.robotBId : null);
-        logPoints = 1;
-        logDescription = `ROUND GANADO: ${winner} gana el asalto.`;
         break;
-      }
-      case 'MS_VIOLATION': {
-        const robot = payload === 'A' ? 'Robot A' : 'Robot B';
-        logType = 'PENALTY';
-        logRobotId = payload === 'A' ? match.robotAId : match.robotBId;
-        logDescription = `VIOLACIÓN: ${robot} cometió una falta reglamentaria.`;
-        if (payload === 'A') match.penaltiesA = [...match.penaltiesA, 'Violación'];
-        else match.penaltiesB = [...match.penaltiesB, 'Violación'];
-        break;
-      }
-      case 'MS_GRAVE_PENALTY': {
-        const robot = payload === 'A' ? 'Robot A' : 'Robot B';
-        const opponent = payload === 'A' ? 'B' : 'A';
-        logType = 'STATE_CHANGE';
-        logDescription = `PENALIDAD GRAVE: ${robot} descalificado por falta grave. Victoria total para el oponente.`;
-        
-        // Disqualify: Opponent gets ideal score (3 rounds)
+      case 'MS_VIOLATION':
         if (payload === 'A') {
-          match.scoreA = 0;
-          match.scoreB = 3;
+          match.penaltiesA = [...match.penaltiesA, 'Violación'];
+          const vCount = (match.penaltiesA || []).filter((p: any) => p === 'Violación').length;
+          if (vCount > 0 && vCount % 2 === 0) {
+            // Reaches 2, 4, 6... violations total
+            match.scoreB += 1;
+            match.roundWinners = [...(match.roundWinners || []), 'B'];
+            match.isActive = false;
+          }
+        } else {
+          match.penaltiesB = [...match.penaltiesB, 'Violación'];
+          const vCount = (match.penaltiesB || []).filter((p: any) => p === 'Violación').length;
+          if (vCount > 0 && vCount % 2 === 0) {
+            match.scoreA += 1;
+            match.roundWinners = [...(match.roundWinners || []), 'A'];
+            match.isActive = false;
+          }
+        }
+        break;
+      case 'MS_GRAVE_PENALTY':
+        if (payload === 'A') {
+          match.scoreA = 0; match.scoreB = 3;
           match.roundWinners = ['B', 'B', 'B'];
           match.winnerId = match.robotBId as any;
-          match.penaltiesA = [...match.penaltiesA, 'Falta Grave/Descalificación'];
+          match.penaltiesA = [...(match.penaltiesA || []), 'Falta Grave/Descalificación'];
         } else {
-          match.scoreB = 0;
-          match.scoreA = 3;
+          match.scoreB = 0; match.scoreA = 3;
           match.roundWinners = ['A', 'A', 'A'];
           match.winnerId = match.robotAId as any;
-          match.penaltiesB = [...match.penaltiesB, 'Falta Grave/Descalificación'];
+          match.penaltiesB = [...(match.penaltiesB || []), 'Falta Grave/Descalificación'];
         }
-        match.isFinished = true;
+        // User requested NOT to finish automatically, referee will click FINISH manually
         match.isActive = false;
         break;
-      }
-      case 'MS_IMMOBILIZATION_START':
-        match.isActive = false;
-        logType = 'TIMER';
-        const msRobotLabel = payload === 'A' ? 'Robot A' : 'Robot B';
-        logRobotId = payload === 'A' ? match.robotAId : match.robotBId;
-        logDescription = `PAUSA: Iniciado conteo de inmovilidad/volteo para ${msRobotLabel} (15s)`;
-        break;
-
-      case 'BB_IMMOBILIZATION_START':
-        match.isActive = false;
-        logType = 'TIMER';
-        const robotLabel = payload === 'A' ? 'Robot A' : 'Robot B';
-        logRobotId = payload === 'A' ? match.robotAId : match.robotBId;
-        logDescription = `PAUSA: Iniciado conteo de inmovilidad para ${robotLabel}`;
-        break;
+      case 'MS_IMMOBILIZATION_START': match.isActive = false; break;
+      case 'BB_IMMOBILIZATION_START': match.isActive = false; break;
       case 'BB_SURRENDER':
         match.isActive = false;
         match.isFinished = true;
         match.timeLeft = 0;
-        const loser = payload === 'A' ? 'Robot A' : 'Robot B';
-        logType = 'STATE_CHANGE';
-        logDescription = `RENDICIÓN: ${loser} se ha rendido o tiene desperfecto grave`;
         if (payload === 'A') match.winnerId = match.robotBId as any;
         else match.winnerId = match.robotAId as any;
         break;
       
-      // BIOBOTS SPECIFIC AUDIT ACTIONS
-      case 'BIO_OBJECT_START':
-        logType = 'SYSTEM_EVENT';
-        logDescription = `BIOBOTS: Iniciado intento de levantamiento - Objeto ${payload.objectId} (Intento ${payload.attemptId})`;
-        break;
+      case 'BIO_OBJECT_START': break;
       case 'BIO_OBJECT_RESULT':
-        logType = payload.success ? 'POINT' : 'SYSTEM_EVENT';
-        logRobotId = match.robotAId;
-        logPoints = payload.points || 0;
-        logDescription = `BIOBOTS: Resultado Objeto ${payload.objectId} - ${payload.success ? 'ÉXITO' : 'FALLO'} (Intento ${payload.attemptId}). Puntos: ${logPoints}`;
-        if (payload.success) match.scoreA += logPoints;
+        if (payload.success) match.scoreA += (payload.points || 0);
         break;
-      case 'BIO_REST_START':
-        logType = 'TIMER';
-        logDescription = `BIOBOTS: Iniciado descanso de 5 min tras Objeto ${payload.objectId}`;
-        break;
-
+      case 'BIO_REST_START': break;
       case 'FINISH':
         match.isActive = false;
         match.isFinished = true;
@@ -886,48 +881,24 @@ io.on('connection', (socket) => {
           if (match.scoreA > match.scoreB) winnerId = match.robotAId;
           else if (match.scoreB > match.scoreA) winnerId = match.robotBId;
         }
-
         match.winnerId = winnerId as any;
-        logType = 'STATE_CHANGE';
-        logDescription = `Combate Finalizado. Ganador: ${winnerId === match.robotAId ? 'Robot A' : (winnerId === match.robotBId ? 'Robot B' : 'Empate/Indefinido')}`;
 
-        // Auto-advance logic
         if (winnerId && match.nextMatchId) {
-          const nextMatch = await Match.findByPk(match.nextMatchId);
+          // IMPORTANT: nextMatch should be in the SAME category table
+          const nextMatch = await (model as any).findByPk(match.nextMatchId);
           if (nextMatch) {
-            if (match.positionInNextMatch === 'A') {
-              nextMatch.robotAId = winnerId as any;
-            } else {
-              nextMatch.robotBId = winnerId as any;
-            }
+            if (match.positionInNextMatch === 'A') nextMatch.robotAId = winnerId as any;
+            else nextMatch.robotBId = winnerId as any;
             await nextMatch.save();
           }
         }
         break;
 
-      // MAZE SPECIFIC AUDIT ACTIONS
-      case 'MAZE_START':
-        logType = 'STATE_CHANGE';
-        logDescription = `LABERINTO: Iniciado Intento ${payload.attemptId}`;
-        match.isActive = true;
-        break;
-      case 'MAZE_FINISH':
-        logType = 'POINT';
-        logPoints = payload.timeTaken;
-        logDescription = `LABERINTO: Meta alcanzada en Intento ${payload.attemptId}. Tiempo Base: ${payload.baseTime}s, Penalizaciones: ${payload.penaltyTime}s. Total: ${payload.timeTaken}s`;
-        match.isActive = false;
-        break;
-      case 'MAZE_RESTART':
-        logType = 'PENALTY';
-        logDescription = `LABERINTO: Rearranque en Intento ${payload.attemptId} (+15s).`;
-        break;
-      case 'MAZE_FAULT':
-        logType = 'SYSTEM_EVENT';
-        logDescription = `LABERINTO: Falta registrada: ${payload.reason}`;
-        break;
+      case 'MAZE_START': match.isActive = true; break;
+      case 'MAZE_FINISH': match.isActive = false; break;
+      case 'MAZE_RESTART': break;
+      case 'MAZE_FAULT': break;
       case 'MAZE_DISQUALIFY':
-        logType = 'STATE_CHANGE';
-        logDescription = `LABERINTO: DESCALIFICACIÓN - ${payload.reason}`;
         match.isActive = false;
         match.isFinished = true;
         match.winnerId = null as any; 
@@ -939,28 +910,9 @@ io.on('connection', (socket) => {
       case 'UNFINISH':
         match.isFinished = false;
         match.winnerId = null as any;
-        logType = 'STATE_CHANGE';
-        logDescription = 'Resultado revertido (Combate no finalizado)';
         break;
     }
     await match.save();
-    
-    // SAVE LOG
-    try {
-      await MatchLog.create({
-        matchId: match.id,
-        robotId: logRobotId,
-        type: logType,
-        action: action,
-        description: logDescription || action,
-        points: logPoints,
-        matchTime: match.timeLeft,
-        metadata: typeof logMetadata === 'object' ? logMetadata : { value: logMetadata }
-      });
-    } catch (logErr) {
-      console.error('Error saving match log:', logErr);
-    }
-
     broadcastState();
   });
 });
@@ -1101,6 +1053,29 @@ sequelize.sync({ alter: true }).then(async () => {
     ]);
     console.log('Seed: EventConfig created');
   }
+
+  // Global Timer
+  setInterval(async () => {
+    try {
+      let anyTick = false;
+      for (const model of ALL_CATEGORY_MATCH_MODELS) {
+        const activeMatches = await (model as any).findAll({ where: { isActive: true } });
+        for (const match of activeMatches) {
+          anyTick = true;
+          if (match.timeLeft > 0) {
+            match.timeLeft -= 1;
+            await match.save();
+          } else {
+            match.isActive = false;
+            await match.save();
+          }
+        }
+      }
+      if (anyTick) broadcastState();
+    } catch (err) {
+      console.error('Error in global timer:', err);
+    }
+  }, 1000);
 
   httpServer.listen(PORT, '0.0.0.0', () => {
     console.log(`Server running with MySQL support on port ${PORT}`);
