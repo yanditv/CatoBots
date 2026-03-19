@@ -214,11 +214,9 @@ app.put('/api/robots/:id/meta', authenticateJWT, isAdmin, async (req, res) => {
   const normName = (s: string) => s?.trim().toLowerCase() || '';
 
   const allRegs = await Registration.findAll({ where: { status: 'SUBMITTED' } });
-  let reg = allRegs.find(r =>
+  const reg = allRegs.find(r =>
     normName(r.data?.robotName) === normName(robotName) ||
     normName(r.data?.teamName) === normName(robotName)
-  ) || allRegs.find(r =>
-    !!institutionName && normName(r.data?.institution) === normName(institutionName)
   ) || null;
 
   if (reg) {
