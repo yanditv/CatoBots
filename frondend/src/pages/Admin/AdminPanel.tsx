@@ -318,7 +318,7 @@ const PaymentRegistrationForm = ({ formData, setFormData, levelsData, categories
 
   // Members helpers
   const rawMembers = formData.data?.members || '';
-  const membersList: string[] = rawMembers ? rawMembers.split(',').map((m: string) => m.trim()) : [''];
+  const membersList: string[] = rawMembers ? rawMembers.split(',').map((m: string) => m.trimStart()) : [''];
   const members = membersList.length > 0 ? membersList : [''];
   const updateMember = (index: number, value: string) => {
     const updated = [...members];

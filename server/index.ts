@@ -528,6 +528,43 @@ app.post('/api/registrations/submit', async (req, res) => {
   });
 });
 
+// Public: buscar registro enviado por email (para página /pago)
+app.get('/api/registrations/status', async (req, res) => {
+  const { email } = req.query;
+  if (!email) return res.status(400).json({ message: 'Email requerido' });
+  const registration = await Registration.findOne({
+    where: { google_email: email as string, status: 'SUBMITTED' },
+    order: [['createdAt', 'DESC']]
+  });
+  if (!registration) return res.status(404).json({ message: 'No se encontró registro' });
+  // Solo retornar campos públicos necesarios
+  res.json({
+    id: registration.id,
+    google_email: registration.google_email,
+    paymentStatus: registration.paymentStatus,
+    payment_proof_filename: registration.payment_proof_filename,
+    data: {
+      institution: registration.data?.institution,
+      robotName: registration.data?.robotName,
+      teamName: registration.data?.teamName,
+      category: registration.data?.category,
+      members: registration.data?.members,
+    }
+  });
+});
+
+// Public: subir comprobante a un registro existente
+app.patch('/api/registrations/:id/payment-proof', async (req, res) => {
+  const { email, payment_proof_filename } = req.body;
+  if (!email || !payment_proof_filename) return res.status(400).json({ message: 'Email y comprobante requeridos' });
+  const registration = await Registration.findOne({
+    where: { id: req.params.id, google_email: email, status: 'SUBMITTED' }
+  });
+  if (!registration) return res.status(404).json({ message: 'Registro no encontrado' });
+  await registration.update({ payment_proof_filename });
+  res.json({ success: true });
+});
+
 // Admin Registration Routes
 app.get('/api/registrations', authenticateJWT, isAdmin, async (req, res) => {
   // Return all SUBMITTED registrations
@@ -554,10 +591,48 @@ app.post('/api/registrations', authenticateJWT, isAdmin, async (req, res) => {
     });
     res.status(201).json(registration);
 
-    // Send email non-blocking after response
-    const targetEmail = (data?.email) || google_email;
+    // Post-response: Institution/Robot creation (if APPROVED) + email (non-blocking)
     setImmediate(async () => {
       try {
+        if (paymentStatus === 'APPROVED' && data) {
+          const institutionName = data.institution || 'INDEPENDIENTE';
+          const contactEmail = data.email || google_email;
+          const membersArr = data.members
+            ? data.members.split(',').map((m: string) => m.trim()).filter((m: string) => m.length > 0)
+            : [];
+
+          const [institution, created] = await Institution.findOrCreate({
+            where: { name: institutionName },
+            defaults: { contactEmail, isPaid: true, members: membersArr },
+          });
+
+          if (!created) {
+            const existingMembers: string[] = institution.members || [];
+            const merged = Array.from(new Set([...existingMembers, ...membersArr]));
+            await institution.update({ isPaid: true, members: merged });
+          }
+
+          const categoryLevel = (data.category || 'JUNIOR').toUpperCase();
+          let specificCategory = 'Minisumo Autónomo';
+          if (categoryLevel === 'SENIOR' && data.seniorCategory) specificCategory = data.seniorCategory;
+          else if (categoryLevel === 'JUNIOR' && data.juniorCategory) specificCategory = data.juniorCategory;
+          else if (categoryLevel === 'MASTER' && data.masterCategory) specificCategory = data.masterCategory;
+
+          const robotName = data.robotName || data.teamName || 'ROBOT S/N';
+          const existingRobot = await Robot.findOne({
+            where: { name: robotName, institutionId: institution.id, category: specificCategory, level: categoryLevel }
+          });
+          if (!existingRobot) {
+            await Robot.create({ name: robotName, institutionId: institution.id, category: specificCategory, level: categoryLevel, isHomologated: false });
+          }
+          console.log(`[Admin create] Robot "${robotName}" → Institution "${institutionName}" (${existingRobot ? 'ya existía' : 'creado'})`);
+        }
+      } catch (err) {
+        console.error('[Admin create] Error creating Robot/Institution:', err);
+      }
+
+      try {
+        const targetEmail = data?.email || google_email;
         if (paymentStatus === 'APPROVED') {
           await sendStatusEmail(targetEmail, 'APPROVED', data);
         } else {
@@ -574,74 +649,78 @@ app.post('/api/registrations', authenticateJWT, isAdmin, async (req, res) => {
 });
 
 app.put('/api/registrations/:id', authenticateJWT, isAdmin, async (req, res) => {
-  const { paymentStatus, google_email, payment_proof_filename, data } = req.body;
+  const { paymentStatus, google_email, payment_proof_filename, data: bodyData } = req.body;
 
   let isPaid = false;
   if (paymentStatus === 'APPROVED') isPaid = true;
-  // If REJECTED or PENDING, isPaid remains false (or becomes false)
 
   const updateFields: any = { isPaid, paymentStatus };
   if (google_email !== undefined) updateFields.google_email = google_email;
   if (payment_proof_filename !== undefined) updateFields.payment_proof_filename = payment_proof_filename;
-  if (data !== undefined) updateFields.data = data;
+  if (bodyData !== undefined) updateFields.data = bodyData;
 
   await Registration.update(updateFields, { where: { id: req.params.id } });
 
   const updatedRegistration = await Registration.findByPk(req.params.id);
 
-  if (updatedRegistration && paymentStatus === 'APPROVED') {
-    const data = updatedRegistration.data;
-    if (data) {
+  res.json(updatedRegistration);
+
+  // Post-response: Institution/Robot creation and email (non-blocking)
+  setImmediate(async () => {
+    const regData = updatedRegistration?.data;
+
+    if (updatedRegistration && paymentStatus === 'APPROVED' && regData) {
       try {
-        const institutionName = data.institution || 'INDEPENDIENTE';
-        const contactEmail = data.email || updatedRegistration.google_email;
-        const membersArr = data.members ? data.members.split(',').map((m: string) => m.trim()).filter((m: string) => m.length > 0) : [];
+        const institutionName = regData.institution || 'INDEPENDIENTE';
+        const contactEmail = regData.email || updatedRegistration.google_email;
+        const membersArr = regData.members
+          ? regData.members.split(',').map((m: string) => m.trim()).filter((m: string) => m.length > 0)
+          : [];
 
-        // 1. Find or Create Institution
-        const [institution] = await Institution.findOrCreate({
+        // 1. Find or Create Institution, then update if already existed
+        const [institution, created] = await Institution.findOrCreate({
           where: { name: institutionName },
-          defaults: {
-            contactEmail: contactEmail,
-            isPaid: true,
-            members: membersArr,
-          }
+          defaults: { contactEmail, isPaid: true, members: membersArr },
         });
 
-        // 2. Determine Robot Category and Level
-        const categoryLevel = (data.category || 'JUNIOR').toUpperCase();
-        let specificCategory = data.category || 'Minisumo Autónomo';
+        if (!created) {
+          // Merge new members into existing list (no duplicates)
+          const existingMembers: string[] = institution.members || [];
+          const merged = Array.from(new Set([...existingMembers, ...membersArr]));
+          await institution.update({ isPaid: true, members: merged });
+        }
 
-        if (categoryLevel === 'SENIOR' && data.seniorCategory) specificCategory = data.seniorCategory;
-        if (categoryLevel === 'JUNIOR' && data.juniorCategory) specificCategory = data.juniorCategory;
-        if (categoryLevel === 'MASTER' && data.masterCategory) specificCategory = data.masterCategory;
+        // 2. Determine level and specific category
+        const categoryLevel = (regData.category || 'JUNIOR').toUpperCase();
+        let specificCategory = 'Minisumo Autónomo';
+        if (categoryLevel === 'SENIOR' && regData.seniorCategory) specificCategory = regData.seniorCategory;
+        else if (categoryLevel === 'JUNIOR' && regData.juniorCategory) specificCategory = regData.juniorCategory;
+        else if (categoryLevel === 'MASTER' && regData.masterCategory) specificCategory = regData.masterCategory;
 
-        const robotName = data.robotName || data.teamName || 'ROBOT S/N';
+        const robotName = regData.robotName || regData.teamName || 'ROBOT S/N';
 
-        // 3. Find or Create Robot
-        await Robot.findOrCreate({
-          where: {
-            name: robotName,
-            institutionId: institution.id,
-            category: specificCategory,
-            level: categoryLevel
-          },
-          defaults: {
-            isHomologated: false,
-          }
+        // 3. Find or Create Robot (usando findOne + create para evitar problemas con findOrCreate e institutionId)
+        const existingRobot = await Robot.findOne({
+          where: { name: robotName, institutionId: institution.id, category: specificCategory, level: categoryLevel }
         });
-        console.log(`[Auto-Create] Robot ${robotName} registered for Institution ${institutionName}`);
+        if (!existingRobot) {
+          await Robot.create({ name: robotName, institutionId: institution.id, category: specificCategory, level: categoryLevel, isHomologated: false });
+        }
+        console.log(`[Auto-Create] Robot "${robotName}" → Institution "${institutionName}" (${existingRobot ? 'ya existía' : 'creado'})`);
       } catch (err) {
         console.error('[Auto-Create] Error creating Robot/Institution:', err);
       }
     }
-  }
 
-  if (updatedRegistration && (paymentStatus === 'APPROVED' || paymentStatus === 'REJECTED')) {
-    const targetEmail = updatedRegistration.data?.email || updatedRegistration.google_email;
-    await sendStatusEmail(targetEmail, paymentStatus, updatedRegistration.data);
-  }
-
-  res.json(updatedRegistration);
+    if (updatedRegistration && (paymentStatus === 'APPROVED' || paymentStatus === 'REJECTED')) {
+      try {
+        const targetEmail = updatedRegistration.data?.email || updatedRegistration.google_email;
+        await sendStatusEmail(targetEmail, paymentStatus, updatedRegistration.data);
+      } catch (err) {
+        console.error('[Email] Error sending status email:', err);
+      }
+    }
+  });
 });
 
 app.delete('/api/registrations/:id', authenticateJWT, isAdmin, async (req, res) => {
