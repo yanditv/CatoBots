@@ -9,12 +9,8 @@ import {
   Flame,
   Hammer,
   AlertTriangle,
-  StopCircle,
-  Wrench,
   Clock,
   XCircle,
-  Trophy,
-  Zap,
   Sword,
   CornerDownRight,
   MoreVertical,
@@ -244,7 +240,8 @@ export const BattleBotsControl = ({
           {prolongationTimer !== null && (
             <div className="bg-cb-white-tech border-x-4 border-cb-black-pure p-2 flex justify-between items-center px-4">
               <span className="font-tech font-black text-xs text-cb-black-pure uppercase flex items-center gap-2">
-                <Timer size={16} /> Prórroga Reglamentaria: {formatTime(prolongationTimer)}
+                <Timer size={16} /> Prórroga Reglamentaria:{" "}
+                {formatTime(prolongationTimer)}
               </span>
               <div className="flex gap-2">
                 <button
@@ -264,7 +261,7 @@ export const BattleBotsControl = ({
       )}
 
       {showMoreActions && (
-        <div className="bg-neutral-200 border-b-4 border-cb-black-pure p-2 grid grid-cols-3 gap-2 shadow-inner">
+        <div className="bg-neutral-200 border-b-4 border-cb-black-pure p-2 grid grid-cols-2 gap-2 shadow-inner">
           <ActionButton
             icon={RotateCcw}
             size="py-3"
@@ -291,26 +288,6 @@ export const BattleBotsControl = ({
             }}
           />
           <ActionButton
-            icon={Zap}
-            size="py-3"
-            label="Muerte Súbita"
-            color="bg-cb-black-pure"
-            textColor="text-cb-yellow-neon"
-            disabled={match.timeLeft > 0 || match.scoreA !== match.scoreB}
-            onClick={() => {
-              openConfirm(
-                "Muerte Súbita",
-                "El primer robot en puntuar ganará el combate. ¿Activar?",
-                () => {
-                  setIsSuddenDeath(true);
-                  onControl(match.id, "SET_TIME", 120);
-                  onControl(match.id, "START");
-                  setShowMoreActions(false);
-                },
-              );
-            }}
-          />
-          <ActionButton
             icon={Clock}
             size="py-3"
             label="Tiempo Accidente (1m)"
@@ -324,90 +301,16 @@ export const BattleBotsControl = ({
               setShowMoreActions(false);
             }}
           />
-
-          <ActionButton
-            icon={Wrench}
-            size="py-3"
-            label="Piezas Sueltas"
-            color="bg-white"
-            textColor="text-cb-black-pure"
-            disabled={match.isFinished || !match.isActive}
-            onClick={() => {
-              onControl(match.id, "BB_LOOSE_PARTS");
-              setShowMoreActions(false);
-            }}
-          />
-          <div className="flex flex-col gap-2 justify-center">
-            <ActionButton
-              icon={XCircle}
-              size="py-1"
-              label="Rendición A"
-              color="bg-red-500"
-              textColor="text-white"
-              disabled={match.isFinished || !match.isActive}
-              onClick={() => handleMalfunction("A")}
-            />
-            <ActionButton
-              icon={XCircle}
-              size="py-1"
-              label="Rendición B"
-              color="bg-red-500"
-              textColor="text-white"
-              disabled={match.isFinished || !match.isActive}
-              onClick={() => handleMalfunction("B")}
-            />
-          </div>
-
-          <div className="flex flex-col gap-2 justify-center">
-            <ActionButton
-              icon={Clock}
-              size="py-1"
-              label="Prórroga A"
-              color="bg-white"
-              textColor="text-cb-black-pure"
-              disabled={match.isFinished || match.isActive}
-              onClick={() => {
-                openConfirm(
-                  "Solicitar Prórroga",
-                  "¿El Robot A solicita tiempo técnico? Se aplicará -5 pts.",
-                  () => {
-                    setProlongationTimer(180);
-                    setIsProlongationRunning(true);
-                    onControl(match.id, "BB_PROLONGATION_START", "A");
-                    setShowMoreActions(false);
-                  }
-                );
-              }}
-            />
-            <ActionButton
-              icon={Clock}
-              size="py-1"
-              label="Prórroga B"
-              color="bg-white"
-              textColor="text-cb-black-pure"
-              disabled={match.isFinished || match.isActive}
-              onClick={() => {
-                openConfirm(
-                  "Solicitar Prórroga",
-                  "¿El Robot B solicita tiempo técnico? Se aplicará -5 pts.",
-                  () => {
-                    setProlongationTimer(180);
-                    setIsProlongationRunning(true);
-                    onControl(match.id, "BB_PROLONGATION_START", "B");
-                    setShowMoreActions(false);
-                  }
-                );
-              }}
-            />
-          </div>
         </div>
       )}
 
-      <div className="grid gap-4 md:gap-5 px-2">
+      <div className="grid grid-cols-2 gap-2 md:gap-5 px-1 mt-2">
         {/* Robot A Card */}
         <div
           className={`flex-1 p-3 md:p-6 border-4 text-center relative flex flex-col justify-center items-center transition-all ${
-            match.isFinished && match.winnerId && match.winnerId !== match.robotA?.id
+            match.isFinished &&
+            match.winnerId &&
+            match.winnerId !== match.robotA?.id
               ? "bg-cb-white-tech border-cb-black-pure opacity-30 grayscale"
               : "bg-cb-white-tech border-cb-black-pure"
           }`}
@@ -419,7 +322,7 @@ export const BattleBotsControl = ({
             {match.scoreA}
           </div>
 
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-2 md:gap-3 w-full mb-3">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-2 md:gap-3 w-full mb-3">
             <ActionButton
               size="py-2"
               icon={Flame}
@@ -427,7 +330,12 @@ export const BattleBotsControl = ({
               color="bg-cb-green-vibrant"
               textColor="text-cb-black-pure"
               disabled={!match.isActive}
-              onClick={() => onControl(match.id, "ADD_SCORE_A", { points: 20, reason: 'Inmovilización' })}
+              onClick={() =>
+                onControl(match.id, "ADD_SCORE_A", {
+                  points: 20,
+                  reason: "Inmovilización",
+                })
+              }
             />
             <ActionButton
               size="py-2"
@@ -436,7 +344,12 @@ export const BattleBotsControl = ({
               color="bg-cb-green-vibrant"
               textColor="text-cb-black-pure"
               disabled={!match.isActive}
-              onClick={() => onControl(match.id, "ADD_SCORE_A", { points: 5, reason: 'Embestida' })}
+              onClick={() =>
+                onControl(match.id, "ADD_SCORE_A", {
+                  points: 5,
+                  reason: "Embestida",
+                })
+              }
             />
             <ActionButton
               size="py-2"
@@ -445,7 +358,12 @@ export const BattleBotsControl = ({
               color="bg-cb-green-vibrant"
               textColor="text-cb-black-pure"
               disabled={!match.isActive}
-              onClick={() => onControl(match.id, "ADD_SCORE_A", { points: 10, reason: 'Vuelco' })}
+              onClick={() =>
+                onControl(match.id, "ADD_SCORE_A", {
+                  points: 10,
+                  reason: "Vuelco",
+                })
+              }
             />
             <ActionButton
               size="py-2"
@@ -454,10 +372,15 @@ export const BattleBotsControl = ({
               color="bg-cb-green-vibrant"
               textColor="text-cb-black-pure"
               disabled={!match.isActive}
-              onClick={() => onControl(match.id, "ADD_SCORE_A", { points: 20, reason: 'Armas' })}
+              onClick={() =>
+                onControl(match.id, "ADD_SCORE_A", {
+                  points: 20,
+                  reason: "Armas",
+                })
+              }
             />
           </div>
-          <div className="grid grid-cols-2 gap-2 md:gap-3 w-full mb-3">
+          <div className="grid grid-cols-1 gap-2 md:gap-3 w-full mb-3">
             <ActionButton
               size="py-2"
               icon={AlertTriangle}
@@ -480,39 +403,14 @@ export const BattleBotsControl = ({
               onClick={() => handleMalfunction("A")}
             />
           </div>
-
-          {immobilizeTimerA !== null ? (
-            <ActionButton
-              size="py-2"
-              icon={StopCircle}
-              label={`CANCELAR INMOV. A (${immobilizeTimerA}s)`}
-              color="bg-red-500"
-              textColor="text-white"
-              onClick={() => {
-                setImmobilizeTimerA(null);
-                onControl(match.id, "START");
-              }}
-            />
-          ) : (
-            <ActionButton
-              size="py-2"
-              icon={StopCircle}
-              label="Conteo Inmovilidad (10s)"
-              color="bg-yellow-400"
-              textColor="text-cb-black-pure"
-              disabled={!match.isActive}
-              onClick={() => {
-                setImmobilizeTimerA(10);
-                onControl(match.id, "BB_IMMOBILIZATION_START", "A");
-              }}
-            />
-          )}
         </div>
 
         {/* Robot B Card */}
         <div
           className={`flex-1 p-3 md:p-6 border-4 text-center relative flex flex-col justify-center items-center transition-all ${
-            match.isFinished && match.winnerId && match.winnerId !== match.robotB?.id
+            match.isFinished &&
+            match.winnerId &&
+            match.winnerId !== match.robotB?.id
               ? "bg-cb-white-tech border-cb-black-pure opacity-30 grayscale"
               : "bg-cb-white-tech border-cb-black-pure"
           }`}
@@ -524,7 +422,7 @@ export const BattleBotsControl = ({
             {match.scoreB}
           </div>
 
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-2 md:gap-3 w-full mb-3">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-2 md:gap-3 w-full mb-3">
             <ActionButton
               size="py-2"
               icon={Flame}
@@ -532,7 +430,12 @@ export const BattleBotsControl = ({
               color="bg-cb-green-vibrant"
               textColor="text-cb-black-pure"
               disabled={!match.isActive}
-              onClick={() => onControl(match.id, "ADD_SCORE_B", { points: 20, reason: 'Inmovilización' })}
+              onClick={() =>
+                onControl(match.id, "ADD_SCORE_B", {
+                  points: 20,
+                  reason: "Inmovilización",
+                })
+              }
             />
             <ActionButton
               size="py-2"
@@ -541,7 +444,12 @@ export const BattleBotsControl = ({
               color="bg-cb-green-vibrant"
               textColor="text-cb-black-pure"
               disabled={!match.isActive}
-              onClick={() => onControl(match.id, "ADD_SCORE_B", { points: 5, reason: 'Embestida' })}
+              onClick={() =>
+                onControl(match.id, "ADD_SCORE_B", {
+                  points: 5,
+                  reason: "Embestida",
+                })
+              }
             />
             <ActionButton
               size="py-2"
@@ -550,7 +458,12 @@ export const BattleBotsControl = ({
               color="bg-cb-green-vibrant"
               textColor="text-cb-black-pure"
               disabled={!match.isActive}
-              onClick={() => onControl(match.id, "ADD_SCORE_B", { points: 10, reason: 'Vuelco' })}
+              onClick={() =>
+                onControl(match.id, "ADD_SCORE_B", {
+                  points: 10,
+                  reason: "Vuelco",
+                })
+              }
             />
             <ActionButton
               size="py-2"
@@ -559,10 +472,15 @@ export const BattleBotsControl = ({
               color="bg-cb-green-vibrant"
               textColor="text-cb-black-pure"
               disabled={!match.isActive}
-              onClick={() => onControl(match.id, "ADD_SCORE_B", { points: 20, reason: 'Armas' })}
+              onClick={() =>
+                onControl(match.id, "ADD_SCORE_B", {
+                  points: 20,
+                  reason: "Armas",
+                })
+              }
             />
           </div>
-          <div className="grid grid-cols-2 gap-2 md:gap-3 w-full mb-3">
+          <div className="grid grid-cols-1 gap-2 md:gap-3 w-full mb-3">
             <ActionButton
               size="py-2"
               icon={AlertTriangle}
@@ -586,57 +504,8 @@ export const BattleBotsControl = ({
             />
           </div>
 
-          {immobilizeTimerB !== null ? (
-            <ActionButton
-              size="py-2"
-              icon={StopCircle}
-              label={`CANCELAR INMOV. B (${immobilizeTimerB}s)`}
-              color="bg-red-500"
-              textColor="text-white"
-              onClick={() => {
-                setImmobilizeTimerB(null);
-                onControl(match.id, "START");
-              }}
-            />
-          ) : (
-            <ActionButton
-              size="py-2"
-              icon={StopCircle}
-              label="Conteo Inmovilidad (10s)"
-              color="bg-yellow-400"
-              textColor="text-cb-black-pure"
-              disabled={!match.isActive}
-              onClick={() => {
-                setImmobilizeTimerB(10);
-                onControl(match.id, "BB_IMMOBILIZATION_START", "B");
-              }}
-            />
-          )}
         </div>
       </div>
-
-      <div className="mt-4 px-2">
-        <ActionButton
-          icon={Trophy}
-          label={
-            match.isFinished ? "Cambiar Ganador" : "Declarar Ganador Final"
-          }
-          color="bg-yellow-400"
-          textColor="text-cb-black-pure"
-          disabled={match.timeLeft > 0 || match.scoreA === match.scoreB}
-          onClick={() => {
-            openConfirm(
-              "Finalizar Combate",
-              "¿Declarar ganador basándose en el puntaje acumulado?",
-              () => {
-                onControl(match.id, "FINISH");
-              },
-              "info",
-            );
-          }}
-        />
-      </div>
-      <br />
 
       <ConfirmModal
         isOpen={modalConfig.isOpen}

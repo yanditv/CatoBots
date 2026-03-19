@@ -353,7 +353,7 @@ export const MinisumoControl = ({
       )}
 
       {/* 3. ROBOT CARDS */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-5 px-2 mt-2">
+      <div className="grid grid-cols-2 md:grid-cols-2 gap-4 md:gap-5 px-2 mt-2">
         {/* Robot A */}
         <div className="flex-1 p-3 bg-cb-white-tech border-4 border-cb-black-pure text-center shadow-block-sm relative flex flex-col items-center">
           <h2 className="text-xl font-tech font-black uppercase text-cb-black-pure truncate mt-2">
@@ -385,7 +385,7 @@ export const MinisumoControl = ({
             })}
           </div>
 
-          <div className="grid grid-cols-3 gap-2 w-full mb-3">
+          <div className="grid grid-cols-1 gap-2 w-full mb-3">
             <ActionButton
               size="py-2"
               icon={ArrowUpFromLine}
@@ -423,7 +423,7 @@ export const MinisumoControl = ({
               disabled={!match.isActive || match.isFinished}
               onClick={() => handleGravePenalty("A")}
             />
-          </div>
+          </div>*
 
           {/* Immobilization */}
           <div className="w-full mt-auto">
@@ -489,7 +489,7 @@ export const MinisumoControl = ({
             })}
           </div>
 
-          <div className="grid grid-cols-3 gap-2 w-full mb-3">
+          <div className="grid grid-cols-1 gap-2 w-full mb-3">
             <ActionButton
               size="py-2"
               icon={ArrowUpFromLine}

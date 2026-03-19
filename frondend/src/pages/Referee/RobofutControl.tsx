@@ -13,6 +13,7 @@ import {
   AlertTriangle,
   Zap,
   Undo,
+  UserX,
 } from "lucide-react";
 import type { MatchState } from "../../App";
 
@@ -83,7 +84,7 @@ export const RobofutControl = ({
   const [isTieBreakChoiceOpen, setIsTieBreakChoiceOpen] = useState(false);
 
   // Timers
-  const [auxTimer, setAuxTimer] = useState<number | null>(null); // Prep, Court Change, Break, Calling
+  const [auxTimer, setAuxTimer] = useState<number | null>(null); 
   const [isAuxRunning, setIsAuxRunning] = useState(false);
   const [isRepairActive, setIsRepairActive] = useState(false);
   const [courtChangeRemaining, setCourtChangeRemaining] = useState<number | null>(null);
@@ -142,15 +143,12 @@ export const RobofutControl = ({
       interval = setInterval(() => setAuxTimer((prev) => prev! - 1), 1000);
     } else if (isAuxRunning && auxTimer === 0) {
       if (isRepairActive && courtChangeRemaining !== null) {
-          // Repair timed out, return to court change
           setAuxTimer(courtChangeRemaining);
           setCourtChangeRemaining(null);
           setIsRepairActive(false);
       } else {
           setIsAuxRunning(false);
-          setAuxTimer(null); // Ocultar banner
-          
-          // Si terminó el cambio de cancha (estamos en half 2), iniciar match
+          setAuxTimer(null); 
           if (half === 2 && !match.isActive) {
              onControl(match.id, "START");
           }
@@ -161,22 +159,19 @@ export const RobofutControl = ({
 
   // Handle Match Phase Automation (Transition Half 1 -> Court Change -> Half 2)
   useEffect(() => {
-      // Automate end of Half 1 (timeLeft reaches 0)
       if (match.timeLeft === 0 && half === 1 && match.isActive) {
           onControl(match.id, "PAUSE");
           setHalf(2);
-          onControl(match.id, "SET_TIME", 120); // Reset for second half
+          onControl(match.id, "SET_TIME", 120); 
           setAuxTimer(30);
           setIsAuxRunning(true);
       }
 
-      // Automate end of Half 2 or Golden Goal (timeLeft reaches 0)
       if (match.timeLeft === 0 && (half === 2 || half === 3) && match.isActive) {
           onControl(match.id, "PAUSE");
           if (match.scoreA === match.scoreB) {
               setIsTieBreakChoiceOpen(true);
           } else {
-               // Show finish option or auto-finish if not a tie
                openConfirm("Finalizar Encuentro", "¿Estás seguro de que deseas finalizar el encuentro con el marcador actual?", () => {
                    onControl(match.id, "FINISH");
                }, "info");
@@ -186,8 +181,6 @@ export const RobofutControl = ({
 
   const handleGoal = (who: "A" | "B") => {
     onControl(match.id, `ADD_SCORE_${who}`, 1);
-    
-    // If Gol de Oro (half 3), the first goal wins
     if (half === 3) {
         openConfirm(
           "¡GOL DE ORO!", 
@@ -230,37 +223,35 @@ export const RobofutControl = ({
     if (scored && penaltyTarget) {
         onControl(match.id, `ADD_SCORE_${penaltyTarget}`, 1);
     }
-    
-    // Reset infractions for the offender
     if (penaltyTarget === "B") setViolationsA(0);
     else setViolationsB(0);
-
     setIsInfractionPenalty(false);
     setPenaltyTarget(null);
   };
 
-  const [gravePenaltiesA, setGravePenaltiesA] = useState(0);
-  const [gravePenaltiesB, setGravePenaltiesB] = useState(0);
-
-  const addGravePenalty = (who: "A" | "B") => {
-    const current = who === "A" ? gravePenaltiesA : gravePenaltiesB;
-    const opponent = who === "A" ? "B" : "A";
-
-    if (current + 1 >= 2) {
-      openConfirm(
-        "DESCALIFICACIÓN",
-        `El Robot ${who} ha acumulado 2 penalizaciones graves. Queda DESCALIFICADO automáticamente. Gana el Robot ${opponent}.`,
-        () => {
+  const handleDisqualification = (who: "A" | "B") => {
+    const robot = who === "A" ? match.robotA : match.robotB;
+    const opponent = who === "A" ? match.robotB : match.robotA;
+    
+    openConfirm(
+      "DESCALIFICACIÓN INMEDIATA",
+      `¿Confirmar DESCALIFICACIÓN para ${robot?.name}? Esta acción finalizará el combate otorgando la victoria a ${opponent?.name}.`,
+      () => {
           onControl(match.id, "PAUSE");
-          onControl(match.id, who === "A" ? "SET_SCORE_B" : "SET_SCORE_A", 99); // Force win
+          // Add a penalty entry to history
+          onControl(match.id, who === "A" ? "ADD_PENALTY_A" : "ADD_PENALTY_B", "DESCALIFICACIÓN");
+          // Set winning score for opponent and finish
+          if (who === "A") {
+              onControl(match.id, "SET_SCORE_A", 0);
+              onControl(match.id, "SET_SCORE_B", Math.max(match.scoreB, 3));
+          } else {
+              onControl(match.id, "SET_SCORE_B", 0);
+              onControl(match.id, "SET_SCORE_A", Math.max(match.scoreA, 3));
+          }
           onControl(match.id, "FINISH");
-        },
-        "danger",
-      );
-    } else {
-      if (who === "A") setGravePenaltiesA(v => v + 1);
-      else setGravePenaltiesB(v => v + 1);
-    }
+      },
+      "danger"
+    );
   };
 
   const startAuxTimer = (seconds: number) => {
@@ -270,7 +261,6 @@ export const RobofutControl = ({
   };
 
   const handleRepairRequest = () => {
-    // If we are currently in court change (30s)
     if (auxTimer !== null && !isRepairActive) {
         setCourtChangeRemaining(auxTimer);
         setAuxTimer(120); // 2m
@@ -278,14 +268,12 @@ export const RobofutControl = ({
         setIsAuxRunning(true);
         setShowMoreActions(false);
     } else {
-        // Normal repair request
         startAuxTimer(120);
     }
   };
 
   const cancelOrFinishAux = () => {
       if (isRepairActive && courtChangeRemaining !== null) {
-          // Finish repair manually and return to court change
           setAuxTimer(courtChangeRemaining);
           setCourtChangeRemaining(null);
           setIsRepairActive(false);
@@ -299,7 +287,6 @@ export const RobofutControl = ({
 
   return (
     <div className="flex flex-col gap-2 relative">
-      {/* 1. STICKY HEADER: Timer & Primary Controls */}
       <div className="sticky top-0 z-50 bg-neutral-100 border-4 border-cb-black-pure shadow-md p-2 flex items-center justify-between gap-2">
         <button
           className={`flex-shrink-0 w-16 h-12 flex items-center justify-center border-2 border-cb-black-pure shadow-[2px_2px_0_#000] active:scale-95 transition-all ${match.isActive ? "bg-cb-yellow-neon text-cb-black-pure" : "bg-cb-green-vibrant text-cb-black-pure"}`}
@@ -329,7 +316,6 @@ export const RobofutControl = ({
         </button>
       </div>
 
-      {/* AUX TIMER BANNER */}
       <AuxTimerBanner 
         timer={auxTimer}
         isRunning={isAuxRunning}
@@ -371,64 +357,6 @@ export const RobofutControl = ({
         </div>
       )}
 
-      {/* 3. CORE FIELD CONTROLS (Goles & Infracciones) */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-5 px-2 mt-2">
-        {/* Robot A */}
-        <div className="flex-1 p-3 bg-cb-white-tech border-4 border-cb-black-pure text-center shadow-block-sm flex flex-col items-center">
-          <h2 className="text-xl font-tech font-black uppercase text-cb-black-pure truncate mb-2">
-            {match.robotA?.name || "EQUIPO A"}
-          </h2>
-          
-          <div className="w-full bg-cb-black-pure border-2 border-cb-black-pure py-4 mb-4 flex flex-col items-center">
-             <span className="text-[10px] text-cb-green-vibrant font-tech mb-1">MARCADOR GOLES</span>
-             <span className="text-5xl font-mono font-black text-cb-white-tech">{match.scoreA}</span>
-          </div>
-
-          <div className="grid grid-cols-2 gap-2 w-full mb-3">
-             <ActionButton
-               size="py-2"
-               icon={Trophy}
-               label="¡GOL!"
-               color="bg-cb-green-vibrant"
-               textColor="text-cb-black-pure"
-               disabled={!match.isActive}
-               onClick={() => handleGoal("A")}
-             />
-             <ActionButton
-               size="py-2"
-               icon={Undo}
-               label="Quitar Gol"
-               color="bg-white"
-               textColor="text-cb-black-pure"
-               disabled={!match.isActive}
-               onClick={() => handleUndoGoal("A")}
-             />
-          </div>
-
-          <div className="grid grid-cols-2 gap-2 w-full">
-            <ActionButton
-              size="py-2"
-              icon={AlertTriangle}
-              label={`Infracción (${violationsA}/3)`}
-              color="bg-cb-yellow-neon"
-              textColor="text-cb-black-pure"
-              disabled={!match.isActive}
-              onClick={() => addInfraction("A")}
-            />
-            <ActionButton
-              size="py-2"
-              icon={XCircle}
-              label={`Penalidad Grave (${gravePenaltiesA}/2)`}
-              color="bg-red-500"
-              textColor="text-white"
-              disabled={!match.isActive}
-              onClick={() => addGravePenalty("A")}
-            />
-          </div>
-        </div>
-
-
-      {/* 4. INFRACTION PENALTY UI (Single Shot) */}
       {isInfractionPenalty && (
         <div className="mt-4 px-2">
             <div className="bg-cb-yellow-neon border-4 border-cb-black-pure p-4 text-center">
@@ -456,62 +384,6 @@ export const RobofutControl = ({
         </div>
       )}
 
-        {/* Robot B */}
-        <div className="flex-1 p-3 bg-cb-white-tech border-4 border-cb-black-pure text-center shadow-block-sm flex flex-col items-center">
-          <h2 className="text-xl font-tech font-black uppercase text-cb-black-pure truncate mb-2">
-            {match.robotB?.name || "EQUIPO B"}
-          </h2>
-          
-          <div className="w-full bg-cb-black-pure border-2 border-cb-black-pure py-4 mb-4 flex flex-col items-center">
-             <span className="text-[10px] text-cb-green-vibrant font-tech mb-1">MARCADOR GOLES</span>
-             <span className="text-5xl font-mono font-black text-cb-white-tech">{match.scoreB}</span>
-          </div>
-
-          <div className="grid grid-cols-2 gap-2 w-full mb-3">
-             <ActionButton
-               size="py-2"
-               icon={Trophy}
-               label="¡GOL!"
-               color="bg-cb-green-vibrant"
-               textColor="text-cb-black-pure"
-               disabled={!match.isActive}
-               onClick={() => handleGoal("B")}
-             />
-             <ActionButton
-               size="py-2"
-               icon={Undo}
-               label="Quitar Gol"
-               color="bg-white"
-               textColor="text-cb-black-pure"
-               disabled={!match.isActive}
-               onClick={() => handleUndoGoal("B")}
-             />
-          </div>
-
-          <div className="grid grid-cols-2 gap-2 w-full">
-            <ActionButton
-              size="py-2"
-              icon={AlertTriangle}
-              label={`Infracción (${violationsB}/3)`}
-              color="bg-cb-yellow-neon"
-              textColor="text-cb-black-pure"
-              disabled={!match.isActive}
-              onClick={() => addInfraction("B")}
-            />
-            <ActionButton
-              size="py-2"
-              icon={XCircle}
-              label={`Penalidad Grave (${gravePenaltiesB}/2)`}
-              color="bg-red-500"
-              textColor="text-white"
-              disabled={!match.isActive}
-              onClick={() => addGravePenalty("B")}
-            />
-          </div>
-        </div>
-      </div>
-
-      {/* 4. PENALTY PHASE UI (Conditional) */}
       {isPenaltyPhase && (
         <div className="mt-4 px-2 space-y-4">
            <div className="bg-cb-black-pure border-4 border-cb-yellow-neon p-4 text-center">
@@ -563,7 +435,7 @@ export const RobofutControl = ({
                       <button 
                         onClick={() => {
                             openConfirm("Finalizar Penalties", `Declarar GANADOR al Robot ${match.robotA?.name} por penales?`, () => {
-                                onControl(match.id, "SET_SCORE_A", match.scoreA + 1); // Point to break tie
+                                onControl(match.id, "SET_SCORE_A", match.scoreA + 1); 
                                 onControl(match.id, "FINISH");
                             }, "info");
                         }}
@@ -574,7 +446,7 @@ export const RobofutControl = ({
                       <button 
                         onClick={() => {
                             openConfirm("Finalizar Penalties", `Declarar GANADOR al Robot ${match.robotB?.name} por penales?`, () => {
-                                onControl(match.id, "SET_SCORE_B", match.scoreB + 1); // Point to break tie
+                                onControl(match.id, "SET_SCORE_B", match.scoreB + 1); 
                                 onControl(match.id, "FINISH");
                             }, "info");
                         }}
@@ -589,7 +461,109 @@ export const RobofutControl = ({
         </div>
       )}
 
-      {/* TIE BREAK CHOICE MODAL */}
+      <div className="grid grid-cols-2 md:grid-cols-2 gap-4 md:gap-5 px-2 mt-2">
+        <div className="flex-1 p-3 bg-cb-white-tech border-4 border-cb-black-pure text-center shadow-block-sm flex flex-col items-center">
+          <h2 className="text-xl font-tech font-black uppercase text-cb-black-pure break-words whitespace-normal mb-2 w-full px-2">
+            {match.robotA?.name || "EQUIPO A"}
+          </h2>
+          
+          <div className="w-full bg-cb-black-pure border-2 border-cb-black-pure py-4 mb-4 flex flex-col items-center">
+             <span className="text-[10px] text-cb-green-vibrant font-tech mb-1">MARCADOR GOLES</span>
+             <span className="text-5xl font-mono font-black text-cb-white-tech">{match.scoreA}</span>
+          </div>
+
+          <div className="grid grid-cols-1 gap-2 w-full mb-3">
+             <ActionButton
+               size="py-2"
+               icon={Trophy}
+               label="¡GOL!"
+               color="bg-cb-green-vibrant"
+               textColor="text-cb-black-pure"
+               disabled={!match.isActive}
+               onClick={() => handleGoal("A")}
+             />
+             <ActionButton
+               size="py-2"
+               icon={Undo}
+               label="Quitar Gol"
+               color="bg-white"
+               textColor="text-cb-black-pure"
+               disabled={!match.isActive}
+               onClick={() => handleUndoGoal("A")}
+             />
+
+            <ActionButton
+              size="py-2"
+              icon={AlertTriangle}
+              label={`Infracción (${violationsA}/3)`}
+              color="bg-cb-yellow-neon"
+              textColor="text-cb-black-pure"
+              disabled={!match.isActive}
+              onClick={() => addInfraction("A")}
+            />
+            <ActionButton
+              size="py-2"
+              icon={UserX}
+              label="Descalificar A"
+              color="bg-red-500"
+              textColor="text-white"
+              disabled={match.isFinished}
+              onClick={() => handleDisqualification("A")}
+            />
+          </div>
+        </div>
+
+        <div className="flex-1 p-3 bg-cb-white-tech border-4 border-cb-black-pure text-center shadow-block-sm flex flex-col items-center">
+          <h2 className="text-xl font-tech font-black uppercase text-cb-black-pure break-words whitespace-normal mb-2 w-full px-2">
+            {match.robotB?.name || "EQUIPO B"}
+          </h2>
+          
+          <div className="w-full bg-cb-black-pure border-2 border-cb-black-pure py-4 mb-4 flex flex-col items-center">
+             <span className="text-[10px] text-cb-green-vibrant font-tech mb-1">MARCADOR GOLES</span>
+             <span className="text-5xl font-mono font-black text-cb-white-tech">{match.scoreB}</span>
+          </div>
+
+          <div className="grid grid-cols-1 gap-2 w-full mb-3">
+             <ActionButton
+               size="py-2"
+               icon={Trophy}
+               label="¡GOL!"
+               color="bg-cb-green-vibrant"
+               textColor="text-cb-black-pure"
+               disabled={!match.isActive}
+               onClick={() => handleGoal("B")}
+             />
+             <ActionButton
+               size="py-2"
+               icon={Undo}
+               label="Quitar Gol"
+               color="bg-white"
+               textColor="text-cb-black-pure"
+               disabled={!match.isActive}
+               onClick={() => handleUndoGoal("B")}
+             />
+            <ActionButton
+              size="py-2"
+              icon={AlertTriangle}
+              label={`Infracción (${violationsB}/3)`}
+              color="bg-cb-yellow-neon"
+              textColor="text-cb-black-pure"
+              disabled={!match.isActive}
+              onClick={() => addInfraction("B")}
+            />
+            <ActionButton
+              size="py-2"
+              icon={UserX}
+              label="Descalificar B"
+              color="bg-red-500"
+              textColor="text-white"
+              disabled={match.isFinished}
+              onClick={() => handleDisqualification("B")}
+            />
+          </div>
+        </div>
+      </div>
+
       {isTieBreakChoiceOpen && (
         <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-cb-black-pure/90 animate-in fade-in duration-300">
            <div className="bg-white border-8 border-cb-black-pure p-6 w-full max-w-sm text-center shadow-[10px_10px_0_#CBFF00]">

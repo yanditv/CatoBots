@@ -305,7 +305,7 @@ export const MazeControl = ({
 
       {/* 2. EXPANDABLE "MORE ACTIONS" PANEL */}
       {showMoreActions && (
-        <div className="bg-neutral-200 border-b-4 border-cb-black-pure p-2 grid grid-cols-3 gap-2 shadow-inner">
+        <div className="bg-neutral-200 border-b-4 border-cb-black-pure p-2 grid grid-cols-2 gap-2 shadow-inner">
           <ActionButton
             icon={RotateCcw}
             size="py-3"
@@ -373,9 +373,9 @@ export const MazeControl = ({
             </div>
             <div className="flex flex-col items-center">
               <span className="text-[10px] font-tech text-cb-black-pure/70 uppercase">
-                PENALIZACIÓN ACUM.
+                PENALIZACIÓN ACUMULADAS
               </span>
-              <span className="text-3xl font-tech font-black text-cb-red-alert">
+              <span className="text-3xl font-tech font-black text-black">
                  +{attemptScores[currentAttempt].restarts + attemptScores[currentAttempt].graveFaults}s
               </span>
             </div>
@@ -422,22 +422,7 @@ export const MazeControl = ({
               </div>
           </div>
 
-          {/* PENALTY HISTORY PANEL */}
-          <div className="w-full mt-4 bg-cb-black-pure/5 border-2 border-dashed border-cb-black-pure p-3 text-left">
-             <div className="text-[10px] font-tech font-black text-cb-black-pure uppercase mb-2">Historial de Penalizaciones:</div>
-             <div className="space-y-1 max-h-32 overflow-y-auto pr-1">
-                {penaltyHistory.length > 0 ? penaltyHistory.map((entry, idx) => (
-                    <div key={idx} className="flex justify-between items-center text-[10px] font-tech font-bold py-1 border-b border-black/10">
-                        <span className={entry.type === "Reaparición" ? "text-cb-green-vibrant bg-cb-black-pure px-1" : "text-cb-black-pure bg-cb-yellow-neon px-1"}>
-                           {entry.type}
-                        </span>
-                        <span className="text-cb-black-pure">+{entry.seconds}s</span>
-                    </div>
-                )) : (
-                    <p className="text-[9px] text-neutral-400 italic">No hay penalizaciones registradas.</p>
-                )}
-             </div>
-          </div>
+         
 
           <div className="w-full mt-2 border-t-2 border-black border-dashed pt-4">
             <div className="grid grid-cols-2 gap-2">
@@ -485,7 +470,7 @@ export const MazeControl = ({
       </div>
 
       {/* 4. BOTTOM FIXED BAR: RESOLUTION */}
-      <div className="mt-4 px-2 pb-6">
+      <div className="mt-1 px-1 pb-1">
         <div className="grid grid-cols-2 gap-2 md:gap-3">
           <ActionButton
             icon={ArrowRight}
@@ -497,7 +482,7 @@ export const MazeControl = ({
           />
           <ActionButton
             icon={CheckCircle}
-            label="Declarar y Guardar"
+            label="Finalizar"
             color="bg-cb-yellow-neon"
             size="py-4"
             textColor="text-cb-black-pure"
