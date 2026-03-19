@@ -11,6 +11,7 @@ import Brackets from './pages/Brackets'
 import { RoundControl } from './pages/Referee/RoundControl'
 import RoundDashboard from './pages/RoundDashboard'
 import NotFound from './pages/NotFound'
+import PaymentUpload from './pages/PaymentUpload'
 import { AuthProvider, useAuth } from './context/AuthContext'
 import { SOCKET_URL } from './config/api'
 
@@ -84,6 +85,9 @@ function AppContent() {
         
         {/* Public Form - Compact Version */}
         <Route path="/registro" element={<WizardForm />} />
+
+        {/* Subir comprobante de pago */}
+        <Route path="/pago" element={<PaymentUpload />} />
 
         {/* Public Scoreboard */}
         <Route path="/dashboard" element={<Dashboard matches={matches} revealWinnerEvent={revealWinnerEvent} onClearReveal={() => setRevealWinnerEvent(null)} />} />
