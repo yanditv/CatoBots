@@ -207,6 +207,45 @@ app.put('/api/robots/:id', authenticateJWT, isAdmin, async (req, res) => {
   res.json(await Robot.findByPk(req.params.id, { include: [Institution] }));
 });
 
+// Save advisor/members for a robot — finds linked registration or creates one
+app.put('/api/robots/:id/meta', authenticateJWT, isAdmin, async (req, res) => {
+  const { advisorName, advisorPhone, members, robotName, institutionName, category, level } = req.body;
+  const membersStr = Array.isArray(members) ? members.join(', ') : (members || '');
+  const normName = (s: string) => s?.trim().toLowerCase() || '';
+
+  const allRegs = await Registration.findAll({ where: { status: 'SUBMITTED' } });
+  let reg = allRegs.find(r =>
+    normName(r.data?.robotName) === normName(robotName) ||
+    normName(r.data?.teamName) === normName(robotName)
+  ) || allRegs.find(r =>
+    !!institutionName && normName(r.data?.institution) === normName(institutionName)
+  ) || null;
+
+  if (reg) {
+    await reg.update({ data: { ...reg.data, advisorName: advisorName || '', advisorPhone: advisorPhone || '', members: membersStr } });
+  } else {
+    const categoryLevel = (level || 'JUNIOR');
+    const subCatKey = categoryLevel === 'JUNIOR' ? 'juniorCategory' : categoryLevel === 'SENIOR' ? 'seniorCategory' : 'masterCategory';
+    await Registration.create({
+      google_email: `robot-${req.params.id}@admin.local`,
+      status: 'SUBMITTED',
+      paymentStatus: 'APPROVED',
+      isPaid: true,
+      data: {
+        robotName,
+        institution: institutionName || '',
+        category: categoryLevel,
+        [subCatKey]: category || '',
+        advisorName: advisorName || '',
+        advisorPhone: advisorPhone || '',
+        members: membersStr,
+      },
+    });
+  }
+
+  res.json({ success: true });
+});
+
 app.delete('/api/robots/:id', authenticateJWT, isAdmin, async (req, res) => {
   await Robot.destroy({ where: { id: req.params.id } });
   res.sendStatus(204);
