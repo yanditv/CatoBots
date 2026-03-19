@@ -739,10 +739,11 @@ app.post('/api/registrations', authenticateJWT, isAdmin, async (req, res) => {
 app.put('/api/registrations/:id', authenticateJWT, isAdmin, async (req, res) => {
   const { paymentStatus, google_email, payment_proof_filename, data: bodyData } = req.body;
 
-  let isPaid = false;
-  if (paymentStatus === 'APPROVED') isPaid = true;
-
-  const updateFields: any = { isPaid, paymentStatus };
+  const updateFields: any = {};
+  if (paymentStatus !== undefined) {
+    updateFields.paymentStatus = paymentStatus;
+    updateFields.isPaid = paymentStatus === 'APPROVED';
+  }
   if (google_email !== undefined) updateFields.google_email = google_email;
   if (payment_proof_filename !== undefined) updateFields.payment_proof_filename = payment_proof_filename;
   if (bodyData !== undefined) updateFields.data = bodyData;

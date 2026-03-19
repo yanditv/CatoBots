@@ -615,8 +615,10 @@ const AdminPanel = () => {
 
     // If editing a robot, find related registration to pre-load advisor/members
     if (activeTab === 'robots') {
+      const normName = (s: string) => s?.trim().toLowerCase();
       const relatedReg = data.registrations.find((r: Registration) =>
-        r.data?.robotName === item.name || r.data?.teamName === item.name
+        normName(r.data?.robotName) === normName(item.name) ||
+        normName(r.data?.teamName) === normName(item.name)
       );
       if (relatedReg) {
         const membersRaw: string = relatedReg.data?.members || '';
@@ -1100,8 +1102,11 @@ const AdminPanel = () => {
                 const q = normalize(searchQuery);
                 const filteredRobots = data.robots.filter(r => {
                   // Buscar registro vinculado para acceder a integrantes y asesor
+                  const normName = (s: string) => s?.trim().toLowerCase();
                   const reg = data.registrations.find(
-                    (reg: Registration) => reg.data?.robotName === r.name || reg.data?.teamName === r.name
+                    (reg: Registration) =>
+                      normName(reg.data?.robotName) === normName(r.name) ||
+                      normName(reg.data?.teamName) === normName(r.name)
                   );
                   const members: string = reg?.data?.members || '';
                   const advisorName: string = reg?.data?.advisorName || '';
@@ -1153,8 +1158,11 @@ const AdminPanel = () => {
                       </>
                     )}
                     expandedContent={(robot) => {
+                      const normName = (s: string) => s?.trim().toLowerCase();
                       const reg = data.registrations.find(
-                        (reg: Registration) => reg.data?.robotName === robot.name || reg.data?.teamName === robot.name
+                        (reg: Registration) =>
+                          normName(reg.data?.robotName) === normName(robot.name) ||
+                          normName(reg.data?.teamName) === normName(robot.name)
                       );
                       const members: string[] = reg?.data?.members
                         ? reg.data.members.split(',').map((m: string) => m.trim()).filter(Boolean)
