@@ -1,18 +1,24 @@
-import { Resend } from 'resend';
+import nodemailer from 'nodemailer';
 import dotenv from 'dotenv';
 import fs from 'fs';
 import path from 'path';
 
 dotenv.config();
 
-// Initialize Resend
-const resend = new Resend(process.env.RESEND_API_KEY);
+// Initialize Nodemailer
+const transporter = nodemailer.createTransport({
+    service: 'gmail',
+    auth: {
+        user: process.env.EMAIL_FROM,
+        pass: process.env.EMAIL_PASSWORD || process.env.RESEND_API_KEY,
+    },
+});
 
 // Log email configuration on startup
 console.log('=== Email Configuration ===');
-console.log('Email Provider: Resend');
-console.log('RESEND_API_KEY:', process.env.RESEND_API_KEY ? '***SET***' : 'NOT SET');
-console.log('EMAIL_FROM:', process.env.EMAIL_FROM || 'onboarding@resend.dev');
+console.log('Email Provider: Nodemailer (Gmail)');
+console.log('EMAIL_PASSWORD:', process.env.EMAIL_PASSWORD || process.env.RESEND_API_KEY ? '***SET***' : 'NOT SET');
+console.log('EMAIL_FROM:', process.env.EMAIL_FROM || 'Not Set');
 console.log('===========================');
 
 // --- Logo ---
@@ -294,28 +300,23 @@ export const sendWelcomeEmail = async (to: string, formData: any) => {
     });
 
     try {
-        if (!process.env.RESEND_API_KEY) {
-            console.log('⚠️ No RESEND_API_KEY found, skipping welcome email to:', to);
+        if (!process.env.EMAIL_PASSWORD && !process.env.RESEND_API_KEY) {
+            console.log('⚠️ No EMAIL_PASSWORD found, skipping welcome email to:', to);
             return;
         }
 
         console.log('📧 Attempting to send welcome email to:', to);
-        console.log('📧 From:', process.env.EMAIL_FROM || 'onboarding@resend.dev');
+        console.log('📧 From:', process.env.EMAIL_FROM);
         
-        const { data, error } = await resend.emails.send({
-            from: process.env.EMAIL_FROM || 'onboarding@resend.dev',
+        const info = await transporter.sendMail({
+            from: `"CatoBots IV" <${process.env.EMAIL_FROM}>`,
             to,
             subject: "⚡ INSCRIPCIÓN RECIBIDA — CatoBots IV",
             html: htmlContent,
         });
         
-        if (error) {
-            console.error('❌ Resend error:', error);
-            return;
-        }
-        
         console.log('✅ Welcome email sent successfully!');
-        console.log('   Message ID:', data?.id);
+        console.log('   Message ID:', info.messageId);
     } catch (error: any) {
         console.error('❌ Error sending welcome email:');
         console.error('   Error message:', error.message);
@@ -476,24 +477,19 @@ export const sendStatusEmail = async (to: string, status: 'APPROVED' | 'REJECTED
     });
 
     try {
-        if (!process.env.RESEND_API_KEY) {
-            console.log('No RESEND_API_KEY found, skipping status email to:', to);
+        if (!process.env.EMAIL_PASSWORD && !process.env.RESEND_API_KEY) {
+            console.log('No EMAIL_PASSWORD found, skipping status email to:', to);
             return;
         }
 
-        const { data, error } = await resend.emails.send({
-            from: process.env.EMAIL_FROM || 'onboarding@resend.dev',
+        const info = await transporter.sendMail({
+            from: `"CatoBots IV" <${process.env.EMAIL_FROM}>`,
             to,
             subject: `${isApproved ? '✅' : '❌'} ${isApproved ? 'APROBADA' : 'RECHAZADA'} — CatoBots IV`,
             html: htmlContent,
         });
         
-        if (error) {
-            console.error('Resend error:', error);
-            return;
-        }
-        
-        console.log(`✅ Status email (${status}) sent to ${to}, ID: ${data?.id}`);
+        console.log(`✅ Status email (${status}) sent to ${to}, ID: ${info.messageId}`);
     } catch (error) {
         console.error('Error sending status email:', error);
     }
