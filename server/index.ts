@@ -207,6 +207,43 @@ app.put('/api/robots/:id', authenticateJWT, isAdmin, async (req, res) => {
   res.json(await Robot.findByPk(req.params.id, { include: [Institution] }));
 });
 
+// Save advisor/members for a robot — finds linked registration or creates one
+app.put('/api/robots/:id/meta', authenticateJWT, isAdmin, async (req, res) => {
+  const { advisorName, advisorPhone, members, robotName, institutionName, category, level } = req.body;
+  const membersStr = Array.isArray(members) ? members.join(', ') : (members || '');
+  const normName = (s: string) => s?.trim().toLowerCase() || '';
+
+  const allRegs = await Registration.findAll({ where: { status: 'SUBMITTED' } });
+  const reg = allRegs.find(r =>
+    normName(r.data?.robotName) === normName(robotName) ||
+    normName(r.data?.teamName) === normName(robotName)
+  ) || null;
+
+  if (reg) {
+    await reg.update({ data: { ...reg.data, advisorName: advisorName || '', advisorPhone: advisorPhone || '', members: membersStr } });
+  } else {
+    const categoryLevel = (level || 'JUNIOR');
+    const subCatKey = categoryLevel === 'JUNIOR' ? 'juniorCategory' : categoryLevel === 'SENIOR' ? 'seniorCategory' : 'masterCategory';
+    await Registration.create({
+      google_email: `robot-${req.params.id}@admin.local`,
+      status: 'SUBMITTED',
+      paymentStatus: 'APPROVED',
+      isPaid: true,
+      data: {
+        robotName,
+        institution: institutionName || '',
+        category: categoryLevel,
+        [subCatKey]: category || '',
+        advisorName: advisorName || '',
+        advisorPhone: advisorPhone || '',
+        members: membersStr,
+      },
+    });
+  }
+
+  res.json({ success: true });
+});
+
 app.delete('/api/robots/:id', authenticateJWT, isAdmin, async (req, res) => {
   await Robot.destroy({ where: { id: req.params.id } });
   res.sendStatus(204);
@@ -485,23 +522,25 @@ app.post('/api/brackets/generate', authenticateJWT, isAdmin, async (req, res) =>
     }
   }
 
-  // Bracket logic (existing)
+  // Bracket logic with play-in (CLASIFICATORIO) for non-power-of-2 team counts
   const shuffled = [...robotIds].sort(() => Math.random() - 0.5);
   const numRobots = shuffled.length;
-  const powerOf2 = Math.ceil(Math.log2(numRobots));
-  const totalSlots = Math.pow(2, powerOf2);
 
-  const filledRobots = [...shuffled];
-  while (filledRobots.length < totalSlots) filledRobots.push(null as any);
+  // Largest power of 2 <= numRobots
+  const floorLog = Math.floor(Math.log2(numRobots));
+  const floorPow2 = Math.pow(2, floorLog);
+  const extra = numRobots - floorPow2;    // number of play-in matches needed
+  const directTeams = floorPow2 - extra;  // robots going directly to first round
 
   try {
-    const roundsList = []; 
+    const roundsList: any[][] = [];
     const roundNames = ['FINAL', 'SEMIS', 'QUARTERS', 'OCTAVOS', '16VOS', '32VOS'];
     let lastMatches: any[] = [];
     const TargetModel = getMatchModel(catName) as any;
     if (!TargetModel) return res.status(400).json({ message: 'Categoría no válida para llaves' });
 
-    for (let currentLevel = 0; currentLevel < powerOf2; currentLevel++) {
+    // Build main bracket top-down (FINAL → first round) using floorPow2 slots
+    for (let currentLevel = 0; currentLevel < floorLog; currentLevel++) {
       const numMatchesInRound = Math.pow(2, currentLevel);
       const roundName = roundNames[currentLevel] || `ROUND_${currentLevel}`;
       const matchesInThisRound: any[] = [];
@@ -515,10 +554,10 @@ app.post('/api/brackets/generate', authenticateJWT, isAdmin, async (req, res) =>
           round: roundName,
           nextMatchId: nextMatch ? nextMatch.id : null,
           positionInNextMatch: nextMatch ? (i % 2 === 0 ? 'A' : 'B') : null,
-          scoreA: 0, 
-          scoreB: 0, 
+          scoreA: 0,
+          scoreB: 0,
           timeLeft: 180,
-          robotAId: null as any, 
+          robotAId: null as any,
           robotBId: null as any,
           showInDashboard: false
         });
@@ -529,16 +568,43 @@ app.post('/api/brackets/generate', authenticateJWT, isAdmin, async (req, res) =>
       lastMatches = matchesInThisRound;
     }
 
+    // Assign direct robots to first-round slots (slots 0..directTeams-1)
     const firstRoundMatches = roundsList[roundsList.length - 1];
     for (let i = 0; i < firstRoundMatches.length; i++) {
       const match = firstRoundMatches[i];
-      match.robotAId = filledRobots[i * 2];
-      match.robotBId = filledRobots[i * 2 + 1];
+      const slotA = i * 2;
+      const slotB = i * 2 + 1;
+      match.robotAId = slotA < directTeams ? shuffled[slotA] : null;
+      match.robotBId = slotB < directTeams ? shuffled[slotB] : null;
       await match.save();
     }
 
+    // Create CLASIFICATORIO play-in matches for the extra teams
+    // Each play-in match winner advances to the corresponding first-round slot
+    for (let j = 0; j < extra; j++) {
+      const targetSlot = directTeams + j;
+      const targetMatchIndex = Math.floor(targetSlot / 2);
+      const targetPosition = targetSlot % 2 === 0 ? 'A' : 'B';
+      const targetMatch = firstRoundMatches[targetMatchIndex];
+
+      await TargetModel.create({
+        category: catName,
+        level: lvlName,
+        refereeId: refId,
+        round: 'CLASIFICATORIO',
+        nextMatchId: targetMatch.id,
+        positionInNextMatch: targetPosition,
+        scoreA: 0,
+        scoreB: 0,
+        timeLeft: 180,
+        robotAId: shuffled[directTeams + j * 2],
+        robotBId: shuffled[directTeams + j * 2 + 1],
+        showInDashboard: false
+      });
+    }
+
     broadcastState();
-    res.json({ message: 'Bracket generated successfully', matchesCount: totalSlots - 1 });
+    res.json({ message: 'Bracket generated successfully', matchesCount: floorPow2 - 1 + extra });
   } catch (err) {
     console.error('Bracket gen error:', err);
     res.status(500).send({ message: 'Error generating bracket' });
@@ -751,10 +817,11 @@ app.post('/api/registrations', authenticateJWT, isAdmin, async (req, res) => {
 app.put('/api/registrations/:id', authenticateJWT, isAdmin, async (req, res) => {
   const { paymentStatus, google_email, payment_proof_filename, data: bodyData } = req.body;
 
-  let isPaid = false;
-  if (paymentStatus === 'APPROVED') isPaid = true;
-
-  const updateFields: any = { isPaid, paymentStatus };
+  const updateFields: any = {};
+  if (paymentStatus !== undefined) {
+    updateFields.paymentStatus = paymentStatus;
+    updateFields.isPaid = paymentStatus === 'APPROVED';
+  }
   if (google_email !== undefined) updateFields.google_email = google_email;
   if (payment_proof_filename !== undefined) updateFields.payment_proof_filename = payment_proof_filename;
   if (bodyData !== undefined) updateFields.data = bodyData;

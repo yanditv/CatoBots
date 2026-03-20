@@ -28,12 +28,13 @@ interface Match {
 
 // Phase color palette — aggresssive grunge
 const PHASE_COLORS: Record<string, { bg: string; border: string; text: string; accent: string; glow: string }> = {
-  '32VOS':    { bg: 'bg-[#000]', border: 'border-white',          text: 'text-white',          accent: 'bg-white',          glow: 'shadow-[4px_4px_0_#000]' },
-  '16VOS':    { bg: 'bg-[#000]', border: 'border-cyan-400',       text: 'text-cyan-400',       accent: 'bg-cyan-400',       glow: 'shadow-[4px_4px_0_#000]' },
-  'OCTAVOS':  { bg: 'bg-[#000]', border: 'border-blue-500',       text: 'text-blue-500',       accent: 'bg-blue-500',       glow: 'shadow-[4px_4px_0_#000]' },
-  'QUARTERS': { bg: 'bg-[#000]', border: 'border-purple-600',     text: 'text-purple-600',     accent: 'bg-purple-600',     glow: 'shadow-[4px_4px_0_#000]' },
-  'SEMIS':    { bg: 'bg-[#000]', border: 'border-red-600',        text: 'text-red-600',        accent: 'bg-red-600',        glow: 'shadow-[4px_4px_0_#000]' },
-  'FINAL':    { bg: 'bg-[#000]', border: 'border-cb-yellow-neon', text: 'text-cb-yellow-neon', accent: 'bg-cb-yellow-neon', glow: 'shadow-[6px_6px_0_#10B961]' },
+  'CLASIFICATORIO': { bg: 'bg-[#000]', border: 'border-orange-400',    text: 'text-orange-400',    accent: 'bg-orange-400',    glow: 'shadow-[4px_4px_0_#000]' },
+  '32VOS':          { bg: 'bg-[#000]', border: 'border-white',          text: 'text-white',          accent: 'bg-white',          glow: 'shadow-[4px_4px_0_#000]' },
+  '16VOS':          { bg: 'bg-[#000]', border: 'border-cyan-400',       text: 'text-cyan-400',       accent: 'bg-cyan-400',       glow: 'shadow-[4px_4px_0_#000]' },
+  'OCTAVOS':        { bg: 'bg-[#000]', border: 'border-blue-500',       text: 'text-blue-500',       accent: 'bg-blue-500',       glow: 'shadow-[4px_4px_0_#000]' },
+  'QUARTERS':       { bg: 'bg-[#000]', border: 'border-purple-600',     text: 'text-purple-600',     accent: 'bg-purple-600',     glow: 'shadow-[4px_4px_0_#000]' },
+  'SEMIS':          { bg: 'bg-[#000]', border: 'border-red-600',        text: 'text-red-600',        accent: 'bg-red-600',        glow: 'shadow-[4px_4px_0_#000]' },
+  'FINAL':          { bg: 'bg-[#000]', border: 'border-cb-yellow-neon', text: 'text-cb-yellow-neon', accent: 'bg-cb-yellow-neon', glow: 'shadow-[6px_6px_0_#10B961]' },
 };
 
 const getPhaseColor = (round: string) => PHASE_COLORS[round] || PHASE_COLORS['OCTAVOS'];
@@ -120,7 +121,7 @@ const Brackets = () => {
     };
   }, [rootMatch, childrenMap]);
 
-  const roundOrder = ['32VOS', '16VOS', 'OCTAVOS', 'QUARTERS', 'SEMIS'];
+  const roundOrder = ['CLASIFICATORIO', '32VOS', '16VOS', 'OCTAVOS', 'QUARTERS', 'SEMIS'];
 
   const isRoundBased = useMemo(() => {
     const c = selectedCategory.toLowerCase();

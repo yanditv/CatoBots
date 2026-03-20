@@ -45,6 +45,9 @@ interface Robot {
   isHomologated: boolean;
   institutionId: string;
   Institution?: Institution;
+  advisorName?: string;
+  advisorPhone?: string;
+  members?: string[];
 }
 
 interface User {
@@ -579,17 +582,16 @@ const AdminPanel = () => {
         : await api.post(endpoint, payload, { headers: { 'Authorization': `Bearer ${token}` } });
 
       if (response.ok) {
-        // If editing a robot with a linked registration, update registration.data
-        if (activeTab === 'robots' && isEditMode && _registrationId) {
-          const updatedData = {
-            ..._registrationData,
+        if (activeTab === 'robots' && isEditMode) {
+          await api.put(`/api/robots/${editingId}/meta`, {
             advisorName: advisorName || '',
             advisorPhone: advisorPhone || '',
-            members: Array.isArray(members) ? members.join(', ') : (members || ''),
-          };
-          await api.put(`/api/registrations/${_registrationId}`, { data: updatedData }, {
-            headers: { 'Authorization': `Bearer ${token}` }
-          });
+            members: Array.isArray(members) ? members : [],
+            robotName: formData.name,
+            institutionName: formData.Institution?.name || '',
+            category: formData.category || '',
+            level: formData.level || '',
+          }, { headers: { 'Authorization': `Bearer ${token}` } });
         }
         setShowModal(false);
         setFormData({});
@@ -615,8 +617,10 @@ const AdminPanel = () => {
 
     // If editing a robot, find related registration to pre-load advisor/members
     if (activeTab === 'robots') {
+      const normName = (s: string) => s?.trim().toLowerCase();
       const relatedReg = data.registrations.find((r: Registration) =>
-        r.data?.robotName === item.name || r.data?.teamName === item.name
+        normName(r.data?.robotName) === normName(item.name) ||
+        normName(r.data?.teamName) === normName(item.name)
       );
       if (relatedReg) {
         const membersRaw: string = relatedReg.data?.members || '';
@@ -1099,9 +1103,10 @@ const AdminPanel = () => {
               ) : (() => {
                 const q = normalize(searchQuery);
                 const filteredRobots = data.robots.filter(r => {
-                  // Buscar registro vinculado para acceder a integrantes y asesor
-                  const reg = data.registrations.find(
-                    (reg: Registration) => reg.data?.robotName === r.name || reg.data?.teamName === r.name
+                  const normName = (s: string) => s?.trim().toLowerCase();
+                  const reg = data.registrations.find((reg: Registration) =>
+                    normName(reg.data?.robotName) === normName(r.name) ||
+                    normName(reg.data?.teamName) === normName(r.name)
                   );
                   const members: string = reg?.data?.members || '';
                   const advisorName: string = reg?.data?.advisorName || '';
@@ -1153,8 +1158,10 @@ const AdminPanel = () => {
                       </>
                     )}
                     expandedContent={(robot) => {
-                      const reg = data.registrations.find(
-                        (reg: Registration) => reg.data?.robotName === robot.name || reg.data?.teamName === robot.name
+                      const normName = (s: string) => s?.trim().toLowerCase();
+                      const reg = data.registrations.find((reg: Registration) =>
+                        normName(reg.data?.robotName) === normName(robot.name) ||
+                        normName(reg.data?.teamName) === normName(robot.name)
                       );
                       const members: string[] = reg?.data?.members
                         ? reg.data.members.split(',').map((m: string) => m.trim()).filter(Boolean)
