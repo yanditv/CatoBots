@@ -689,8 +689,8 @@ const AdminPanel = () => {
   };
 
   const handleGenerateBracket = async () => {
-    if (!formData.category || !formData.level || selectedRobots.length < 2 || !formData.refereeId) {
-      openConfirm('Atención', 'Completa Nivel, Categoría, Árbitro y selecciona al menos 2 robots', () => {}, 'warning');
+    if (!formData.category || !formData.level || selectedRobots.length < 2 || (!formData.refereeId && (!formData.refereeIds || formData.refereeIds.length === 0))) {
+      openConfirm('Atención', 'Completa Nivel, Categoría, al menos un Árbitro y selecciona al menos 2 robots', () => {}, 'warning');
       return;
     }
     try {
@@ -698,7 +698,7 @@ const AdminPanel = () => {
         category: formData.category,
         level: formData.level,
         robotIds: selectedRobots,
-        refereeId: formData.refereeId
+        refereeIds: formData.refereeIds || [formData.refereeId]
       }, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
@@ -1534,11 +1534,29 @@ const AdminPanel = () => {
                       </div>
 
                       <div className="space-y-1">
-                        <label className="text-[10px] font-tech font-black text-neutral-500 uppercase tracking-widest">Árbitro Oficial</label>
-                        <select value={formData.refereeId || ''} onChange={e => setFormData({ ...formData, refereeId: e.target.value })} className="w-full text-cb-white-tech bg-[#0a0a0a] border-2 border-neutral-700 p-4 appearance-none font-tech text-sm focus:border-cb-yellow-neon outline-none transition-all duration-75">
-                          <option value="">Seleccionar...</option>
-                          {data.referees.map(u => <option key={u.id} value={u.id}>@{u.username}</option>)}
-                        </select>
+                        <label className="text-[10px] font-tech font-black text-neutral-500 uppercase tracking-widest">Árbitros Designados</label>
+                        <div className="bg-[#0a0a0a] border-2 border-neutral-700 p-2 max-h-48 overflow-y-auto custom-scrollbar space-y-1">
+                          {data.referees.map(u => {
+                            const isSelected = (formData.refereeIds || []).includes(u.id);
+                            return (
+                              <div 
+                                key={u.id}
+                                onClick={() => {
+                                  const current = formData.refereeIds || [];
+                                  const updated = isSelected 
+                                    ? current.filter((id: string) => id !== u.id)
+                                    : [...current, u.id];
+                                  setFormData({ ...formData, refereeIds: updated });
+                                }}
+                                className={`flex items-center gap-3 p-2 cursor-pointer transition-all ${isSelected ? 'bg-cb-yellow-neon/10 text-cb-yellow-neon' : 'text-neutral-500 hover:bg-white/5'}`}
+                              >
+                                <div className={`w-3 h-3 border ${isSelected ? 'bg-cb-yellow-neon border-cb-yellow-neon' : 'border-neutral-600'}`} />
+                                <span className="text-xs font-tech font-bold uppercase">@{u.username}</span>
+                              </div>
+                            );
+                          })}
+                        </div>
+                        <p className="text-[9px] font-tech text-neutral-600 mt-1">Los partidos se distribuirán entre los jueces seleccionados.</p>
                       </div>
 
                       <button onClick={handleGenerateBracket} className="w-full bg-cb-yellow-neon text-cb-black-pure py-5 font-tech font-black uppercase text-sm tracking-wider border-3 border-cb-black-pure shadow-[4px_4px_0_#10B961] hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-none transition-all duration-75">

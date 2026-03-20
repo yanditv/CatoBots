@@ -412,8 +412,20 @@ app.delete('/api/matches/:id', authenticateJWT, isAdmin, async (req, res) => {
 // --- Bracket Generation ---
 
 app.post('/api/brackets/generate', authenticateJWT, isAdmin, async (req, res) => {
-  const { category: catName, level: lvlName, robotIds, refereeId: refId } = req.body;
+  const { category: catName, level: lvlName, robotIds, refereeId: refId, refereeIds: refIds } = req.body;
   if (!robotIds || robotIds.length < 2) return res.status(400).send({ message: 'At least 2 robots required' });
+
+  // Si recibimos múltiples referees, los usamos. Si no, usamos el único refereeId por compatibilidad.
+  const allReferees = Array.isArray(refIds) && refIds.length > 0 ? refIds : (refId ? [refId] : []);
+  if (allReferees.length === 0) return res.status(400).send({ message: 'At least 1 referee required' });
+
+  let refIndex = 0;
+  const getNextReferee = () => {
+    const r = allReferees[refIndex];
+    refIndex = (refIndex + 1) % allReferees.length;
+    return r;
+  };
+
 
   const isRoundBased = (name: string) => {
     const c = name.toLowerCase();
@@ -431,7 +443,7 @@ app.post('/api/brackets/generate', authenticateJWT, isAdmin, async (req, res) =>
         await TargetModel.create({
           category: catName, 
           level: lvlName, 
-          refereeId: refId,
+          refereeId: getNextReferee(),
           robotAId: robotId,
           robotBId: null as any,
           round: 'RONDA 1',
@@ -451,7 +463,7 @@ app.post('/api/brackets/generate', authenticateJWT, isAdmin, async (req, res) =>
           await TargetModel.create({
             category: catName, 
             level: lvlName, 
-            refereeId: refId,
+            refereeId: getNextReferee(),
             robotAId: null as any, 
             robotBId: null as any,
             round: 'RONDA 2',
@@ -499,7 +511,7 @@ app.post('/api/brackets/generate', authenticateJWT, isAdmin, async (req, res) =>
         const match = await TargetModel.create({
           category: catName,
           level: lvlName,
-          refereeId: refId,
+          refereeId: getNextReferee(),
           round: roundName,
           nextMatchId: nextMatch ? nextMatch.id : null,
           positionInNextMatch: nextMatch ? (i % 2 === 0 ? 'A' : 'B') : null,
